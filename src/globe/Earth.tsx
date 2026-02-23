@@ -80,7 +80,7 @@ export function Earth({ children }: { children?: React.ReactNode }) {
             color="#00B4FF"
             wireframe
             transparent
-            opacity={0.04}
+            opacity={0.06}
             depthWrite={false}
           />
         </mesh>
@@ -158,7 +158,7 @@ function GridLines() {
         color="#00B4FF"
         size={0.003}
         transparent
-        opacity={0.12}
+        opacity={0.15}
         depthWrite={false}
         sizeAttenuation
       />
