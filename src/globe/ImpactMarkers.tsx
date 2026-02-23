@@ -1,0 +1,174 @@
+import { useRef, useEffect } from 'react';
+import { useFrame } from '@react-three/fiber';
+import * as THREE from 'three';
+import { useStreamStore } from '../stream/useStreamStore';
+import { pulseEasing, easeOutExpo } from '../utils/easing';
+
+// ── Shared geometry pool (created once, reused for all markers) ──
+
+const _sharedCoreGeo = new THREE.CircleGeometry(0.012, 12);
+const _sharedRing1Geo = new THREE.RingGeometry(0.015, 0.022, 24);
+const _sharedRing2Geo = new THREE.RingGeometry(0.025, 0.030, 24);
+
+const _materialProps = {
+  transparent: true,
+  depthWrite: false,
+  blending: THREE.AdditiveBlending,
+  side: THREE.DoubleSide,
+} as const;
+
+function getMarkerColorHex(type: string): number {
+  switch (type) {
+    case 'malware': return 0xFF3737;
+    case 'phishing': return 0xFF8A00;
+    default: return 0x00D1FF;
+  }
+}
+
+/**
+ * Renders animated impact markers at source/destination positions.
+ * Uses imperative Three.js objects with shared geometries for performance.
+ * Source: expanding halo pulse
+ * Destination: shockwave ripple
+ */
+export function ImpactMarkers() {
+  const groupRef = useRef<THREE.Group>(null);
+  const markers = useStreamStore(s => s.markers);
+
+  const markerObjectsRef = useRef<Map<string, {
+    core: THREE.Mesh;
+    ring1: THREE.Mesh;
+    ring2: THREE.Mesh | null;
+    isSource: boolean;
+  }>>(new Map());
+
+  // Sync Three.js objects with marker state
+  useEffect(() => {
+    const group = groupRef.current;
+    if (!group) return;
+
+    const existingIds = new Set(markerObjectsRef.current.keys());
+    const currentIds = new Set(markers.map(m => m.id));
+
+    // Remove old markers
+    for (const id of existingIds) {
+      if (!currentIds.has(id)) {
+        const obj = markerObjectsRef.current.get(id);
+        if (obj) {
+          group.remove(obj.core);
+          group.remove(obj.ring1);
+          if (obj.ring2) group.remove(obj.ring2);
+          // Dispose per-instance materials only (geometries are shared)
+          (obj.core.material as THREE.Material).dispose();
+          (obj.ring1.material as THREE.Material).dispose();
+          if (obj.ring2) (obj.ring2.material as THREE.Material).dispose();
+        }
+        markerObjectsRef.current.delete(id);
+      }
+    }
+
+    // Add new markers
+    for (const marker of markers) {
+      if (!markerObjectsRef.current.has(marker.id)) {
+        const colorHex = getMarkerColorHex(marker.attackType);
+        const pos = new THREE.Vector3(...marker.position);
+        const normal = pos.clone().normalize();
+
+        // Orientation quaternion (face outward from globe)
+        const quaternion = new THREE.Quaternion();
+        quaternion.setFromUnitVectors(new THREE.Vector3(0, 0, 1), normal);
+
+        // Core glow dot — shared geometry, unique material (for per-instance opacity)
+        const coreMat = new THREE.MeshBasicMaterial({
+          ..._materialProps,
+          color: colorHex,
+          opacity: 0.9,
+        });
+        const core = new THREE.Mesh(_sharedCoreGeo, coreMat);
+        core.position.copy(pos);
+        core.quaternion.copy(quaternion);
+
+        // Primary ring — shared geometry
+        const ring1Mat = new THREE.MeshBasicMaterial({
+          ..._materialProps,
+          color: colorHex,
+          opacity: 0.6,
+        });
+        const ring1 = new THREE.Mesh(_sharedRing1Geo, ring1Mat);
+        ring1.position.copy(pos);
+        ring1.quaternion.copy(quaternion);
+
+        // Secondary ring (destination only) — shared geometry
+        let ring2: THREE.Mesh | null = null;
+        if (!marker.isSource) {
+          const ring2Mat = new THREE.MeshBasicMaterial({
+            ..._materialProps,
+            color: colorHex,
+            opacity: 0.3,
+          });
+          ring2 = new THREE.Mesh(_sharedRing2Geo, ring2Mat);
+          ring2.position.copy(pos);
+          ring2.quaternion.copy(quaternion);
+          group.add(ring2);
+        }
+
+        group.add(core);
+        group.add(ring1);
+
+        markerObjectsRef.current.set(marker.id, {
+          core, ring1, ring2,
+          isSource: marker.isSource,
+        });
+      }
+    }
+  }, [markers]);
+
+  // Animate markers each frame
+  useFrame(() => {
+    for (const marker of markers) {
+      const obj = markerObjectsRef.current.get(marker.id);
+      if (!obj) continue;
+
+      const p = marker.progress;
+      if (p <= 0) {
+        obj.core.visible = false;
+        obj.ring1.visible = false;
+        if (obj.ring2) obj.ring2.visible = false;
+        continue;
+      }
+
+      obj.core.visible = true;
+      obj.ring1.visible = true;
+
+      if (obj.isSource) {
+        // Source: expanding pulse with fade
+        const pulseScale = 1 + easeOutExpo(p) * 0.1;
+        const pulseOpacity = pulseEasing(p);
+
+        obj.ring1.scale.setScalar(pulseScale);
+        (obj.ring1.material as THREE.MeshBasicMaterial).opacity = pulseOpacity * 0.6;
+
+        const coreOpacity = Math.max(0, 1 - easeOutExpo(p));
+        (obj.core.material as THREE.MeshBasicMaterial).opacity = coreOpacity * 0.9;
+      } else {
+        // Destination: shockwave ripple
+        const ripple1 = easeOutExpo(Math.min(p * 2, 1));
+        const fadeOut = Math.max(0, 1 - easeOutExpo(p));
+
+        obj.ring1.scale.setScalar(1 + ripple1 * 0.15);
+        (obj.ring1.material as THREE.MeshBasicMaterial).opacity = fadeOut * 0.5;
+
+        if (obj.ring2) {
+          obj.ring2.visible = true;
+          const ripple2 = easeOutExpo(Math.min(Math.max(p - 0.3, 0) * 2, 1));
+          obj.ring2.scale.setScalar(1 + ripple2 * 0.1);
+          (obj.ring2.material as THREE.MeshBasicMaterial).opacity = fadeOut * 0.3;
+        }
+
+        (obj.core.material as THREE.MeshBasicMaterial).opacity = fadeOut * 0.9;
+      }
+    }
+  });
+
+  return <group ref={groupRef} />;
+}
