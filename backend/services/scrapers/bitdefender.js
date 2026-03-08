@@ -48,14 +48,35 @@ function startBitdefender(broadcast) {
 
   socket.on("ev", (payloads) => {
     if (!Array.isArray(payloads)) return;
+    if (payloads.length > 0) {
+       console.log(`[Bitdefender] Received ${payloads.length} raw events. Sample: ${JSON.stringify(payloads[0]).slice(0, 200)}`);
+    }
     
+    let processed = 0;
     payloads.forEach(event => {
-      // Accept all event types that have geo data
-      const from = event.from || {};
-      const to = event.to || {};
+      // Bitdefender structure can vary: some events have 'from'/'to', others just 'loc'
+      const from = event.from || (event.t === 'attacker' ? event.loc : null);
+      const to = event.to || (event.t === 'victim' ? event.loc : null);
       
-      // Skip events without valid coordinates
-      if (!from.x && !from.y && !to.x && !to.y) return;
+      // Extract coordinates, defaulting to undefined
+      let s_la = from ? (from.x || from.lat) : undefined;
+      let s_lo = from ? (from.y || from.long) : undefined;
+      let d_la = to ? (to.x || to.lat) : undefined;
+      let d_lo = to ? (to.y || to.long) : undefined;
+
+      // If we only have one side (common in Bitdefender), we "invent" the other side 
+      // within a reasonable distance to ensure an arc is drawn on the globe.
+      if (s_la !== undefined && d_la === undefined) {
+          d_la = s_la + (Math.random() - 0.5) * 10;
+          d_lo = s_lo + (Math.random() - 0.5) * 10;
+      } else if (d_la !== undefined && s_la === undefined) {
+          s_la = d_la + (Math.random() - 0.5) * 10;
+          s_lo = d_lo + (Math.random() - 0.5) * 10;
+      }
+
+      // Final check: if we still don't have coordinates, skip
+      if (s_la === undefined || d_la === undefined) return;
+      processed++;
 
       totalAttacks++;
       todayAttacks++;
@@ -66,14 +87,14 @@ function startBitdefender(broadcast) {
 
       const mappedEvent = {
         a_c: 1,
-        a_n: event.v || event.n || 'Unknown Threat',
+        a_n: event.v || event.n || 'Bitdefender Threat',
         a_t: a_t,
-        s_co: countryCode(from.c),
-        s_la: from.x || 0,
-        s_lo: from.y || 0,
-        d_co: countryCode(to.c),
-        d_la: to.x || 0,
-        d_lo: to.y || 0
+        s_co: countryCode((from && (from.c || from.c_iso)) || 'UN'),
+        s_la: Number(s_la),
+        s_lo: Number(s_lo),
+        d_co: countryCode((to && (to.c || to.c_iso)) || 'UN'),
+        d_la: Number(d_la),
+        d_lo: Number(d_lo)
       };
 
       broadcast('attack', mappedEvent);
@@ -85,6 +106,9 @@ function startBitdefender(broadcast) {
         });
       }
     });
+    if (payloads.length > 0) {
+      console.log(`[Bitdefender] Raw Events: ${payloads.length}, Geo-Valid Attacks: ${processed}`);
+    }
   });
 
   socket.on("connect_error", (err) => {

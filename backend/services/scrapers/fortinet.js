@@ -27,8 +27,11 @@ async function pollFortinet(broadcast) {
     const res = await axios.get(`https://fortiguard.fortinet.com/api/threatmap/live/outbreak?outbreak_id=${outbreakId}&limit=50&segment_sec=1800&last_sec=10800&replay=false`);
     
     if (res.data && res.data.ips) {
+      const slices = Object.keys(res.data.ips);
+      let eventCount = 0;
       for (const ts in res.data.ips) {
         const events = res.data.ips[ts];
+        if (Array.isArray(events)) eventCount += events.length;
         if (!Array.isArray(events)) continue;
         events.forEach(ev => {
           if (!ev || !ev.src_lat || !ev.dest_lat) return;
@@ -49,6 +52,9 @@ async function pollFortinet(broadcast) {
           broadcast('attack', mappedEvent);
         });
       }
+      console.log(`[Fortinet] Polled Outbreak ${outbreakId}. Found ${eventCount} events across ${slices.length} time slices.`);
+    } else {
+      console.log(`[Fortinet] Polled Outbreak ${outbreakId}. No event data in current window.`);
     }
   } catch (err) {
     console.error("[Fortinet] Error polling:", err.message);
@@ -56,6 +62,7 @@ async function pollFortinet(broadcast) {
 }
 
 function startFortinet(broadcast) {
+  console.log("[Fortinet] Scraper started. Polling every 4 seconds.");
   setInterval(() => pollFortinet(broadcast), 4000);
   getOutbreakId();
 }

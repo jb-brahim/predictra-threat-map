@@ -20,6 +20,10 @@ let clients = [];
 
 // Helper to broadcast events to all connected clients and save to DB
 const broadcast = async (event, data, sourceApi = 'unknown') => {
+  if (event === 'attack') {
+    console.log(`[Aggregator] ${sourceApi} attack: ${data.a_n} | src: (${data.s_la},${data.s_lo}) | dst: (${data.d_la},${data.d_lo})`);
+  }
+
   clients.forEach(client => {
     client.res.write(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`);
   });

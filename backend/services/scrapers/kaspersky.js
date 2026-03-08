@@ -19,6 +19,7 @@ async function startKaspersky(broadcast) {
     // Provide occasional Kaspersky-themed events
     setInterval(() => {
       if (topMalware.length === 0) return;
+      console.log(`[Kaspersky] Sending simulated attack event`);
       const randomMalware = topMalware[Math.floor(Math.random() * topMalware.length)];
       
       const src_lat = (Math.random() * 140) - 70;

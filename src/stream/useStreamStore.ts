@@ -275,7 +275,10 @@ export const useStreamStore = create<StreamState>((set, get) => ({
           try {
             const data = JSON.parse(e.data);
             // Validate and normalize
-            if (!data.a_t || !data.s_la || !data.s_lo || !data.d_la || !data.d_lo) return;
+            // Validate and normalize - ensure we don't drop events with 0 coordinates
+            if (!data.a_t || 
+                data.s_la === undefined || data.s_lo === undefined || 
+                data.d_la === undefined || data.d_lo === undefined) return;
 
             const event: ThreatEvent = {
               id: fastId(),
