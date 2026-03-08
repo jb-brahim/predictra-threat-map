@@ -18,6 +18,7 @@
     "eventsource": "^4.1.0",
     "express": "^5.2.1",
     "mongoose": "^8.23.0",
+    "predictra-threat-map": "file:..",
     "socket.io-client": "^2.4.0",
     "ws": "^8.19.0"
   },
