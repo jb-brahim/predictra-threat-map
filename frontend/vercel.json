@@ -1,8 +1,13 @@
 {
+  "version": 2,
   "rewrites": [
     {
       "source": "/api/feed",
-      "destination": "https://threatmap-api.checkpoint.com/ThreatMap/api/feed"
+      "destination": "/api/feed"
+    },
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
     }
   ]
 }
