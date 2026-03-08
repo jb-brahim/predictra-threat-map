@@ -7,10 +7,9 @@ export default defineConfig({
   server: {
     proxy: {
       '/api/feed': {
-        target: 'https://threatmap-api.checkpoint.com',
+        target: 'http://localhost:3001',
         changeOrigin: true,
-        rewrite: (path) => `/ThreatMap${path}`,
-        secure: true,
+        secure: false,
       },
     },
   },
