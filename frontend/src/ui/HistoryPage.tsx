@@ -35,7 +35,7 @@ export function HistoryPage() {
       background: 'rgba(5, 8, 15, 0.95)',
       backdropFilter: 'blur(20px)',
       padding: '40px',
-      overflowY: 'auto',
+      overflow: 'hidden',
       display: 'flex',
       flexDirection: 'column',
       gap: '24px',
@@ -91,7 +91,14 @@ export function HistoryPage() {
         </button>
       </div>
 
-      <GlassPanel style={{ padding: 0, overflow: 'hidden' }}>
+      <GlassPanel style={{ 
+        padding: 0, 
+        overflowY: 'auto', 
+        flex: 1, 
+        minHeight: 0,
+        background: 'rgba(255, 255, 255, 0.02)',
+        border: `1px solid ${theme.colors.panelBorder}`,
+      }}>
         <table style={{
           width: '100%',
           borderCollapse: 'collapse',
@@ -99,12 +106,17 @@ export function HistoryPage() {
           fontSize: '14px',
         }}>
           <thead style={{
-            background: 'rgba(255, 255, 255, 0.03)',
+            position: 'sticky',
+            top: 0,
+            zIndex: 10,
+            background: 'rgba(10, 15, 25, 0.95)',
+            backdropFilter: 'blur(10px)',
             color: theme.colors.textDim,
             textTransform: 'uppercase',
             letterSpacing: '1px',
             fontSize: '11px',
             fontWeight: 700,
+            borderBottom: `1px solid ${theme.colors.panelBorder}`,
           }}>
             <tr>
               <th style={{ padding: '16px 20px' }}>Timestamp</th>
