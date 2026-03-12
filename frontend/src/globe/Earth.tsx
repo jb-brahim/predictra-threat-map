@@ -61,12 +61,12 @@ export function Earth({ children }: { children?: React.ReactNode }) {
         <mesh>
           <sphereGeometry args={[1, 48, 48]} />
           <meshPhongMaterial
-            color="#0A1628"
-            emissive="#030810"
+            color="#020408"
+            emissive="#010204"
             emissiveIntensity={0.5}
-            shininess={10}
+            shininess={0}
             transparent
-            opacity={0.98}
+            opacity={1.0}
           />
         </mesh>
 
@@ -77,10 +77,10 @@ export function Earth({ children }: { children?: React.ReactNode }) {
         <mesh>
           <icosahedronGeometry args={[1.001, 3]} />
           <meshBasicMaterial
-            color="#00B4FF"
+            color="#00D1FF"
             wireframe
             transparent
-            opacity={0.06}
+            opacity={0.04}
             depthWrite={false}
           />
         </mesh>
@@ -95,18 +95,18 @@ export function Earth({ children }: { children?: React.ReactNode }) {
       {/* Static Atmospheric Effects (don't rotate with planet) */}
       <group>
         {/* Rim glow — 32x32 segments (Fresnel doesn't need high tessellation) */}
-        <mesh scale={[1.15, 1.15, 1.15]}>
+        <mesh scale={[1.18, 1.18, 1.18]}>
           <sphereGeometry args={[1, 32, 32]} />
           <primitive object={glowMaterial} attach="material" />
         </mesh>
 
         {/* Inner glow / volume */}
-        <mesh scale={[1.05, 1.05, 1.05]}>
+        <mesh scale={[1.08, 1.08, 1.08]}>
           <sphereGeometry args={[1, 32, 32]} />
           <meshBasicMaterial
-            color="#00A8FF"
+            color="#00D1FF"
             transparent
-            opacity={0.03}
+            opacity={0.05}
             side={THREE.BackSide}
             depthWrite={false}
           />
