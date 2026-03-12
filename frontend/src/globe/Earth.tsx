@@ -72,21 +72,6 @@ export function Earth({ children }: { children?: React.ReactNode }) {
         {/* Real Country Boundaries */}
         <CountryOutlines />
 
-        {/* Abstract Wireframe Grid */}
-        <mesh>
-          <icosahedronGeometry args={[1.001, 3]} />
-          <meshBasicMaterial
-            color="#00D1FF"
-            wireframe
-            transparent
-            opacity={0.03}
-            depthWrite={false}
-          />
-        </mesh>
-
-        {/* Latitude/Longitude grid lines */}
-        <GridLines />
-
         {/* Sync'ed children (Arcs, Markers, etc) */}
         {children}
       </group>
