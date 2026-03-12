@@ -81,15 +81,6 @@ export function CountryOutlines() {
         const polygons = extractPolygons(topology);
         const linePoints: THREE.Vector3[] = [];
         
-        // Materials for extrusion
-        const landMaterial = new THREE.MeshLambertMaterial({
-          color: 0x0A0F1A,
-          emissive: 0x000000,
-          transparent: true,
-          opacity: 0.9,
-          side: THREE.DoubleSide
-        });
-
         polygons.forEach(polygon => {
           // 1. Line Points for neon borders (existing logic)
           for (let i = 0; i < polygon.length - 1; i++) {
