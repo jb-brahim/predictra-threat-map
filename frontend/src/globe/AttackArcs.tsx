@@ -22,7 +22,7 @@ function getLineMaterial(type: string): THREE.LineBasicMaterial {
     _lineMaterials[type] = new THREE.LineBasicMaterial({
       color: getArcColorHex(type),
       transparent: true,
-      opacity: 0.8,
+      opacity: 1.0,
       depthWrite: false,
       blending: THREE.AdditiveBlending,
     });
@@ -48,7 +48,7 @@ function getGlowMaterial(type: string): THREE.MeshBasicMaterial {
     _glowMaterials[type] = new THREE.MeshBasicMaterial({
       color: getArcColorHex(type),
       transparent: true,
-      opacity: 0.5,
+      opacity: 0.8,
       depthWrite: false,
       blending: THREE.AdditiveBlending,
     });

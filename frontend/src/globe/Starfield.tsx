@@ -11,9 +11,9 @@ export function Starfield({ count = 3000 }: { count?: number }) {
     const sizes = new Float32Array(count);
 
     const starColors = [
-      new THREE.Color(0xFFFFFF), // White
-      new THREE.Color(0x88CCFF), // Light Blue
-      new THREE.Color(0xFFFFEE), // Pale Yellow
+      new THREE.Color(0x00E8FF), // Neon Cyan
+      new THREE.Color(0x0044FF), // Deep Blue
+      new THREE.Color(0xFF0055), // Cyberpunk Magenta
     ];
 
     for (let i = 0; i < count; i++) {
