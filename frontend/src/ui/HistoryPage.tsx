@@ -1,6 +1,6 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useStreamStore } from '../stream/useStreamStore';
-import { ThreatEvent } from '../stream/types';
+import type { ThreatEvent } from '../stream/types';
 import { theme, getAttackColor } from '../theme/theme';
 import { GlassPanel } from './GlassPanel';
 
@@ -45,7 +45,7 @@ export function HistoryPage() {
         display: 'flex',
         justifyContent: 'space-between',
         alignItems: 'center',
-        borderBottom: `1px solid ${theme.colors.border}`,
+        borderBottom: `1px solid ${theme.colors.panelBorder}`,
         paddingBottom: '20px',
       }}>
         <div>
@@ -124,7 +124,7 @@ export function HistoryPage() {
               </tr>
             ) : error ? (
               <tr>
-                <td colSpan={6} style={{ padding: '60px', textAlign: 'center', color: theme.colors.error }}>
+                <td colSpan={6} style={{ padding: '60px', textAlign: 'center', color: theme.colors.danger }}>
                   Error: {error}
                 </td>
               </tr>
@@ -188,7 +188,7 @@ export function HistoryPage() {
                       fontSize: '11px',
                       color: theme.colors.textDim,
                     }}>
-                      {(event as any).source_api || 'unknown'}
+                      {event.source_api || 'unknown'}
                     </span>
                   </td>
                 </tr>
