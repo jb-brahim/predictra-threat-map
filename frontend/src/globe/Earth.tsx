@@ -33,7 +33,7 @@ export function Earth({ children }: { children?: React.ReactNode }) {
           vec3 vNormal = normalize(normalMatrix * normal);
           vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
           vec3 vNormel = normalize(-mvPosition.xyz);
-          vIntensity = pow(0.65 - dot(vNormal, vNormel), 12.0);
+          vIntensity = pow(0.7 - dot(vNormal, vNormel), 3.0);
           gl_Position = projectionMatrix * mvPosition;
         }
       `,
@@ -41,9 +41,9 @@ export function Earth({ children }: { children?: React.ReactNode }) {
         uniform vec3 glowColor;
         varying float vIntensity;
         void main() {
-          gl_FragColor = vec4(glowColor, vIntensity * 0.4);
+          gl_FragColor = vec4(glowColor, vIntensity * 0.6);
           // Only show on edges
-          if (gl_FragColor.a < 0.005) discard;
+          if (gl_FragColor.a < 0.01) discard;
         }
       `,
       side: THREE.FrontSide,
@@ -61,29 +61,32 @@ export function Earth({ children }: { children?: React.ReactNode }) {
         <mesh>
           <sphereGeometry args={[1, 48, 48]} />
           <meshPhongMaterial
-            color="#050A15"
-            emissive="#020408"
+            color="#0A1628"
+            emissive="#030810"
             emissiveIntensity={0.5}
-            transparent
-            opacity={0.95}
             shininess={10}
+            transparent
+            opacity={0.98}
           />
         </mesh>
 
         {/* Real Country Boundaries */}
         <CountryOutlines />
 
-        {/* Subtle base grid for space reference */}
+        {/* Abstract Wireframe Grid */}
         <mesh>
-          <icosahedronGeometry args={[1, 2]} />
+          <icosahedronGeometry args={[1.001, 3]} />
           <meshBasicMaterial
-            color="#00D1FF"
+            color="#00B4FF"
             wireframe
             transparent
-            opacity={0.02}
+            opacity={0.06}
             depthWrite={false}
           />
         </mesh>
+
+        {/* Latitude/Longitude grid lines */}
+        <GridLines />
 
         {/* Sync'ed children (Arcs, Markers, etc) */}
         {children}
@@ -92,7 +95,7 @@ export function Earth({ children }: { children?: React.ReactNode }) {
       {/* Static Atmospheric Effects (don't rotate with planet) */}
       <group>
         {/* Rim glow — 32x32 segments (Fresnel doesn't need high tessellation) */}
-        <mesh scale={[1.12, 1.12, 1.12]}>
+        <mesh scale={[1.15, 1.15, 1.15]}>
           <sphereGeometry args={[1, 32, 32]} />
           <primitive object={glowMaterial} attach="material" />
         </mesh>
@@ -101,9 +104,9 @@ export function Earth({ children }: { children?: React.ReactNode }) {
         <mesh scale={[1.05, 1.05, 1.05]}>
           <sphereGeometry args={[1, 32, 32]} />
           <meshBasicMaterial
-            color="#00D1FF"
+            color="#00A8FF"
             transparent
-            opacity={0.02}
+            opacity={0.03}
             side={THREE.BackSide}
             depthWrite={false}
           />
@@ -113,4 +116,52 @@ export function Earth({ children }: { children?: React.ReactNode }) {
   );
 }
 
+function GridLines() {
+  const linesGeo = useMemo(() => {
+    const points: THREE.Vector3[] = [];
+    const radius = 1.002;
 
+    // Latitude lines every 30 degrees
+    for (let lat = -60; lat <= 60; lat += 30) {
+      const phi = (90 - lat) * (Math.PI / 180);
+      for (let lon = 0; lon <= 360; lon += 2) {
+        const theta = lon * (Math.PI / 180);
+        points.push(new THREE.Vector3(
+          -(radius * Math.sin(phi) * Math.cos(theta)),
+          radius * Math.cos(phi),
+          radius * Math.sin(phi) * Math.sin(theta)
+        ));
+      }
+    }
+
+    // Longitude lines every 30 degrees
+    for (let lon = 0; lon < 360; lon += 30) {
+      const theta = lon * (Math.PI / 180);
+      for (let lat = -90; lat <= 90; lat += 2) {
+        const phi = (90 - lat) * (Math.PI / 180);
+        points.push(new THREE.Vector3(
+          -(radius * Math.sin(phi) * Math.cos(theta)),
+          radius * Math.cos(phi),
+          radius * Math.sin(phi) * Math.sin(theta)
+        ));
+      }
+    }
+
+    const geo = new THREE.BufferGeometry().setFromPoints(points);
+    return geo;
+  }, []);
+
+  return (
+    <points>
+      <primitive object={linesGeo} attach="geometry" />
+      <pointsMaterial
+        color="#00B4FF"
+        size={0.003}
+        transparent
+        opacity={0.15}
+        depthWrite={false}
+        sizeAttenuation
+      />
+    </points>
+  );
+}
