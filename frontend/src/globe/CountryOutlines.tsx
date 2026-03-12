@@ -133,19 +133,6 @@ export function CountryOutlines() {
           }
         }
 
-        // Add a "Land Layer" sphere slightly larger than Earth to act as the 3D elevation
-        // We'll use a very dark material to make the continents look extruded and solid
-        const elevationMesh = new THREE.Mesh(
-          new THREE.SphereGeometry(GLOBE_RADIUS, 64, 64),
-          new THREE.MeshPhongMaterial({
-            color: 0x05080F,
-            transparent: true,
-            opacity: 0.5,
-            shininess: 0
-          })
-        );
-        group.add(elevationMesh);
-
         setLoaded(true);
       })
       .catch(err => console.warn('Failed to load country outlines:', err));

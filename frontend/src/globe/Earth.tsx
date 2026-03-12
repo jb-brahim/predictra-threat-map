@@ -61,16 +61,29 @@ export function Earth({ children }: { children?: React.ReactNode }) {
         <mesh>
           <sphereGeometry args={[1, 48, 48]} />
           <meshPhongMaterial
-            color="#020408"
-            emissive="#000000"
+            color="#050A15"
+            emissive="#020408"
+            emissiveIntensity={0.5}
             transparent
-            opacity={1.0}
-            shininess={0}
+            opacity={0.95}
+            shininess={10}
           />
         </mesh>
 
         {/* Real Country Boundaries */}
         <CountryOutlines />
+
+        {/* Subtle base grid for space reference */}
+        <mesh>
+          <icosahedronGeometry args={[1, 2]} />
+          <meshBasicMaterial
+            color="#00D1FF"
+            wireframe
+            transparent
+            opacity={0.02}
+            depthWrite={false}
+          />
+        </mesh>
 
         {/* Sync'ed children (Arcs, Markers, etc) */}
         {children}
