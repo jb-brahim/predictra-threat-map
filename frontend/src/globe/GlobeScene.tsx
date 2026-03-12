@@ -1,7 +1,8 @@
 import { useMemo } from 'react';
+import * as THREE from 'three';
 import { Canvas, useFrame } from '@react-three/fiber';
 import { OrbitControls } from '@react-three/drei';
-import { EffectComposer, Bloom } from '@react-three/postprocessing';
+import { EffectComposer, Bloom, Vignette, ChromaticAberration } from '@react-three/postprocessing';
 import { Earth } from './Earth';
 import { AttackArcs } from './AttackArcs';
 import { ImpactMarkers } from './ImpactMarkers';
@@ -52,9 +53,9 @@ export function GlobeScene() {
         dpr={qualityPreset === 'low' ? 1 : Math.min(window.devicePixelRatio, 2)}
       >
         {/* Lighting */}
-        <ambientLight intensity={0.15} color="#4488CC" />
-        <directionalLight position={[5, 3, 5]} intensity={0.4} color="#88BBFF" />
-        <directionalLight position={[-5, -2, -5]} intensity={0.1} color="#0044AA" />
+        <ambientLight intensity={0.2} color="#4488CC" />
+        <directionalLight position={[5, 3, 5]} intensity={0.8} color="#88BBFF" />
+        <directionalLight position={[-5, -2, -5]} intensity={0.2} color="#0044AA" />
 
         {/* Background */}
         <color attach="background" args={['#05080F']} />
@@ -84,9 +85,16 @@ export function GlobeScene() {
           <EffectComposer>
             <Bloom
               intensity={bloomIntensity}
-              luminanceThreshold={0.2}
+              luminanceThreshold={0.15}
               luminanceSmoothing={0.9}
-              radius={0.8}
+              radius={0.7}
+              mipmapBlur
+            />
+            <Vignette eskil={false} offset={0.1} darkness={1.1} />
+            <ChromaticAberration
+              offset={new THREE.Vector2(0.0015, 0.0015)}
+              radialModulation={false}
+              modulationOffset={0}
             />
           </EffectComposer>
         )}
