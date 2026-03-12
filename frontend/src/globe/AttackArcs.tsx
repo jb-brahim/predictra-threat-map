@@ -9,8 +9,8 @@ const MAX_ARC_SEGMENTS = 64;
 
 // ── Shared geometry & material pools (created once, reused for all arcs) ──
 
-const _sharedTracerGeo = new THREE.SphereGeometry(0.02, 8, 8);
-const _sharedGlowGeo = new THREE.SphereGeometry(0.06, 8, 8);
+const _sharedTracerGeo = new THREE.SphereGeometry(0.015, 6, 6);
+const _sharedGlowGeo = new THREE.SphereGeometry(0.04, 6, 6);
 
 // Only 3 attack-type colors; pool materials per type
 const _lineMaterials: Record<string, THREE.LineBasicMaterial> = {};
@@ -22,7 +22,7 @@ function getLineMaterial(type: string): THREE.LineBasicMaterial {
     _lineMaterials[type] = new THREE.LineBasicMaterial({
       color: getArcColorHex(type),
       transparent: true,
-      opacity: 1.0,
+      opacity: 0.9,
       depthWrite: false,
       blending: THREE.AdditiveBlending,
     });
@@ -48,7 +48,7 @@ function getGlowMaterial(type: string): THREE.MeshBasicMaterial {
     _glowMaterials[type] = new THREE.MeshBasicMaterial({
       color: getArcColorHex(type),
       transparent: true,
-      opacity: 0.8,
+      opacity: 0.3,
       depthWrite: false,
       blending: THREE.AdditiveBlending,
     });

@@ -1,8 +1,7 @@
 import { useMemo } from 'react';
-import * as THREE from 'three';
 import { Canvas, useFrame } from '@react-three/fiber';
 import { OrbitControls } from '@react-three/drei';
-import { EffectComposer, Bloom, Vignette, ChromaticAberration } from '@react-three/postprocessing';
+import { EffectComposer, Bloom } from '@react-three/postprocessing';
 import { Earth } from './Earth';
 import { AttackArcs } from './AttackArcs';
 import { ImpactMarkers } from './ImpactMarkers';
@@ -40,7 +39,7 @@ export function GlobeScene() {
       position: 'fixed',
       inset: 0,
       zIndex: 0,
-      background: '#010205',
+      background: '#05080F',
     }}>
       <Canvas
         camera={{ position: [0, 0, 2.8], fov: 45, near: 0.1, far: 1000 }}
@@ -53,13 +52,13 @@ export function GlobeScene() {
         dpr={qualityPreset === 'low' ? 1 : Math.min(window.devicePixelRatio, 2)}
       >
         {/* Lighting */}
-        <ambientLight intensity={0.05} color="#224488" />
-        <directionalLight position={[5, 3, 5]} intensity={0.3} color="#4488FF" />
-        <directionalLight position={[-5, -2, -5]} intensity={0.1} color="#002266" />
+        <ambientLight intensity={0.15} color="#4488CC" />
+        <directionalLight position={[5, 3, 5]} intensity={0.4} color="#88BBFF" />
+        <directionalLight position={[-5, -2, -5]} intensity={0.1} color="#0044AA" />
 
         {/* Background */}
-        <color attach="background" args={['#010205']} />
-        <fog attach="fog" args={['#010205', 5, 30]} />
+        <color attach="background" args={['#05080F']} />
+        <fog attach="fog" args={['#05080F', 5, 30]} />
         <Starfield count={qualityPreset === 'low' ? 1000 : 3000} />
 
         {/* Globe and Attacks */}
@@ -85,16 +84,9 @@ export function GlobeScene() {
           <EffectComposer>
             <Bloom
               intensity={bloomIntensity}
-              luminanceThreshold={0.15}
+              luminanceThreshold={0.2}
               luminanceSmoothing={0.9}
-              radius={0.7}
-              mipmapBlur
-            />
-            <Vignette eskil={false} offset={0.1} darkness={1.1} />
-            <ChromaticAberration
-              offset={new THREE.Vector2(0.0015, 0.0015)}
-              radialModulation={false}
-              modulationOffset={0}
+              radius={0.8}
             />
           </EffectComposer>
         )}

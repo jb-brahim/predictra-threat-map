@@ -5,12 +5,12 @@ import { useStreamStore } from '../stream/useStreamStore';
 import { CountryOutlines } from './CountryOutlines';
 
 /**
- * Cyberpunk/Holographic Earth.
- * Clean, dark core, glowing data grids, and intense neon atmosphere.
+ * Earth sphere with dark surface, wireframe country outlines,
+ * and atmospheric Fresnel rim glow.
+ * Optimized: reduced sphere segments, shared glow geometry.
  */
 export function Earth({ children }: { children?: React.ReactNode }) {
   const meshRef = useRef<THREE.Group>(null);
-  const dataGridRef = useRef<THREE.Mesh>(null);
   const config = useStreamStore(s => s.config);
 
   // Auto-rotation
@@ -18,28 +18,22 @@ export function Earth({ children }: { children?: React.ReactNode }) {
     if (config.rotation && meshRef.current) {
       meshRef.current.rotation.y += delta * 0.05;
     }
-    // Make the outer data grid rotate slightly faster for a holographic scanning effect
-    if (dataGridRef.current) {
-      dataGridRef.current.rotation.y += delta * 0.08;
-      dataGridRef.current.rotation.x += delta * 0.02;
-    }
   });
 
-  // Cyberpunk aggressive glow shader (sharp neon edge)
+  // Atmospheric glow shader (stays static relative to camera)
   const glowMaterial = useMemo(() => {
     return new THREE.ShaderMaterial({
       uniforms: {
-        glowColor: { value: new THREE.Color(0x00E8FF) },
+        glowColor: { value: new THREE.Color(0x00A8FF) },
+        viewVector: { value: new THREE.Vector3(0, 0, 1) },
       },
       vertexShader: `
         varying float vIntensity;
-        varying vec3 vNormal;
         void main() {
-          vNormal = normalize(normalMatrix * normal);
+          vec3 vNormal = normalize(normalMatrix * normal);
           vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
           vec3 vNormel = normalize(-mvPosition.xyz);
-          // Sharp falloff for a hard "laser" rim
-          vIntensity = pow(0.55 - dot(vNormal, vNormel), 5.0);
+          vIntensity = pow(0.7 - dot(vNormal, vNormel), 3.0);
           gl_Position = projectionMatrix * mvPosition;
         }
       `,
@@ -47,10 +41,12 @@ export function Earth({ children }: { children?: React.ReactNode }) {
         uniform vec3 glowColor;
         varying float vIntensity;
         void main() {
-          gl_FragColor = vec4(glowColor, vIntensity * 1.5);
+          gl_FragColor = vec4(glowColor, vIntensity * 0.6);
+          // Only show on edges
+          if (gl_FragColor.a < 0.01) discard;
         }
       `,
-      side: THREE.BackSide,
+      side: THREE.FrontSide,
       blending: THREE.AdditiveBlending,
       transparent: true,
       depthWrite: false,
@@ -61,49 +57,59 @@ export function Earth({ children }: { children?: React.ReactNode }) {
     <group>
       {/* Rotating Planet Group */}
       <group ref={meshRef}>
-        
-        {/* Main Dark Core (Obscures the back of the globe) */}
+        {/* Main Earth sphere surface — 48x48 segments (vs 64x64, still smooth) */}
         <mesh>
-          <sphereGeometry args={[1, 64, 64]} />
+          <sphereGeometry args={[1, 48, 48]} />
           <meshPhongMaterial
-            color="#010308"
-            emissive="#010205"
-            specular={new THREE.Color(0x003366)}
-            shininess={30}
+            color="#0A1628"
+            emissive="#030810"
+            emissiveIntensity={0.5}
+            shininess={10}
             transparent
-            opacity={0.99}
+            opacity={0.98}
           />
         </mesh>
 
         {/* Real Country Boundaries */}
-        <group scale={[1.002, 1.002, 1.002]}>
-          <CountryOutlines />
-        </group>
+        <CountryOutlines />
 
-        {/* Outer Holographic Data Grid */}
-        <mesh ref={dataGridRef} scale={[1.004, 1.004, 1.004]}>
-          <icosahedronGeometry args={[1, 4]} />
+        {/* Abstract Wireframe Grid */}
+        <mesh>
+          <icosahedronGeometry args={[1.001, 3]} />
           <meshBasicMaterial
-            color="#00E8FF"
+            color="#00B4FF"
             wireframe
             transparent
-            opacity={0.03}
-            blending={THREE.AdditiveBlending}
+            opacity={0.06}
             depthWrite={false}
           />
         </mesh>
 
+        {/* Latitude/Longitude grid lines */}
         <GridLines />
 
         {/* Sync'ed children (Arcs, Markers, etc) */}
         {children}
       </group>
 
-      {/* Atmospheric Neon Rim Glow */}
+      {/* Static Atmospheric Effects (don't rotate with planet) */}
       <group>
+        {/* Rim glow — 32x32 segments (Fresnel doesn't need high tessellation) */}
         <mesh scale={[1.15, 1.15, 1.15]}>
-          <sphereGeometry args={[1, 64, 64]} />
+          <sphereGeometry args={[1, 32, 32]} />
           <primitive object={glowMaterial} attach="material" />
+        </mesh>
+
+        {/* Inner glow / volume */}
+        <mesh scale={[1.05, 1.05, 1.05]}>
+          <sphereGeometry args={[1, 32, 32]} />
+          <meshBasicMaterial
+            color="#00A8FF"
+            transparent
+            opacity={0.03}
+            side={THREE.BackSide}
+            depthWrite={false}
+          />
         </mesh>
       </group>
     </group>
@@ -113,11 +119,12 @@ export function Earth({ children }: { children?: React.ReactNode }) {
 function GridLines() {
   const linesGeo = useMemo(() => {
     const points: THREE.Vector3[] = [];
-    const radius = 1.003;
+    const radius = 1.002;
 
+    // Latitude lines every 30 degrees
     for (let lat = -60; lat <= 60; lat += 30) {
       const phi = (90 - lat) * (Math.PI / 180);
-      for (let lon = 0; lon <= 360; lon += 4) {
+      for (let lon = 0; lon <= 360; lon += 2) {
         const theta = lon * (Math.PI / 180);
         points.push(new THREE.Vector3(
           -(radius * Math.sin(phi) * Math.cos(theta)),
@@ -127,9 +134,10 @@ function GridLines() {
       }
     }
 
+    // Longitude lines every 30 degrees
     for (let lon = 0; lon < 360; lon += 30) {
       const theta = lon * (Math.PI / 180);
-      for (let lat = -90; lat <= 90; lat += 4) {
+      for (let lat = -90; lat <= 90; lat += 2) {
         const phi = (90 - lat) * (Math.PI / 180);
         points.push(new THREE.Vector3(
           -(radius * Math.sin(phi) * Math.cos(theta)),
@@ -139,18 +147,18 @@ function GridLines() {
       }
     }
 
-    return new THREE.BufferGeometry().setFromPoints(points);
+    const geo = new THREE.BufferGeometry().setFromPoints(points);
+    return geo;
   }, []);
 
   return (
     <points>
       <primitive object={linesGeo} attach="geometry" />
       <pointsMaterial
-        color="#00E8FF"
+        color="#00B4FF"
         size={0.003}
         transparent
         opacity={0.15}
-        blending={THREE.AdditiveBlending}
         depthWrite={false}
         sizeAttenuation
       />
