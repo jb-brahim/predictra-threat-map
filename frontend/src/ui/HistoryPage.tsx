@@ -147,7 +147,7 @@ export function HistoryPage() {
                   onMouseOut={(e) => e.currentTarget.style.background = idx % 2 === 0 ? 'transparent' : 'rgba(255, 255, 255, 0.01)'}
                 >
                   <td style={{ padding: '16px 20px', color: theme.colors.textSecondary, fontFamily: theme.fonts.mono, fontSize: '12px' }}>
-                    {new Date(event.ts || Date.now()).toLocaleString()}
+                    {new Date(event.timestamp || event.ts || Date.now()).toLocaleString()}
                   </td>
                   <td style={{ padding: '16px 20px' }}>
                     <span style={{

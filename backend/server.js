@@ -91,7 +91,8 @@ app.get('/api/history', async (req, res) => {
   try {
     const history = await ThreatEvent.find()
       .sort({ timestamp: -1 })
-      .limit(100);
+      .limit(100)
+      .lean();
     res.json(history);
   } catch (error) {
     console.error('[API] Error fetching history:', error.message);

@@ -2,8 +2,8 @@
   "version": 2,
   "rewrites": [
     {
-      "source": "/api/feed",
-      "destination": "https://predictrathreatmap.onrender.com/api/feed"
+      "source": "/api/(.*)",
+      "destination": "https://predictrathreatmap.onrender.com/api/$1"
     },
     {
       "source": "/(.*)",

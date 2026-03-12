@@ -17,7 +17,8 @@ export interface ThreatEvent {
   d_ip?: string;
   source_api?: string;
   severity?: 1 | 2 | 3 | 4 | 5;
-  ts: string;
+  ts?: string;
+  timestamp?: string | Date;
   meta?: Record<string, unknown>;
 }
 
