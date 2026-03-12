@@ -33,7 +33,7 @@ export function Earth({ children }: { children?: React.ReactNode }) {
           vec3 vNormal = normalize(normalMatrix * normal);
           vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
           vec3 vNormel = normalize(-mvPosition.xyz);
-          vIntensity = pow(0.7 - dot(vNormal, vNormel), 3.0);
+          vIntensity = pow(0.65 - dot(vNormal, vNormel), 12.0);
           gl_Position = projectionMatrix * mvPosition;
         }
       `,
@@ -41,9 +41,9 @@ export function Earth({ children }: { children?: React.ReactNode }) {
         uniform vec3 glowColor;
         varying float vIntensity;
         void main() {
-          gl_FragColor = vec4(glowColor, vIntensity * 0.6);
+          gl_FragColor = vec4(glowColor, vIntensity * 0.4);
           // Only show on edges
-          if (gl_FragColor.a < 0.01) discard;
+          if (gl_FragColor.a < 0.005) discard;
         }
       `,
       side: THREE.FrontSide,
@@ -62,11 +62,10 @@ export function Earth({ children }: { children?: React.ReactNode }) {
           <sphereGeometry args={[1, 48, 48]} />
           <meshPhongMaterial
             color="#020408"
-            emissive="#010204"
-            emissiveIntensity={0.5}
-            shininess={0}
+            emissive="#000000"
             transparent
             opacity={1.0}
+            shininess={0}
           />
         </mesh>
 
@@ -80,7 +79,7 @@ export function Earth({ children }: { children?: React.ReactNode }) {
             color="#00D1FF"
             wireframe
             transparent
-            opacity={0.04}
+            opacity={0.03}
             depthWrite={false}
           />
         </mesh>
@@ -95,18 +94,18 @@ export function Earth({ children }: { children?: React.ReactNode }) {
       {/* Static Atmospheric Effects (don't rotate with planet) */}
       <group>
         {/* Rim glow — 32x32 segments (Fresnel doesn't need high tessellation) */}
-        <mesh scale={[1.18, 1.18, 1.18]}>
+        <mesh scale={[1.12, 1.12, 1.12]}>
           <sphereGeometry args={[1, 32, 32]} />
           <primitive object={glowMaterial} attach="material" />
         </mesh>
 
         {/* Inner glow / volume */}
-        <mesh scale={[1.08, 1.08, 1.08]}>
+        <mesh scale={[1.05, 1.05, 1.05]}>
           <sphereGeometry args={[1, 32, 32]} />
           <meshBasicMaterial
             color="#00D1FF"
             transparent
-            opacity={0.05}
+            opacity={0.02}
             side={THREE.BackSide}
             depthWrite={false}
           />
