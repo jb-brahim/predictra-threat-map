@@ -24,7 +24,8 @@ function getFlag(co: string): string {
   }
 }
 
-function relativeTime(isoStr: string): string {
+function relativeTime(isoStr?: string | Date): string {
+  if (!isoStr) return 'just now';
   const now = Date.now();
   const then = new Date(isoStr).getTime();
   const diffSec = Math.floor((now - then) / 1000);
@@ -265,7 +266,7 @@ export function Sidebar() {
                     color: theme.colors.textDim,
                     fontFamily: theme.fonts.mono,
                   }}>
-                    {relativeTime(event.ts)}
+                    {relativeTime(event.timestamp || event.ts)}
                   </span>
                 </div>
                 <div style={{
