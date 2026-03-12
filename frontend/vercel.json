@@ -3,7 +3,7 @@
   "rewrites": [
     {
       "source": "/api/feed",
-      "destination": "/api/feed"
+      "destination": "https://predictrathreatmap.onrender.com/api/feed"
     },
     {
       "source": "/(.*)",
