@@ -4,6 +4,7 @@ import { Sidebar } from './ui/Sidebar';
 import { StatusBar } from './ui/StatusBar';
 import { PerfOverlay } from './ui/PerfOverlay';
 import { HistoryPage } from './ui/HistoryPage';
+import { DashboardPage } from './ui/DashboardPage';
 import { useStreamStore } from './stream/useStreamStore';
 import './index.css';
 
@@ -36,6 +37,9 @@ function App() {
 
       {/* History Page overlay */}
       {currentView === 'history' && <HistoryPage />}
+
+      {/* Dashboard Page overlay */}
+      {currentView === 'dashboard' && <DashboardPage />}
 
       {/* Background grid overlay */}
       <div className="grid-overlay" />

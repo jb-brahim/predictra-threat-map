@@ -78,7 +78,16 @@ export function Sidebar() {
   const recentEvents = useStreamStore(s => s.recentEvents);
   const activeArcCount = useStreamStore(s => s.activeArcCount);
   const currentView = useStreamStore(s => s.currentView);
-  const setView = useStreamStore(s => s.setView);
+  const setView = useStreamStore(s => s.setView) as (view: 'map' | 'history' | 'dashboard') => void;
+  
+  const vectorDistribution = useStreamStore(s => s.vectorDistribution);
+  const originDistribution = useStreamStore(s => s.originDistribution);
+  const targetDistribution = useStreamStore(s => s.targetDistribution);
+  const trendData = useStreamStore(s => s.trendData);
+
+  const topVectors = Object.entries(vectorDistribution).sort((a, b) => b[1] - a[1]).slice(0, 5);
+  const topOrigins = Object.entries(originDistribution).sort((a, b) => b[1] - a[1]).slice(0, 5);
+  const topTargets = Object.entries(targetDistribution).sort((a, b) => b[1] - a[1]).slice(0, 5);
 
   const total = counterData?.today || totalAttacks;
   const distTotal = typeDistribution.exploit + typeDistribution.malware + typeDistribution.phishing || 1;
@@ -126,7 +135,7 @@ export function Sidebar() {
             onClick={() => setView('history')}
             style={{
               flex: 1,
-              padding: '8px 12px',
+              padding: '8px 4px',
               background: currentView === 'history' ? 'rgba(0, 209, 255, 0.2)' : 'transparent',
               border: `1px solid ${currentView === 'history' ? 'rgba(0, 209, 255, 0.4)' : 'transparent'}`,
               color: currentView === 'history' ? '#fff' : theme.colors.textDim,
@@ -140,7 +149,27 @@ export function Sidebar() {
               letterSpacing: '1px'
             }}
           >
-            Attack History
+            History
+          </button>
+          <button 
+            onClick={() => setView('dashboard')}
+            style={{
+              flex: 1,
+              padding: '8px 4px',
+              background: currentView === 'dashboard' ? 'rgba(0, 209, 255, 0.2)' : 'transparent',
+              border: `1px solid ${currentView === 'dashboard' ? 'rgba(0, 209, 255, 0.4)' : 'transparent'}`,
+              color: currentView === 'dashboard' ? '#fff' : theme.colors.textDim,
+              borderRadius: '8px',
+              fontFamily: theme.fonts.display,
+              fontSize: '11px',
+              fontWeight: 700,
+              cursor: 'pointer',
+              transition: 'all 0.2s ease',
+              textTransform: 'uppercase',
+              letterSpacing: '1px'
+            }}
+          >
+            Dashboard
           </button>
         </div>
       </GlassPanel>
@@ -180,6 +209,14 @@ export function Sidebar() {
           <MetricBox label="ACTIVE ARCS" value={String(activeArcCount)} color={theme.colors.exploit} />
           <MetricBox label="THREATS/MIN" value={formatNumber(Math.round(distTotal / Math.max(1, (Date.now() % 3600000) / 60000)))} color={theme.colors.warning} />
         </div>
+        
+        {/* Activity Trend Sparkline */}
+        <div style={{ marginTop: 16 }}>
+          <div style={{ fontSize: 9, fontFamily: theme.fonts.display, textTransform: 'uppercase', letterSpacing: 1.5, color: theme.colors.textDim }}>
+            Activity Trend (10m)
+          </div>
+          <Sparkline data={trendData} color={theme.colors.exploit} />
+        </div>
       </GlassPanel>
 
       {/* Threat Distribution */}
@@ -216,6 +253,19 @@ export function Sidebar() {
           shape="●"
         />
       </GlassPanel>
+
+      {/* New Top Attack Vectors Panel */}
+      <TopList title="Top Threat Vectors" items={topVectors} color={theme.colors.warning} />
+      
+      {/* New Top Countries Panels */}
+      <div style={{ display: 'flex', gap: 12 }}>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <TopList title="Top Origins" items={topOrigins} isCountry color={theme.colors.exploit} />
+        </div>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <TopList title="Top Targets" items={topTargets} isCountry color={theme.colors.phishing} />
+        </div>
+      </div>
 
       {/* Recent Threat Feed */}
       <GlassPanel style={{ flex: 1, minHeight: 0 }}>
@@ -382,5 +432,136 @@ function DistributionBar({ label, count, total, color, shape }: {
         }} />
       </div>
     </div>
+  );
+}
+
+function Sparkline({ data, color }: { data: number[]; color: string }) {
+  const max = Math.max(...data, 1);
+  const pts = [...data].reverse().map((val, i) => {
+    const x = (i / Math.max(1, data.length - 1)) * 100;
+    const y = 100 - (val / max) * 100;
+    return `${x},${y}`;
+  }).join(' ');
+
+  return (
+    <div style={{ marginTop: 8, height: 36, width: '100%', position: 'relative' }}>
+        <svg width="100%" height="100%" preserveAspectRatio="none" viewBox="0 -5 100 110" style={{ overflow: 'visible' }}>
+        <defs>
+          <linearGradient id="spark-grad" x1="0" x2="0" y1="0" y2="1">
+            <stop offset="0%" stopColor={color} stopOpacity={0.4} />
+            <stop offset="50%" stopColor={color} stopOpacity={0.15} />
+            <stop offset="100%" stopColor={color} stopOpacity={0.0} />
+          </linearGradient>
+          <filter id="glow-spark" x="-20%" y="-20%" width="140%" height="140%">
+            <feGaussianBlur stdDeviation="2" result="blur" />
+            <feComposite in="SourceGraphic" in2="blur" operator="over" />
+          </filter>
+        </defs>
+        <polygon fill="url(#spark-grad)" points={`0,100 ${pts} 100,100`} />
+        <polyline 
+          fill="none" 
+          stroke={color} 
+          strokeWidth="2" 
+          strokeLinecap="round" 
+          strokeLinejoin="round" 
+          filter="url(#glow-spark)"
+          points={pts} 
+        />
+        {/* Animated pulse dot at the end */}
+        {data.length > 0 && (
+          <circle 
+            cx="100" 
+            cy={100 - (data[0] / max) * 100} 
+            r="3" 
+            fill="#fff" 
+            filter="url(#glow-spark)"
+          >
+            <animate attributeName="r" values="2;4;2" dur="1.5s" repeatCount="indefinite" />
+            <animate attributeName="opacity" values="1;0.5;1" dur="1.5s" repeatCount="indefinite" />
+          </circle>
+        )}
+      </svg>
+    </div>
+  );
+}
+
+function TopList({ title, items, isCountry = false, color }: { title: string; items: [string, number][], isCountry?: boolean, color: string }) {
+  if (items.length === 0) return null;
+  const max = Math.max(...items.map(i => i[1]), 1);
+
+  return (
+    <GlassPanel style={{ padding: '14px 18px', borderTop: `1px solid ${color}40`, background: `linear-gradient(180deg, ${color}08 0%, rgba(10,16,24,0) 100%)` }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}>
+        <div style={{ width: 6, height: 6, borderRadius: '50%', background: color, boxShadow: `0 0 8px ${color}` }} />
+        <div style={{ fontSize: 11, fontFamily: theme.fonts.display, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 2, color: theme.colors.textPrimary }}>
+          {title}
+        </div>
+      </div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+        {items.map(([name, count], index) => (
+          <div key={name} style={{ 
+            display: 'flex', 
+            alignItems: 'center', 
+            gap: 10,
+            padding: '4px 6px',
+            borderRadius: 8,
+            transition: 'background 0.2s',
+            cursor: 'default',
+          }}
+          onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.03)'}
+          onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+          >
+            <div style={{ 
+              width: 18, 
+              height: 18, 
+              borderRadius: 4, 
+              background: `rgba(255,255,255,0.05)`, 
+              display: 'flex', 
+              alignItems: 'center', 
+              justifyContent: 'center',
+              fontSize: 10, 
+              fontFamily: theme.fonts.mono,
+              color: theme.colors.textDim,
+              fontWeight: 600,
+              flexShrink: 0 
+            }}>
+              {index + 1}
+            </div>
+            
+            {isCountry && (
+              <div style={{ width: 16, fontSize: 14, textAlign: 'center', flexShrink: 0, filter: 'drop-shadow(0 0 2px rgba(0,0,0,0.5))' }}>
+                {getFlag(name)}
+              </div>
+            )}
+            
+            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 4, minWidth: 0 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', fontSize: 11, color: theme.colors.textSecondary }}>
+                <span style={{ 
+                  overflow: 'hidden', 
+                  textOverflow: 'ellipsis', 
+                  whiteSpace: 'nowrap',
+                  fontWeight: index === 0 ? 600 : 400,
+                  color: index === 0 ? theme.colors.textPrimary : theme.colors.textSecondary
+                }}>
+                  {name}
+                </span>
+                <span style={{ fontFamily: theme.fonts.mono, fontSize: 10, color: color, flexShrink: 0, paddingLeft: 8, fontWeight: 600 }}>
+                  {formatNumber(count)}
+                </span>
+              </div>
+              <div style={{ width: '100%', height: 3, background: 'rgba(255,255,255,0.05)', borderRadius: 2, overflow: 'hidden' }}>
+                <div style={{ 
+                  width: `${(count / max) * 100}%`, 
+                  height: '100%', 
+                  background: `linear-gradient(90deg, ${color}88, ${color})`, 
+                  borderRadius: 2,
+                  boxShadow: `0 0 4px ${color}88`
+                }} />
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </GlassPanel>
   );
 }

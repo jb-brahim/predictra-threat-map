@@ -16,7 +16,7 @@ interface StreamState {
   reconnectAttempts: number;
 
   // Navigation
-  currentView: 'map' | 'history';
+  currentView: 'map' | 'history' | 'dashboard';
 
   // Events
   eventBuffer: RingBuffer<ThreatEvent>;
@@ -29,6 +29,13 @@ interface StreamState {
 
   // Type distribution
   typeDistribution: TypeDistribution;
+  vectorDistribution: Record<string, number>;
+  originDistribution: Record<string, number>;
+  targetDistribution: Record<string, number>;
+  corridorDistribution: Record<string, number>;
+  sourceApiDistribution: Record<string, number>;
+  trendData: number[]; // 10-second buckets
+  lastTrendTime: number;
 
   // Active visual elements
   arcs: ArcData[];
@@ -71,6 +78,13 @@ export const useStreamStore = create<StreamState>((set, get) => ({
   totalAttacks: 0,
   attacksPerSecond: 0,
   typeDistribution: { exploit: 0, malware: 0, phishing: 0 },
+  vectorDistribution: {},
+  originDistribution: {},
+  targetDistribution: {},
+  corridorDistribution: {},
+  sourceApiDistribution: {},
+  trendData: Array(60).fill(0),
+  lastTrendTime: Date.now(),
   arcs: [],
   markers: [],
   activeArcCount: 0,
@@ -153,12 +167,43 @@ export const useStreamStore = create<StreamState>((set, get) => ({
       }
     }
 
-    // Update type distribution
-    const dist = { ...state.typeDistribution };
+    // Update trend data buckets (10-second buckets, 60 buckets = 10 minutes)
+    let currentTrend = [...state.trendData];
+    let lastTime = state.lastTrendTime;
+    const intervalsElapsed = Math.floor((now - lastTime) / 10000);
+    
+    if (intervalsElapsed > 0) {
+      const empty = Array(Math.min(intervalsElapsed, 60)).fill(0);
+      currentTrend = [...empty, ...currentTrend].slice(0, 60);
+      lastTime += intervalsElapsed * 10000;
+    }
+    currentTrend[0] += events.length;
+
+    // Update distributions
+    const tDist = { ...state.typeDistribution };
+    const vDist = { ...state.vectorDistribution };
+    const oDist = { ...state.originDistribution };
+    const tgtDist = { ...state.targetDistribution };
+    const cDist = { ...state.corridorDistribution };
+    const apiDist = { ...state.sourceApiDistribution };
+    
     for (const e of events) {
-      if (e.a_t in dist) {
-        dist[e.a_t as keyof TypeDistribution]++;
-      }
+      if (e.a_t in tDist) tDist[e.a_t as keyof TypeDistribution]++;
+      
+      const vName = String(e.a_n || 'Unknown').trim();
+      vDist[vName] = (vDist[vName] || 0) + 1;
+      
+      const sCo = String(e.s_co || '??').toUpperCase();
+      oDist[sCo] = (oDist[sCo] || 0) + 1;
+      
+      const dCo = String(e.d_co || '??').toUpperCase();
+      tgtDist[dCo] = (tgtDist[dCo] || 0) + 1;
+
+      const corridor = `${sCo}-${dCo}`;
+      cDist[corridor] = (cDist[corridor] || 0) + 1;
+      
+      const api = String(e.source_api || 'unknown');
+      apiDist[api] = (apiDist[api] || 0) + 1;
     }
 
     const allArcs = state.arcs.concat(newArcs);
@@ -169,7 +214,14 @@ export const useStreamStore = create<StreamState>((set, get) => ({
       arcs: allArcs,
       markers: allMarkers,
       activeArcCount: allArcs.length,
-      typeDistribution: dist,
+      typeDistribution: tDist,
+      vectorDistribution: vDist,
+      originDistribution: oDist,
+      targetDistribution: tgtDist,
+      corridorDistribution: cDist,
+      sourceApiDistribution: apiDist,
+      trendData: currentTrend,
+      lastTrendTime: lastTime,
       totalAttacks: state.totalAttacks + events.length,
     });
 
@@ -243,7 +295,7 @@ export const useStreamStore = create<StreamState>((set, get) => ({
     }));
   },
 
-  setView: (view: 'map' | 'history') => {
+  setView: (view: 'map' | 'history' | 'dashboard') => {
     set({ currentView: view });
   },
 
