@@ -51,7 +51,31 @@ const broadcast = async (event, data, sourceApi = 'unknown') => {
   }
 };
 
-// ... existing code ... (DB toggle endpoints)
+// SSE Feed endpoint – clients connect here for live events
+app.get('/api/feed', (req, res) => {
+  res.setHeader('Content-Type', 'text/event-stream');
+  res.setHeader('Cache-Control', 'no-cache');
+  res.setHeader('Connection', 'keep-alive');
+  res.flushHeaders();
+
+  const clientId = Date.now();
+  const newClient = { id: clientId, res };
+  clients.push(newClient);
+
+  req.on('close', () => {
+    clients = clients.filter(c => c.id !== clientId);
+  });
+});
+
+// Toggle DB persistence
+app.post('/api/db/toggle', (req, res) => {
+  isDatabaseEnabled = !isDatabaseEnabled;
+  res.json({ enabled: isDatabaseEnabled });
+});
+
+app.get('/api/db/status', (req, res) => {
+  res.json({ enabled: isDatabaseEnabled });
+});
 
 // History Endpoint with Search
 app.get('/api/history', async (req, res) => {
@@ -71,7 +95,7 @@ app.get('/api/history', async (req, res) => {
         { 'meta.malware_family': searchRegex },
         { 'meta.threat_type': searchRegex },
         { 'meta.as_name': searchRegex },
-        { 'meta.port': String(q) } // Exact match for port if it's a number
+        { 'meta.port': String(q) }
       ];
     }
 
@@ -83,6 +107,86 @@ app.get('/api/history', async (req, res) => {
   } catch (error) {
     console.error('[API] Error fetching history:', error.message);
     res.status(500).json({ error: 'Failed to fetch attack history' });
+  }
+});
+
+// Aggregated Stats Endpoint
+app.get('/api/stats', async (req, res) => {
+  try {
+    const { type, source, country, from } = req.query;
+    const matchStage = {};
+
+    if (type) matchStage.a_t = type;
+    if (source) matchStage.source_api = source;
+    if (country) matchStage.$or = [{ s_co: country.toUpperCase() }, { d_co: country.toUpperCase() }];
+    if (from) matchStage.timestamp = { $gte: new Date(from) };
+
+    const [typeAgg, originAgg, targetAgg, vectorAgg, sourceAgg, total] = await Promise.all([
+      ThreatEvent.aggregate([
+        { $match: matchStage },
+        { $group: { _id: '$a_t', count: { $sum: 1 } } },
+        { $sort: { count: -1 } }
+      ]),
+      ThreatEvent.aggregate([
+        { $match: matchStage },
+        { $group: { _id: '$s_co', count: { $sum: 1 } } },
+        { $sort: { count: -1 } },
+        { $limit: 20 }
+      ]),
+      ThreatEvent.aggregate([
+        { $match: matchStage },
+        { $group: { _id: '$d_co', count: { $sum: 1 } } },
+        { $sort: { count: -1 } },
+        { $limit: 20 }
+      ]),
+      ThreatEvent.aggregate([
+        { $match: matchStage },
+        { $group: { _id: '$a_n', count: { $sum: 1 } } },
+        { $sort: { count: -1 } },
+        { $limit: 20 }
+      ]),
+      ThreatEvent.aggregate([
+        { $match: matchStage },
+        { $group: { _id: '$source_api', count: { $sum: 1 } } },
+        { $sort: { count: -1 } }
+      ]),
+      ThreatEvent.countDocuments(matchStage)
+    ]);
+
+    res.json({
+      total,
+      byType: Object.fromEntries(typeAgg.map(d => [d._id, d.count])),
+      byOrigin: Object.fromEntries(originAgg.map(d => [d._id, d.count])),
+      byTarget: Object.fromEntries(targetAgg.map(d => [d._id, d.count])),
+      byVector: Object.fromEntries(vectorAgg.map(d => [d._id, d.count])),
+      bySource: Object.fromEntries(sourceAgg.map(d => [d._id, d.count])),
+    });
+  } catch (error) {
+    console.error('[API] Error fetching stats:', error.message);
+    res.status(500).json({ error: 'Failed to fetch stats' });
+  }
+});
+
+// Timeline – hourly buckets for last 24 hours
+app.get('/api/stats/timeline', async (req, res) => {
+  try {
+    const since = new Date(Date.now() - 24 * 3600 * 1000);
+    const agg = await ThreatEvent.aggregate([
+      { $match: { timestamp: { $gte: since } } },
+      {
+        $group: {
+          _id: {
+            $dateToString: { format: '%Y-%m-%dT%H:00:00Z', date: '$timestamp' }
+          },
+          count: { $sum: 1 }
+        }
+      },
+      { $sort: { _id: 1 } }
+    ]);
+    res.json(agg.map(d => ({ hour: d._id, count: d.count })));
+  } catch (error) {
+    console.error('[API] Error fetching timeline:', error.message);
+    res.status(500).json({ error: 'Failed to fetch timeline' });
   }
 });
 

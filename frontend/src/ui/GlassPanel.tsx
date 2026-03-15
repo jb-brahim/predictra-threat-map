@@ -1,7 +1,7 @@
 import React from 'react';
 import { theme } from '../theme/theme';
 
-interface GlassPanelProps {
+interface GlassPanelProps extends React.HTMLAttributes<HTMLDivElement> {
   children: React.ReactNode;
   className?: string;
   style?: React.CSSProperties;
@@ -10,8 +10,9 @@ interface GlassPanelProps {
 
 /**
  * Reusable glassmorphism panel with translucent background, blur, and neon border.
+ * Accepts any standard div HTML attributes (onClick, onMouseEnter, etc.).
  */
-export function GlassPanel({ children, className, style, hoverable = false }: GlassPanelProps) {
+export function GlassPanel({ children, className, style, hoverable = false, ...rest }: GlassPanelProps) {
   return (
     <div
       className={`glass-panel ${hoverable ? 'glass-panel--hoverable' : ''} ${className || ''}`}
@@ -27,6 +28,7 @@ export function GlassPanel({ children, className, style, hoverable = false }: Gl
         transition: theme.transitions.normal,
         ...style,
       }}
+      {...rest}
     >
       {children}
     </div>
