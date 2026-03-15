@@ -145,11 +145,11 @@ export function Earth({ children }: { children?: React.ReactNode }) {
             <planeGeometry args={[5, 2.5]} />
           )}
           <meshPhongMaterial
-            color="#040810"
-            emissive="#010204"
-            emissiveIntensity={0.2}
-            shininess={2}
-            specular="#080808"
+            color="#081018"
+            emissive="#020408"
+            emissiveIntensity={0.4}
+            shininess={5}
+            specular="#111111"
             transparent
             opacity={0.99}
           />

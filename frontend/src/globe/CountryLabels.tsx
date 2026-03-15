@@ -55,16 +55,14 @@ export function CountryLabels() {
         <Text
           key={l.name}
           position={l.pos}
-          fontSize={0.04}
+          fontSize={0.06}
           color="#8899aa"
-          font="https://fonts.gstatic.com/s/orbitron/v25/yYqxRnd6CQ8G_p7704r567P_8f62.woff" // Sci-fi font
           anchorX="center"
           anchorY="middle"
           outlineWidth={0.002}
           outlineColor="#000000"
           onBeforeRender={() => {
              // Basic billboarding - keep facing camera
-             // Controlled by Text component internally mostly, but we can nudge it
           }}
         >
           {l.name}

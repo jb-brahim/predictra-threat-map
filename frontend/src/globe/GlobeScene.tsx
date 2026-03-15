@@ -52,11 +52,11 @@ export function GlobeScene() {
         }}
         dpr={qualityPreset === 'low' ? 1 : Math.min(window.devicePixelRatio, 2)}
       >
-        {/* Lighting - Subtler, more focused */}
-        <ambientLight intensity={0.05} color="#4488CC" />
-        <directionalLight position={[5, 3, 5]} intensity={0.2} color="#88BBFF" />
-        <directionalLight position={[-5, -2, -5]} intensity={0.05} color="#0044AA" />
-        <pointLight position={[0, 5, 0]} intensity={0.3} color="#00ffaa" /> {/* Top aurora light */}
+        {/* Lighting - Restored intensity */}
+        <ambientLight intensity={0.4} color="#4488CC" />
+        <directionalLight position={[5, 3, 5]} intensity={0.8} color="#88BBFF" />
+        <directionalLight position={[-5, -2, -5]} intensity={0.2} color="#0044AA" />
+        <pointLight position={[0, 8, 0]} intensity={1.5} color="#00ffaa" /> {/* Top aurora light */}
 
         {/* Background */}
         <color attach="background" args={['#020408']} />
