@@ -3,7 +3,7 @@ import { GlassPanel } from './GlassPanel';
 import { theme } from '../theme/theme';
 import { Canvas } from '@react-three/fiber';
 import { OrbitControls, Stars } from '@react-three/drei';
-import { Earth } from '../globe/Earth';
+import { CountryHologram } from './CountryHologram';
 
 export function CountryDashboard() {
   const selectedCountry = useStreamStore(s => s.selectedCountry);
@@ -82,12 +82,11 @@ export function CountryDashboard() {
           background: 'radial-gradient(circle at center, #0A1628 0%, #05080F 100%)',
           border: `1px solid ${theme.colors.panelBorder}`
         }}>
-            <Canvas camera={{ position: [0, 0, 2], fov: 45 }}>
-                <ambientLight intensity={0.2} />
-                <pointLight position={[10, 10, 10]} intensity={1} />
+            <Canvas camera={{ position: [0, 0, 150], fov: 45 }}>
+                <ambientLight intensity={0.5} />
                 <Stars radius={100} depth={50} count={5000} factor={4} saturation={0} fade speed={1} />
-                <Earth />
-                <OrbitControls enablePan={false} autoRotate autoRotateSpeed={0.5} />
+                <CountryHologram />
+                <OrbitControls enablePan={true} autoRotate autoRotateSpeed={0.5} />
             </Canvas>
             
             <div style={{
