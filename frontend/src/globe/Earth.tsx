@@ -56,7 +56,7 @@ export function Earth({ children }: { children?: React.ReactNode }) {
   const setSelectedCountry = useStreamStore(s => s.setSelectedCountry);
   const setView = useStreamStore(s => s.setView);
 
-  const handlePointerDown = (e: any) => {
+  const handlePointerDown = async (e: any) => {
     e.stopPropagation();
     const point = e.point;
     const vector = new THREE.Vector3().copy(point).normalize();
@@ -65,9 +65,76 @@ export function Earth({ children }: { children?: React.ReactNode }) {
     const lat = Math.asin(vector.y) * (180 / Math.PI);
     const lon = Math.atan2(vector.z, -vector.x) * (180 / Math.PI);
 
-    setSelectedCountry(`Region at ${lat.toFixed(1)}°, ${lon.toFixed(1)}°`);
+    let countryName = `Region at ${lat.toFixed(1)}°, ${lon.toFixed(1)}°`;
+
+    try {
+      // Try to identify country from GeoJSON
+      const res = await fetch('https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json');
+      const topology = await res.json();
+      
+      // We need to decode the topology to get polygons
+      // (This logic is usually in CountryOutlines, we'll use a simplified version here)
+      const { arcs: topoArcs, transform } = topology;
+      const { scale, translate } = transform || { scale: [1, 1], translate: [0, 0] };
+      const decodedArcs = topoArcs.map((arc: any) => {
+        let x = 0, y = 0;
+        return arc.map((p: any) => {
+          x += p[0]; y += p[1];
+          return [x * scale[0] + translate[0], y * scale[1] + translate[1]];
+        });
+      });
+
+      const geometries = topology.objects.countries?.geometries || [];
+      for (const geo of geometries) {
+        const polygons = [];
+        if (geo.type === 'Polygon') {
+          polygons.push(resolveArcs(geo.arcs, decodedArcs));
+        } else if (geo.type === 'MultiPolygon') {
+          for (const poly of geo.arcs) polygons.push(resolveArcs(poly, decodedArcs));
+        }
+
+        // Check if point [lon, lat] is in any polygon of this country
+        for (const poly of polygons) {
+          if (isPointInPolygon([lon, lat], poly)) {
+            countryName = geo.properties?.name || `Country #${geo.id}`;
+            break;
+          }
+        }
+        if (countryName !== `Region at ${lat.toFixed(1)}°, ${lon.toFixed(1)}°`) break;
+      }
+    } catch (err) {
+      console.warn('Geo-lookup failed:', err);
+    }
+
+    setSelectedCountry(countryName);
     setView('country');
   };
+
+  // Helper for point-in-polygon
+  function isPointInPolygon(point: number[], vs: number[][]) {
+    const x = point[0], y = point[1];
+    let inside = false;
+    for (let i = 0, j = vs.length - 1; i < vs.length; j = i++) {
+        const xi = vs[i][0], yi = vs[i][1];
+        const xj = vs[j][0], yj = vs[j][1];
+        const intersect = ((yi > y) !== (yj > y)) && (x < (xj - xi) * (y - yi) / (yj - yi) + xi);
+        if (intersect) inside = !inside;
+    }
+    return inside;
+  }
+
+  function resolveArcs(arcIndices: any, decodedArcs: any) {
+    const coords: any[] = [];
+    const flatIndices = Array.isArray(arcIndices[0]) ? arcIndices[0] : arcIndices;
+    for (const idx of flatIndices) {
+      const arcIdx = idx < 0 ? ~idx : idx;
+      const arc = decodedArcs[arcIdx];
+      if (!arc) continue;
+      const points = idx < 0 ? [...arc].reverse() : arc;
+      for (let i = coords.length > 0 ? 1 : 0; i < points.length; i++) coords.push(points[i]);
+    }
+    return coords;
+  }
 
   return (
     <group>

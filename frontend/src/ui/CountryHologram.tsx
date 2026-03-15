@@ -16,18 +16,15 @@ export function CountryHologram() {
         const decodedArcs = decodeTopology(topology);
         const geometries = topology.objects.countries?.geometries || [];
         
-        // Try to find a geometry that matches the selected country
-        // or just pick one based on latitude/longitude if available.
-        // For now, let's use a "stable" selection based on the selectedCountry string's length
-        // to pretend it's picking different ones for different regions.
-        const countryIndex = selectedCountry ? (selectedCountry.length % geometries.length) : 0;
-        const demoGeo = geometries[countryIndex];
+        // Find geometry by name
+        const targetGeo = geometries.find((g: any) => g.properties?.name === selectedCountry) || 
+                          geometries[Math.floor(Math.random() * geometries.length)];
         
         const polygons: number[][][] = [];
-        if (demoGeo.type === 'Polygon') {
-          for (const ring of demoGeo.arcs) polygons.push(resolveArcs(ring, decodedArcs));
-        } else if (demoGeo.type === 'MultiPolygon') {
-          for (const polygon of demoGeo.arcs)
+        if (targetGeo.type === 'Polygon') {
+          for (const ring of targetGeo.arcs) polygons.push(resolveArcs(ring, decodedArcs));
+        } else if (targetGeo.type === 'MultiPolygon') {
+          for (const polygon of targetGeo.arcs)
             for (const ring of polygon) polygons.push(resolveArcs(ring, decodedArcs));
         }
 
@@ -44,7 +41,17 @@ export function CountryHologram() {
         if (points.length > 0) {
           const geo = new THREE.BufferGeometry().setFromPoints(points);
           geo.center();
+          
+          // Calculate bounding box and scale it up to fill the viewport
+          geo.computeBoundingBox();
+          const boundingBox = geo.boundingBox!;
+          const size = new THREE.Vector3();
+          boundingBox.getSize(size);
+          const maxDim = Math.max(size.x, size.y);
+          const scale = 100 / maxDim; // Adjust scale dynamically
+          
           setGeometry(geo);
+          if (groupRef.current) groupRef.current.scale.setScalar(scale);
         }
       });
   }, [selectedCountry]);
