@@ -201,7 +201,8 @@ function CountryDotGrid() {
               if (projectionMode === '3d') {
                 const phi = (90 - lat) * (Math.PI / 180);
                 const theta = (lon + 180) * (Math.PI / 180);
-                points.push(new THREE.Vector3(-(1.001 * Math.sin(phi) * Math.cos(theta)), 1.001 * Math.cos(phi), 1.001 * Math.sin(phi) * Math.sin(theta)));
+                // Position dots slightly above the max displacement (1.0 + 0.08)
+                points.push(new THREE.Vector3(-(1.085 * Math.sin(phi) * Math.cos(theta)), 1.085 * Math.cos(phi), 1.085 * Math.sin(phi) * Math.sin(theta)));
               } else {
                 points.push(new THREE.Vector3((lon / 180) * 2.5, (lat / 90) * 1.25, 0.006));
               }
@@ -460,14 +461,16 @@ export function Earth({ children }: { children?: React.ReactNode }) {
           <mesh>
             <sphereGeometry args={[1, 256, 256]} />
             <meshPhongMaterial
-              color="#051225" // Deep Navy Blue instead of black
-              emissive="#020818"
-              emissiveIntensity={0.5}
-              shininess={25}
+              color="#040D1D" // Slightly darker base
+              emissive="#01040A"
+              emissiveIntensity={0.2}
+              specular="#00A8FF"
+              shininess={40}
               displacementMap={landmask || undefined}
-              displacementScale={0.05} // Increased significantly
-              bumpMap={landmask || undefined} // Added bump for sharper edges
-              bumpScale={0.01}
+              displacementScale={0.08} // Increased for a clear "shelf"
+              displacementBias={-0.02} // Sink the ocean area
+              bumpMap={landmask || undefined}
+              bumpScale={0.015} // Stronger bump for edges
             />
           </mesh>
         ) : (
