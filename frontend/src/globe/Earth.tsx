@@ -3,6 +3,7 @@ import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import { useStreamStore } from '../stream/useStreamStore';
 import { CountryOutlines } from './CountryOutlines';
+import { CountryLabels } from './CountryLabels';
 
 /**
  * Earth sphere with dark surface, wireframe country outlines,
@@ -17,7 +18,7 @@ export function Earth({ children }: { children?: React.ReactNode }) {
   const setSelectedCountry = useStreamStore(s => s.setSelectedCountry);
   const setView = useStreamStore(s => s.setView);
 
-  // Atmospheric glow shader
+  // Atmospheric glow shader (Fresnel)
   const glowMaterial = useMemo(() => {
     return new THREE.ShaderMaterial({
       uniforms: {
@@ -28,32 +29,65 @@ export function Earth({ children }: { children?: React.ReactNode }) {
         varying float vIntensity;
         void main() {
           vec3 vNormal = normalize(normalMatrix * normal);
-          vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
-          vec3 vNormel = normalize(-mvPosition.xyz);
-          vIntensity = pow(0.7 - dot(vNormal, vNormel), 3.0);
-          gl_Position = projectionMatrix * mvPosition;
+          vec3 vView = normalize(-((modelViewMatrix * vec4(position, 1.0)).xyz));
+          vIntensity = pow(0.6 - dot(vNormal, vView), 4.0);
+          gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
         }
       `,
       fragmentShader: `
         uniform vec3 glowColor;
         varying float vIntensity;
         void main() {
-          gl_FragColor = vec4(glowColor, vIntensity * 0.6);
+          gl_FragColor = vec4(glowColor, vIntensity * 0.8);
           if (gl_FragColor.a < 0.01) discard;
         }
       `,
-      side: THREE.FrontSide,
+      side: THREE.BackSide,
       blending: THREE.AdditiveBlending,
       transparent: true,
       depthWrite: false,
     });
   }, []);
 
-  // Auto-rotation (only in 3D)
-  useFrame((_, delta) => {
+  // Aurora / Polar Glow Shader
+  const auroraMaterial = useMemo(() => {
+    return new THREE.ShaderMaterial({
+      uniforms: {
+        time: { value: 0 },
+        color: { value: new THREE.Color(0x00FF88) },
+      },
+      vertexShader: `
+        varying vec2 vUv;
+        varying float vOpacity;
+        void main() {
+          vUv = uv;
+          vOpacity = pow(1.0 - abs(position.y), 2.0); // Focus on poles
+          gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+        }
+      `,
+      fragmentShader: `
+        uniform float time;
+        uniform vec3 color;
+        varying vec2 vUv;
+        varying float vOpacity;
+        void main() {
+          float pulse = 0.5 + 0.5 * sin(time * 0.5 + vUv.x * 20.0);
+          gl_FragColor = vec4(color, vOpacity * pulse * 0.15);
+          if (gl_FragColor.a < 0.001) discard;
+        }
+      `,
+      transparent: true,
+      blending: THREE.AdditiveBlending,
+      depthWrite: false,
+      side: THREE.DoubleSide,
+    });
+  }, []);
+
+  useFrame(({ clock }, delta) => {
     if (config.rotation && meshRef.current && projectionMode === '3d') {
       meshRef.current.rotation.y += delta * 0.05;
     }
+    auroraMaterial.uniforms.time.value = clock.getElapsedTime();
   });
 
   const handlePointerDown = async (e: any) => {
@@ -99,36 +133,40 @@ export function Earth({ children }: { children?: React.ReactNode }) {
   return (
     <group>
       <group ref={meshRef}>
+        {/* Main Earth surface - Darker, Matte */}
         <mesh 
           onClick={handlePointerDown}
           onPointerOver={() => { document.body.style.cursor = 'pointer'; }}
           onPointerOut={() => { document.body.style.cursor = 'default'; }}
         >
           {projectionMode === '3d' ? (
-            <sphereGeometry args={[1, 48, 48]} />
+            <sphereGeometry args={[1, 64, 64]} />
           ) : (
             <planeGeometry args={[5, 2.5]} />
           )}
           <meshPhongMaterial
-            color="#0A1628"
-            emissive="#030810"
-            emissiveIntensity={0.5}
-            shininess={10}
+            color="#040810"
+            emissive="#010204"
+            emissiveIntensity={0.2}
+            shininess={2}
+            specular="#080808"
             transparent
-            opacity={0.98}
+            opacity={0.99}
           />
         </mesh>
 
         <CountryOutlines />
+        <CountryLabels />
 
+        {/* Subtle matrix-like grid (Kaspersky style) */}
         {projectionMode === '3d' && (
           <mesh>
-            <icosahedronGeometry args={[1.001, 3]} />
+            <icosahedronGeometry args={[1.002, 4]} />
             <meshBasicMaterial
-              color="#00B4FF"
+              color="#00ffaa"
               wireframe
               transparent
-              opacity={0.06}
+              opacity={0.03}
               depthWrite={false}
             />
           </mesh>
@@ -138,18 +176,28 @@ export function Earth({ children }: { children?: React.ReactNode }) {
         {children}
       </group>
 
+      {/* Atmospheric Effects */}
       {projectionMode === '3d' && (
         <group>
-          <mesh scale={[1.15, 1.15, 1.15]}>
+          {/* Rim glow */}
+          <mesh scale={[1.18, 1.18, 1.18]}>
             <sphereGeometry args={[1, 32, 32]} />
             <primitive object={glowMaterial} attach="material" />
           </mesh>
-          <mesh scale={[1.05, 1.05, 1.05]}>
+          
+          {/* Aurora/Polar Glow Mesh */}
+          <mesh rotation={[Math.PI / 2, 0, 0]} scale={[1.4, 1.4, 1.4]}>
+            <cylinderGeometry args={[1, 1, 0.5, 64, 1, true]} />
+            <primitive object={auroraMaterial} attach="material" />
+          </mesh>
+
+          {/* Halo volume */}
+          <mesh scale={[1.08, 1.08, 1.08]}>
             <sphereGeometry args={[1, 32, 32]} />
             <meshBasicMaterial
-              color="#00A8FF"
+              color="#00D4FF"
               transparent
-              opacity={0.03}
+              opacity={0.04}
               side={THREE.BackSide}
               depthWrite={false}
             />

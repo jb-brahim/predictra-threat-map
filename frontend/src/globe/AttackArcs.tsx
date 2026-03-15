@@ -22,7 +22,7 @@ function getLineMaterial(type: string): THREE.LineBasicMaterial {
     _lineMaterials[type] = new THREE.LineBasicMaterial({
       color: getArcColorHex(type),
       transparent: true,
-      opacity: 0.9,
+      opacity: 0.4, // Subtler lines
       depthWrite: false,
       blending: THREE.AdditiveBlending,
     });
