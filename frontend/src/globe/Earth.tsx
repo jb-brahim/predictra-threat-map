@@ -201,8 +201,8 @@ function CountryDotGrid() {
               if (projectionMode === '3d') {
                 const phi = (90 - lat) * (Math.PI / 180);
                 const theta = (lon + 180) * (Math.PI / 180);
-                // Position dots slightly above the max displacement (1.0 + 0.08)
-                points.push(new THREE.Vector3(-(1.085 * Math.sin(phi) * Math.cos(theta)), 1.085 * Math.cos(phi), 1.085 * Math.sin(phi) * Math.sin(theta)));
+                // Position dots slightly above the volumetric land (1.05 + 0.002)
+                points.push(new THREE.Vector3(-(1.052 * Math.sin(phi) * Math.cos(theta)), 1.052 * Math.cos(phi), 1.052 * Math.sin(phi) * Math.sin(theta)));
               } else {
                 points.push(new THREE.Vector3((lon / 180) * 2.5, (lat / 90) * 1.25, 0.006));
               }
@@ -217,6 +217,116 @@ function CountryDotGrid() {
   }, [projectionMode]);
 
   return pointsGeo ? <points geometry={pointsGeo} material={dotMaterial} /> : null;
+}
+
+function VolumetricLand() {
+  const [mesh, setMesh] = useState<THREE.Group | null>(null);
+  const projectionMode = useStreamStore(s => s.projectionMode);
+
+  useEffect(() => {
+    if (projectionMode !== '3d') {
+      setMesh(null);
+      return;
+    }
+
+    const load = async () => {
+      try {
+        const res = await fetch('https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json');
+        const topology = await res.json();
+        const decodedArcs = decodeTopology(topology);
+        const geometries = topology.objects.countries?.geometries || [];
+        const landPolygons: number[][][] = [];
+        for (const geo of geometries) {
+          if (geo.type === 'Polygon') landPolygons.push(resolveArcs(geo.arcs, decodedArcs));
+          else if (geo.type === 'MultiPolygon') {
+            for (const poly of geo.arcs) landPolygons.push(resolveArcs(poly, decodedArcs));
+          }
+        }
+
+        const group = new THREE.Group();
+        const rTop = 1.05;
+        const rBottom = 1.01;
+
+        for (const poly of landPolygons) {
+          const sideIndices: number[] = [];
+
+          const points3DTop: THREE.Vector3[] = poly.map(p => {
+            const phi = (90 - p[1]) * (Math.PI / 180);
+            const theta = (p[0] + 180) * (Math.PI / 180);
+            return new THREE.Vector3(-(rTop * Math.sin(phi) * Math.cos(theta)), rTop * Math.cos(phi), rTop * Math.sin(phi) * Math.sin(theta));
+          });
+
+          const points3DBottom: THREE.Vector3[] = poly.map(p => {
+            const phi = (90 - p[1]) * (Math.PI / 180);
+            const theta = (p[0] + 180) * (Math.PI / 180);
+            return new THREE.Vector3(-(rBottom * Math.sin(phi) * Math.cos(theta)), rBottom * Math.cos(phi), rBottom * Math.sin(phi) * Math.sin(theta));
+          });
+
+          // Create geometry
+          const geometry = new THREE.BufferGeometry();
+          
+          // Vertices for Top and Bottom faces
+          const allPoints = [...points3DTop, ...points3DBottom];
+          const vertexArray = new Float32Array(allPoints.length * 3);
+          allPoints.forEach((p, i) => {
+            vertexArray[i * 3] = p.x;
+            vertexArray[i * 3 + 1] = p.y;
+            vertexArray[i * 3 + 2] = p.z;
+          });
+          geometry.setAttribute('position', new THREE.BufferAttribute(vertexArray, 3));
+
+          // Side walls (connecting Top to Bottom)
+          const sideCount = poly.length;
+          for (let i = 0; i < sideCount - 1; i++) {
+            const t1 = i;
+            const t2 = i + 1;
+            const b1 = i + sideCount;
+            const b2 = i + 1 + sideCount;
+
+            // Two triangles for the quad wall
+            sideIndices.push(t1, b1, t2);
+            sideIndices.push(t2, b1, b2);
+          }
+
+          geometry.setIndex(sideIndices);
+          geometry.computeVertexNormals();
+
+          // Side material (Neon)
+          const sideMesh = new THREE.Mesh(geometry, new THREE.MeshPhongMaterial({ color: 0x00D1FF, emissive: 0x00A8FF, emissiveIntensity: 0.5, side: THREE.DoubleSide }));
+          group.add(sideMesh);
+
+          // Top Face (using the points) - simpler to use Shape if flat, but here it's curved.
+          // For now, let's just do the walls as it defines the "volume" best against the sphere.
+          // Adding a slightly larger surface mesh for the land top
+          const shape = new THREE.Shape();
+          poly.forEach((p, i) => {
+            const x = (p[0] / 180) * 2.5; // Dummy projection just to triangulate
+            const y = (p[1] / 90) * 1.25;
+            if (i === 0) shape.moveTo(x, y); else shape.lineTo(x, y);
+          });
+          const topGeom = new THREE.ShapeGeometry(shape);
+          // Convert the 2D ShapeGeometry vertices to 3D Sphere positions
+          const topPos = topGeom.attributes.position;
+          for (let i = 0; i < topPos.count; i++) {
+            const x2d = topPos.getX(i);
+            const y2d = topPos.getY(i);
+            const lon = (x2d / 2.5) * 180;
+            const lat = (y2d / 1.25) * 90;
+            const phi = (90 - lat) * (Math.PI / 180);
+            const theta = (lon + 180) * (Math.PI / 180);
+            topPos.setXYZ(i, -(rTop * Math.sin(phi) * Math.cos(theta)), rTop * Math.cos(phi), rTop * Math.sin(phi) * Math.sin(theta));
+          }
+          topGeom.computeVertexNormals();
+          const topMesh = new THREE.Mesh(topGeom, new THREE.MeshPhongMaterial({ color: 0x0A244D, specular: 0x00A8FF, shininess: 30 }));
+          group.add(topMesh);
+        }
+        setMesh(group);
+      } catch (err) { console.warn('Volumetric failed:', err); }
+    };
+    load();
+  }, [projectionMode]);
+
+  return mesh ? <primitive object={mesh} /> : null;
 }
 
 function CountryFills2D() {
@@ -256,52 +366,6 @@ export function Earth({ children }: { children?: React.ReactNode }) {
   const meshRef = useRef<THREE.Group>(null);
   const config = useStreamStore(s => s.config);
   const projectionMode = useStreamStore(s => s.projectionMode);
-  const [landmask, setLandmask] = useState<THREE.Texture | null>(null);
-
-  useEffect(() => {
-    // Generate landmask locally from GeoJSON to avoid CORS/Network issues
-    const generateMask = async () => {
-      try {
-        const res = await fetch('https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json');
-        const topology = await res.json();
-        const decodedArcs = decodeTopology(topology);
-        const geometries = topology.objects.countries?.geometries || [];
-        
-        const canvas = document.createElement('canvas');
-        canvas.width = 2048;
-        canvas.height = 1024;
-        const ctx = canvas.getContext('2d');
-        if (!ctx) return;
-
-        ctx.fillStyle = 'black';
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-        ctx.fillStyle = 'white';
-
-        for (const geo of geometries) {
-          const polygons = [];
-          if (geo.type === 'Polygon') polygons.push(resolveArcs(geo.arcs, decodedArcs));
-          else if (geo.type === 'MultiPolygon') {
-            for (const poly of geo.arcs) polygons.push(resolveArcs(poly, decodedArcs));
-          }
-          for (const poly of polygons) {
-            ctx.beginPath();
-            for (let i = 0; i < poly.length; i++) {
-              const x = ((poly[i][0] + 180) / 360) * canvas.width;
-              const y = ((90 - poly[i][1]) / 180) * canvas.height;
-              if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
-            }
-            ctx.fill();
-          }
-        }
-        const tex = new THREE.CanvasTexture(canvas);
-        tex.needsUpdate = true;
-        setLandmask(tex);
-      } catch (err) {
-        console.warn('Landmask generation failed:', err);
-      }
-    };
-    generateMask();
-  }, []);
 
   const setSelectedCountry = useStreamStore(s => s.setSelectedCountry);
   const setView = useStreamStore(s => s.setView);
@@ -459,18 +523,12 @@ export function Earth({ children }: { children?: React.ReactNode }) {
       <group ref={meshRef}>
         {projectionMode === '3d' ? (
           <mesh>
-            <sphereGeometry args={[1, 256, 256]} />
+            <sphereGeometry args={[1, 64, 64]} />
             <meshPhongMaterial
-              color="#040D1D" // Slightly darker base
-              emissive="#01040A"
-              emissiveIntensity={0.2}
-              specular="#00A8FF"
-              shininess={40}
-              displacementMap={landmask || undefined}
-              displacementScale={0.08} // Increased for a clear "shelf"
-              displacementBias={-0.02} // Sink the ocean area
-              bumpMap={landmask || undefined}
-              bumpScale={0.015} // Stronger bump for edges
+              color="#051225"
+              emissive="#020818"
+              emissiveIntensity={0.5}
+              shininess={25}
             />
           </mesh>
         ) : (
@@ -503,6 +561,7 @@ export function Earth({ children }: { children?: React.ReactNode }) {
 
         <CountryOutlines />
         <CountryDotGrid />
+        <VolumetricLand />
         {projectionMode === '2d' && <CountryFills2D />}
 
         {projectionMode === '3d' && (
