@@ -77,8 +77,6 @@ export function Sidebar() {
   const typeDistribution = useStreamStore(s => s.typeDistribution);
   const recentEvents = useStreamStore(s => s.recentEvents);
   const activeArcCount = useStreamStore(s => s.activeArcCount);
-  const currentView = useStreamStore(s => s.currentView);
-  const setView = useStreamStore(s => s.setView);
   
   const vectorDistribution = useStreamStore(s => s.vectorDistribution);
   const originDistribution = useStreamStore(s => s.originDistribution);
@@ -95,84 +93,21 @@ export function Sidebar() {
   return (
     <div style={{
       position: 'fixed',
-      top: 80,
-      right: 20,
-      bottom: 20,
-      width: 360,
+      top: 100,
+      right: 24,
+      bottom: 24,
+      width: 380,
       display: 'flex',
       flexDirection: 'column',
-      gap: 16,
+      gap: 32,
       zIndex: 10,
       overflowY: 'auto',
       overflowX: 'hidden',
+      paddingRight: 8,
       scrollbarWidth: 'thin',
-      scrollbarColor: '#1a2a3a #05080F',
+      scrollbarColor: 'rgba(0, 224, 255, 0.2) transparent',
     }}>
-      {/* View Toggle */}
-      <GlassPanel style={{ padding: '8px', background: 'rgba(0, 209, 255, 0.05)' }}>
-        <div style={{ display: 'flex', gap: '8px' }}>
-          <button 
-            onClick={() => setView('map')}
-            style={{
-              flex: 1,
-              padding: '8px 12px',
-              background: currentView === 'map' ? 'rgba(0, 209, 255, 0.2)' : 'transparent',
-              border: `1px solid ${currentView === 'map' ? 'rgba(0, 209, 255, 0.4)' : 'transparent'}`,
-              color: currentView === 'map' ? '#fff' : theme.colors.textDim,
-              borderRadius: '8px',
-              fontFamily: theme.fonts.display,
-              fontSize: '11px',
-              fontWeight: 700,
-              cursor: 'pointer',
-              transition: 'all 0.2s ease',
-              textTransform: 'uppercase',
-              letterSpacing: '1px'
-            }}
-          >
-            Live Map
-          </button>
-          <button 
-            onClick={() => setView('history')}
-            style={{
-              flex: 1,
-              padding: '8px 4px',
-              background: currentView === 'history' ? 'rgba(0, 209, 255, 0.2)' : 'transparent',
-              border: `1px solid ${currentView === 'history' ? 'rgba(0, 209, 255, 0.4)' : 'transparent'}`,
-              color: currentView === 'history' ? '#fff' : theme.colors.textDim,
-              borderRadius: '8px',
-              fontFamily: theme.fonts.display,
-              fontSize: '11px',
-              fontWeight: 700,
-              cursor: 'pointer',
-              transition: 'all 0.2s ease',
-              textTransform: 'uppercase',
-              letterSpacing: '1px'
-            }}
-          >
-            History
-          </button>
-          <button 
-            onClick={() => setView('dashboard')}
-            style={{
-              flex: 1,
-              padding: '8px 4px',
-              background: currentView === 'dashboard' ? 'rgba(0, 209, 255, 0.2)' : 'transparent',
-              border: `1px solid ${currentView === 'dashboard' ? 'rgba(0, 209, 255, 0.4)' : 'transparent'}`,
-              color: currentView === 'dashboard' ? '#fff' : theme.colors.textDim,
-              borderRadius: '8px',
-              fontFamily: theme.fonts.display,
-              fontSize: '11px',
-              fontWeight: 700,
-              cursor: 'pointer',
-              transition: 'all 0.2s ease',
-              textTransform: 'uppercase',
-              letterSpacing: '1px'
-            }}
-          >
-            Dashboard
-          </button>
-        </div>
-      </GlassPanel>
+      {/* Live Metrics */}
 
       {/* Live Metrics */}
       <GlassPanel>
@@ -258,7 +193,7 @@ export function Sidebar() {
       <TopList title="Top Threat Vectors" items={topVectors} color={theme.colors.warning} />
       
       {/* New Top Countries Panels */}
-      <div style={{ display: 'flex', gap: 12 }}>
+      <div style={{ display: 'flex', gap: 16, marginTop: 8 }}>
         <div style={{ flex: 1, minWidth: 0 }}>
           <TopList title="Top Origins" items={topOrigins} isCountry color={theme.colors.exploit} />
         </div>
