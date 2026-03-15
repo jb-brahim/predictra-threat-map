@@ -99,7 +99,7 @@ export function Sidebar() {
       width: 380,
       display: 'flex',
       flexDirection: 'column',
-      gap: 32,
+      gap: 40, // More breathing room
       zIndex: 10,
       overflowY: 'auto',
       overflowX: 'hidden',
@@ -192,14 +192,10 @@ export function Sidebar() {
       {/* New Top Attack Vectors Panel */}
       <TopList title="Top Threat Vectors" items={topVectors} color={theme.colors.warning} />
       
-      {/* New Top Countries Panels */}
-      <div style={{ display: 'flex', gap: 16, marginTop: 8 }}>
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <TopList title="Top Origins" items={topOrigins} isCountry color={theme.colors.exploit} />
-        </div>
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <TopList title="Top Targets" items={topTargets} isCountry color={theme.colors.phishing} />
-        </div>
+      {/* New Top Countries Panels - Stacked vertically to prevent squashing */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 24, marginTop: 8 }}>
+        <TopList title="Top Origins" items={topOrigins} isCountry color={theme.colors.exploit} />
+        <TopList title="Top Targets" items={topTargets} isCountry color={theme.colors.phishing} />
       </div>
 
       {/* Recent Threat Feed */}
