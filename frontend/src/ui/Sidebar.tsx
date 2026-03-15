@@ -127,10 +127,12 @@ export function Sidebar() {
               fontSize: 42,
               fontFamily: theme.fonts.display,
               fontWeight: 900,
-              lineHeight: 1,
+              lineHeight: 1.2, // Improved from 1 to avoid clipping
+              padding: '4px 0',
               background: 'linear-gradient(135deg, #00D1FF, #00E0FF, #88EEFF)',
               WebkitBackgroundClip: 'text',
               WebkitTextFillColor: 'transparent',
+              marginBottom: -4,
             }}
             role="status"
             aria-live="polite"
@@ -190,7 +192,7 @@ export function Sidebar() {
       </GlassPanel>
 
       {/* New Top Attack Vectors Panel */}
-      <TopList title="Top Threat Vectors" items={topVectors} color={theme.colors.warning} />
+      <TopList title="Top Threat Vectors" items={topVectors.length > 0 ? topVectors : [['No Data', 0]]} color={theme.colors.warning} />
       
       {/* New Top Countries Panels - Stacked vertically to prevent squashing */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: 24, marginTop: 8 }}>
@@ -199,7 +201,7 @@ export function Sidebar() {
       </div>
 
       {/* Recent Threat Feed */}
-      <GlassPanel style={{ flex: 1, minHeight: 0 }}>
+      <GlassPanel>
         <div style={{
           fontSize: 10,
           fontFamily: theme.fonts.display,
