@@ -76,6 +76,8 @@ export function AttackArcs() {
     points: THREE.Vector3[];
   }>>(new Map());
 
+  const projectionMode = useStreamStore(s => s.projectionMode);
+
   // Sync Three.js objects with arc state
   useEffect(() => {
     const group = groupRef.current;
@@ -92,40 +94,50 @@ export function AttackArcs() {
           group.remove(obj.line);
           group.remove(obj.tracer);
           group.remove(obj.tracerGlow);
-          // Only dispose per-arc geometry (line); shared geos/mats are pooled
           obj.line.geometry.dispose();
         }
         lineObjectsRef.current.delete(id);
       }
     }
 
-    // Add new arcs
+    // Add/Update arcs
     for (const arc of arcs) {
-      if (!lineObjectsRef.current.has(arc.id)) {
-        const points = greatCirclePoints(
-          arc.sourceLat, arc.sourceLon,
-          arc.targetLat, arc.targetLon,
-          MAX_ARC_SEGMENTS
-        );
+      const existing = lineObjectsRef.current.get(arc.id);
+      
+      // If projection mode changed, we need to re-generate points
+      if (!existing) {
+        let points: THREE.Vector3[] = [];
+        if (projectionMode === '3d') {
+          points = greatCirclePoints(
+            arc.sourceLat, arc.sourceLon,
+            arc.targetLat, arc.targetLon,
+            MAX_ARC_SEGMENTS
+          );
+        } else {
+          // 2D Projection
+          const x1 = (arc.sourceLon / 180) * 2.5;
+          const y1 = (arc.sourceLat / 90) * 1.25;
+          const x2 = (arc.targetLon / 180) * 2.5;
+          const y2 = (arc.targetLat / 90) * 1.25;
+          
+          // Cubic Bezier for 2D arc
+          const curve = new THREE.QuadraticBezierCurve3(
+            new THREE.Vector3(x1, y1, 0.02),
+            new THREE.Vector3((x1 + x2) / 2, (y1 + y2) / 2, 0.5), // Arch height
+            new THREE.Vector3(x2, y2, 0.02)
+          );
+          points = curve.getPoints(MAX_ARC_SEGMENTS);
+        }
 
-        // Create line geometry (unique per arc since positions differ)
         const geometry = new THREE.BufferGeometry();
         const positions = new Float32Array((MAX_ARC_SEGMENTS + 1) * 3);
         geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
         geometry.setDrawRange(0, 0);
-        // Set a fixed large bounding sphere to avoid per-frame recomputation
         geometry.boundingSphere = _largeBoundingSphere.clone();
 
-        // Use pooled material by attack type
         const line = new THREE.Line(geometry, getLineMaterial(arc.attackType));
-
-        // Tracer dot — shared geometry, pooled material
         const tracer = new THREE.Mesh(_sharedTracerGeo, getTracerMaterial(arc.attackType));
-        tracer.visible = false;
-
-        // Tracer glow — shared geometry, pooled material
         const tracerGlow = new THREE.Mesh(_sharedGlowGeo, getGlowMaterial(arc.attackType));
-        tracerGlow.visible = false;
 
         group.add(line);
         group.add(tracer);
@@ -134,7 +146,7 @@ export function AttackArcs() {
         lineObjectsRef.current.set(arc.id, { line, tracer, tracerGlow, points });
       }
     }
-  }, [arcs]);
+  }, [arcs, projectionMode]);
 
   // Animate arcs each frame
   useFrame(() => {

@@ -58,6 +58,8 @@ interface StreamState {
     showPerfOverlay: boolean;
   };
 
+  projectionMode: '3d' | '2d';
+
   // Actions
   addEvents: (events: ThreatEvent[]) => void;
   updateCounter: (data: CounterData) => void;
@@ -68,6 +70,7 @@ interface StreamState {
   setView: (view: 'map' | 'history' | 'dashboard' | 'country') => void;
   setSelectedCountry: (co: string | null) => void;
   setHistorySearch: (search: { q: string, ip: string }) => void;
+  setProjectionMode: (mode: '3d' | '2d') => void;
   initStream: () => void;
   _cleanup: (() => void) | null;
 }
@@ -75,6 +78,7 @@ interface StreamState {
 export const useStreamStore = create<StreamState>((set, get) => ({
   status: 'disconnected',
   reconnectAttempts: 0,
+  projectionMode: '3d',
   currentView: 'map',
   selectedCountry: null,
   historySearch: { q: '', ip: '' },
@@ -149,6 +153,8 @@ export const useStreamStore = create<StreamState>((set, get) => ({
         newMarkers.push({
           id: `src-${event.id || fastId()}`,
           position: latLonToVector3(event.s_la, event.s_lo),
+          lat: event.s_la,
+          lon: event.s_lo,
           attackType: event.a_t,
           startTime: now,
           duration: MARKER_DURATION,
@@ -163,6 +169,8 @@ export const useStreamStore = create<StreamState>((set, get) => ({
         newMarkers.push({
           id: `dst-${event.id || fastId()}`,
           position: latLonToVector3(event.d_la, event.d_lo),
+          lat: event.d_la,
+          lon: event.d_lo,
           attackType: event.a_t,
           startTime: now + ARC_DURATION * 0.7,
           duration: MARKER_DURATION,
@@ -312,6 +320,8 @@ export const useStreamStore = create<StreamState>((set, get) => ({
   setHistorySearch: (search: { q: string, ip: string }) => {
     set({ historySearch: search });
   },
+
+  setProjectionMode: (mode) => set({ projectionMode: mode }),
 
   initStream: () => {
     const state = get();

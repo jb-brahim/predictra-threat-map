@@ -1,5 +1,6 @@
 import { useRef, useEffect, useState } from 'react';
 import * as THREE from 'three';
+import { useStreamStore } from '../stream/useStreamStore';
 
 // Use the 110m dataset that is proven to work
 const GEOJSON_URL = 'https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json';
@@ -69,63 +70,73 @@ function extractPolygons(topology: any): number[][][] {
  */
 export function CountryOutlines() {
   const groupRef = useRef<THREE.Group>(null);
-  const [loaded, setLoaded] = useState(false);
+  const projectionMode = useStreamStore(s => s.projectionMode);
+  const [loadedData, setLoadedData] = useState<any>(null);
+
+  useEffect(() => {
+    fetch(GEOJSON_URL)
+      .then(res => res.json())
+      .then(topology => setLoadedData(topology))
+      .catch(err => console.warn('Failed to load country outlines:', err));
+  }, []);
 
   useEffect(() => {
     const group = groupRef.current;
-    if (!group || loaded) return;
+    if (!group || !loadedData) return;
 
-    fetch(GEOJSON_URL)
-      .then(res => res.json())
-      .then(topology => {
-        const polygons = extractPolygons(topology);
-        const linePoints: THREE.Vector3[] = [];
+    // Clear previous lines
+    while (group.children.length > 0) {
+      const child = group.children[0] as any;
+      if (child.geometry) child.geometry.dispose();
+      group.remove(child);
+    }
 
-        for (const polygon of polygons) {
-          for (let i = 0; i < polygon.length - 1; i++) {
-            const [lon1, lat1] = polygon[i];
-            const [lon2, lat2] = polygon[i + 1];
-            if (Math.abs(lon2 - lon1) > 90) continue;
-            linePoints.push(latLonToVec3(lat1, lon1, GLOBE_RADIUS));
-            linePoints.push(latLonToVec3(lat2, lon2, GLOBE_RADIUS));
-          }
+    const polygons = extractPolygons(loadedData);
+    const linePoints: THREE.Vector3[] = [];
+
+    for (const polygon of polygons) {
+      for (let i = 0; i < polygon.length - 1; i++) {
+        const [lon1, lat1] = polygon[i];
+        const [lon2, lat2] = polygon[i + 1];
+        
+        if (projectionMode === '3d') {
+          if (Math.abs(lon2 - lon1) > 90) continue;
+          linePoints.push(latLonToVec3(lat1, lon1, GLOBE_RADIUS));
+          linePoints.push(latLonToVec3(lat2, lon2, GLOBE_RADIUS));
+        } else {
+          // 2D Projection
+          const x1 = (lon1 / 180) * 2.5;
+          const y1 = (lat1 / 90) * 1.25;
+          const x2 = (lon2 / 180) * 2.5;
+          const y2 = (lat2 / 90) * 1.25;
+          linePoints.push(new THREE.Vector3(x1, y1, 0.01));
+          linePoints.push(new THREE.Vector3(x2, y2, 0.01));
         }
+      }
+    }
 
-        if (linePoints.length === 0) return;
+    if (linePoints.length > 0) {
+      const geometry = new THREE.BufferGeometry().setFromPoints(linePoints);
+      const layers = [
+        { color: new THREE.Color(0x00E8FF).multiplyScalar(2.0), opacity: 0.8, scale: 1.0 },
+        { color: new THREE.Color(0x00D0FF).multiplyScalar(1.5), opacity: 0.45, scale: 1.002 },
+        { color: new THREE.Color(0x00BBFF).multiplyScalar(1.2), opacity: 0.25, scale: 1.004 },
+      ];
 
-        const geometry = new THREE.BufferGeometry().setFromPoints(linePoints);
-
-        // ─── 5-layer glow stack ───────────────────────────────────
-        // All layers use AdditiveBlending so they stack into pure white-hot glow.
-        // Colors are intentionally overbright (> 1.0 via Color.multiplyScalar)
-        // to guarantee they exceed the Bloom luminanceThreshold.
-
-        const layers: { color: THREE.Color; opacity: number; scale: number }[] = [
-          // L1: Sharp white-cyan core (the actual border line)
-          { color: new THREE.Color(0x00E8FF).multiplyScalar(2.0), opacity: 0.8,  scale: 1.0 },
-          // L2: Bright cyan inner
-          { color: new THREE.Color(0x00D0FF).multiplyScalar(1.5), opacity: 0.45, scale: 1.002 },
-          // L3: Medium spread
-          { color: new THREE.Color(0x00BBFF).multiplyScalar(1.2), opacity: 0.25, scale: 1.004 },
-        ];
-
-        for (const layer of layers) {
-          const mat = new THREE.LineBasicMaterial({
-            color: layer.color,
-            transparent: true,
-            opacity: layer.opacity,
-            depthWrite: false,
-            blending: THREE.AdditiveBlending,
-          });
-          const lines = new THREE.LineSegments(geometry, mat);
-          lines.scale.setScalar(layer.scale);
-          group.add(lines);
-        }
-
-        setLoaded(true);
-      })
-      .catch(err => console.warn('Failed to load country outlines:', err));
-  }, [loaded]);
+      for (const layer of layers) {
+        const mat = new THREE.LineBasicMaterial({
+          color: layer.color,
+          transparent: true,
+          opacity: layer.opacity,
+          depthWrite: false,
+          blending: THREE.AdditiveBlending,
+        });
+        const lines = new THREE.LineSegments(geometry, mat);
+        if (projectionMode === '3d') lines.scale.setScalar(layer.scale);
+        group.add(lines);
+      }
+    }
+  }, [loadedData, projectionMode]);
 
   return <group ref={groupRef} />;
 }

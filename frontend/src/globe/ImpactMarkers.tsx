@@ -34,6 +34,7 @@ function getMarkerColorHex(type: string): number {
 export function ImpactMarkers() {
   const groupRef = useRef<THREE.Group>(null);
   const markers = useStreamStore(s => s.markers);
+  const projectionMode = useStreamStore(s => s.projectionMode);
 
   const markerObjectsRef = useRef<Map<string, {
     core: THREE.Mesh;
@@ -47,81 +48,56 @@ export function ImpactMarkers() {
     const group = groupRef.current;
     if (!group) return;
 
-    const existingIds = new Set(markerObjectsRef.current.keys());
-    const currentIds = new Set(markers.map(m => m.id));
-
-    // Remove old markers
-    for (const id of existingIds) {
-      if (!currentIds.has(id)) {
-        const obj = markerObjectsRef.current.get(id);
-        if (obj) {
-          group.remove(obj.core);
-          group.remove(obj.ring1);
-          if (obj.ring2) group.remove(obj.ring2);
-          // Dispose per-instance materials only (geometries are shared)
-          (obj.core.material as THREE.Material).dispose();
-          (obj.ring1.material as THREE.Material).dispose();
-          if (obj.ring2) (obj.ring2.material as THREE.Material).dispose();
-        }
-        markerObjectsRef.current.delete(id);
-      }
+    // Clear everything if mode changes or if we want a fresh sync
+    while (group.children.length > 0) {
+      const child = group.children[0] as any;
+      if (child.geometry) child.geometry.dispose();
+      if (child.material) child.material.dispose();
+      group.remove(child);
     }
+    markerObjectsRef.current.clear();
 
-    // Add new markers
+    // Re-add all markers
     for (const marker of markers) {
-      if (!markerObjectsRef.current.has(marker.id)) {
-        const colorHex = getMarkerColorHex(marker.attackType);
-        const pos = new THREE.Vector3(...marker.position);
+      const colorHex = getMarkerColorHex(marker.attackType);
+      
+      let pos: THREE.Vector3;
+      let quaternion = new THREE.Quaternion();
+
+      if (projectionMode === '3d') {
+        pos = new THREE.Vector3(...marker.position);
         const normal = pos.clone().normalize();
-
-        // Orientation quaternion (face outward from globe)
-        const quaternion = new THREE.Quaternion();
         quaternion.setFromUnitVectors(new THREE.Vector3(0, 0, 1), normal);
-
-        // Core glow dot — shared geometry, unique material (for per-instance opacity)
-        const coreMat = new THREE.MeshBasicMaterial({
-          ..._materialProps,
-          color: colorHex,
-          opacity: 0.9,
-        });
-        const core = new THREE.Mesh(_sharedCoreGeo, coreMat);
-        core.position.copy(pos);
-        core.quaternion.copy(quaternion);
-
-        // Primary ring — shared geometry
-        const ring1Mat = new THREE.MeshBasicMaterial({
-          ..._materialProps,
-          color: colorHex,
-          opacity: 0.6,
-        });
-        const ring1 = new THREE.Mesh(_sharedRing1Geo, ring1Mat);
-        ring1.position.copy(pos);
-        ring1.quaternion.copy(quaternion);
-
-        // Secondary ring (destination only) — shared geometry
-        let ring2: THREE.Mesh | null = null;
-        if (!marker.isSource) {
-          const ring2Mat = new THREE.MeshBasicMaterial({
-            ..._materialProps,
-            color: colorHex,
-            opacity: 0.3,
-          });
-          ring2 = new THREE.Mesh(_sharedRing2Geo, ring2Mat);
-          ring2.position.copy(pos);
-          ring2.quaternion.copy(quaternion);
-          group.add(ring2);
-        }
-
-        group.add(core);
-        group.add(ring1);
-
-        markerObjectsRef.current.set(marker.id, {
-          core, ring1, ring2,
-          isSource: marker.isSource,
-        });
+      } else {
+        const x = (marker.lon / 180) * 2.5;
+        const y = (marker.lat / 90) * 1.25;
+        pos = new THREE.Vector3(x, y, 0.02);
       }
+
+      const coreMat = new THREE.MeshBasicMaterial({ ..._materialProps, color: colorHex, opacity: 0.9 });
+      const core = new THREE.Mesh(_sharedCoreGeo, coreMat);
+      core.position.copy(pos);
+      core.quaternion.copy(quaternion);
+
+      const ring1Mat = new THREE.MeshBasicMaterial({ ..._materialProps, color: colorHex, opacity: 0.6 });
+      const ring1 = new THREE.Mesh(_sharedRing1Geo, ring1Mat);
+      ring1.position.copy(pos);
+      ring1.quaternion.copy(quaternion);
+
+      let ring2: THREE.Mesh | null = null;
+      if (!marker.isSource) {
+        const ring2Mat = new THREE.MeshBasicMaterial({ ..._materialProps, color: colorHex, opacity: 0.3 });
+        ring2 = new THREE.Mesh(_sharedRing2Geo, ring2Mat);
+        ring2.position.copy(pos);
+        ring2.quaternion.copy(quaternion);
+        group.add(ring2);
+      }
+
+      group.add(core);
+      group.add(ring1);
+      markerObjectsRef.current.set(marker.id, { core, ring1, ring2, isSource: marker.isSource });
     }
-  }, [markers]);
+  }, [markers, projectionMode]);
 
   // Animate markers each frame
   useFrame(() => {

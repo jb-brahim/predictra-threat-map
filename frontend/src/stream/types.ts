@@ -73,6 +73,8 @@ export interface ArcData {
 export interface MarkerData {
   id: string;
   position: [number, number, number];
+  lat: number;
+  lon: number;
   attackType: AttackType;
   startTime: number;
   duration: number;

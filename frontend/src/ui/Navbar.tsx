@@ -4,6 +4,8 @@ import { theme } from '../theme/theme';
 export function Navbar() {
   const currentView = useStreamStore(s => s.currentView);
   const setView = useStreamStore(s => s.setView);
+  const projectionMode = useStreamStore(s => s.projectionMode);
+  const setProjectionMode = useStreamStore(s => s.setProjectionMode);
 
   const tabs = [
     { id: 'map', label: 'LIVE MAP' },
@@ -77,6 +79,51 @@ export function Navbar() {
           </button>
         );
       })}
+
+      {/* Projection Toggle */}
+      <div style={{
+        height: '24px',
+        width: '1px',
+        background: 'rgba(255,255,255,0.1)',
+        margin: '0 12px'
+      }} />
+
+      <button
+        onClick={() => setProjectionMode(projectionMode === '3d' ? '2d' : '3d')}
+        style={{
+          padding: '8px 16px',
+          background: 'rgba(255, 255, 255, 0.05)',
+          border: '1px solid rgba(255, 255, 255, 0.1)',
+          borderRadius: '100px',
+          color: '#fff',
+          fontFamily: theme.fonts.display,
+          fontSize: '10px',
+          fontWeight: 800,
+          letterSpacing: '1px',
+          cursor: 'pointer',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '8px',
+          transition: 'all 0.2s ease',
+        }}
+        onMouseOver={e => {
+          e.currentTarget.style.background = 'rgba(0, 209, 255, 0.1)';
+          e.currentTarget.style.borderColor = 'rgba(0, 209, 255, 0.3)';
+        }}
+        onMouseOut={e => {
+          e.currentTarget.style.background = 'rgba(255, 255, 255, 0.05)';
+          e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.1)';
+        }}
+      >
+        <div style={{
+          width: 8,
+          height: 8,
+          borderRadius: '50%',
+          background: projectionMode === '3d' ? '#00D1FF' : '#fff',
+          boxShadow: projectionMode === '3d' ? '0 0 8px #00D1FF' : 'none'
+        }} />
+        {projectionMode === '3d' ? '3D VIEW' : '2D FLAT'}
+      </button>
     </div>
   );
 }

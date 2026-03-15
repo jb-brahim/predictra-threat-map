@@ -28,6 +28,7 @@ function AnimationLoop() {
  */
 export function GlobeScene() {
   const qualityPreset = useStreamStore(s => s.config.qualityPreset);
+  const projectionMode = useStreamStore(s => s.projectionMode);
 
   const bloomIntensity = useMemo(() =>
     qualityPreset === 'cinematic' ? 1.2
@@ -42,7 +43,7 @@ export function GlobeScene() {
       background: '#05080F',
     }}>
       <Canvas
-        camera={{ position: [0, 0, 2.8], fov: 45, near: 0.1, far: 1000 }}
+        camera={{ position: [0, 0, projectionMode === '3d' ? 2.8 : 3.5], fov: 45, near: 0.1, far: 1000 }}
         gl={{
           antialias: qualityPreset !== 'low',
           alpha: false,
@@ -69,14 +70,16 @@ export function GlobeScene() {
 
         {/* Controls */}
         <OrbitControls
-          enablePan={false}
+          enablePan={projectionMode === '2d'}
           minDistance={1.5}
           maxDistance={6}
           enableDamping
           dampingFactor={0.05}
-          rotateSpeed={0.5}
+          rotateSpeed={projectionMode === '3d' ? 0.5 : 0}
           zoomSpeed={0.8}
           autoRotate={false}
+          maxPolarAngle={projectionMode === '3d' ? Math.PI : Math.PI / 2}
+          minPolarAngle={projectionMode === '3d' ? 0 : Math.PI / 2}
         />
 
         {/* Post-processing */}
