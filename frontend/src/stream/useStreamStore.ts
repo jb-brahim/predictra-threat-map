@@ -10,6 +10,17 @@ const MAX_MARKERS = 300;
 const ARC_DURATION = 5000; // ms — longer for better visibility
 const MARKER_DURATION = 6000; // ms
 
+// --- Layer 3 Mutable State (Throttled Analytics Flush) ---
+let lastAnalyticsFlush = 0;
+let lastRecentEventsFlush = 0;
+const pendingType = { exploit: 0, malware: 0, phishing: 0 };
+const pendingVector: Record<string, number> = {};
+const pendingOrigin: Record<string, number> = {};
+const pendingTarget: Record<string, number> = {};
+const pendingCorridor: Record<string, number> = {};
+const pendingApi: Record<string, number> = {};
+let pendingTotal = 0;
+
 interface StreamState {
   // Connection
   status: ConnectionStatus;
@@ -119,7 +130,16 @@ export const useStreamStore = create<StreamState>((set, get) => ({
     const newArcs: ArcData[] = [];
     const newMarkers: MarkerData[] = [];
 
-    for (const event of events) {
+    // Layer 2: Adaptive Sampling for Visuals (arcs/markers)
+    const fps = perfTelemetry.stats.fps;
+    let visualEvents = events;
+    if (fps < 30) {
+      visualEvents = events.filter((_, i) => i % 3 === 0); // Keep 33%
+    } else if (fps < 45) {
+      visualEvents = events.filter((_, i) => i % 2 === 0); // Keep 50%
+    }
+
+    for (const event of visualEvents) {
       perfTelemetry.recordEvent();
 
       // Create arc
@@ -181,64 +201,94 @@ export const useStreamStore = create<StreamState>((set, get) => ({
       }
     }
 
-    // Update trend data buckets (10-second buckets, 60 buckets = 10 minutes)
+    const allArcs = state.arcs.concat(newArcs);
+    const allMarkers = state.markers.concat(newMarkers);
+
+    // Prepare next state for fast visual updates
+    const nextState: Partial<StreamState> = {
+      arcs: allArcs,
+      markers: allMarkers,
+      activeArcCount: allArcs.length,
+    };
+
+    // Cap recentEvents update frequency (500ms)
+    if (now - lastRecentEventsFlush > 500) {
+      nextState.recentEvents = buffer.getRecent(40); // 40 items max in UI feed
+      lastRecentEventsFlush = now;
+    }
+
+    // Accumulate Analytics data (Layer 3)
+    pendingTotal += events.length;
+    for (const e of events) {
+      if (e.a_t in pendingType) pendingType[e.a_t as keyof TypeDistribution]++;
+      
+      const vName = String(e.a_n || 'Unknown').trim();
+      pendingVector[vName] = (pendingVector[vName] || 0) + 1;
+      
+      const sCo = String(e.s_co || '??').toUpperCase();
+      pendingOrigin[sCo] = (pendingOrigin[sCo] || 0) + 1;
+      
+      const dCo = String(e.d_co || '??').toUpperCase();
+      pendingTarget[dCo] = (pendingTarget[dCo] || 0) + 1;
+
+      const corridor = `${sCo}-${dCo}`;
+      pendingCorridor[corridor] = (pendingCorridor[corridor] || 0) + 1;
+      
+      const api = String(e.source_api || 'unknown');
+      pendingApi[api] = (pendingApi[api] || 0) + 1;
+    }
+
+    // Trend calculation
     let currentTrend = [...state.trendData];
     let lastTime = state.lastTrendTime;
     const intervalsElapsed = Math.floor((now - lastTime) / 10000);
-    
     if (intervalsElapsed > 0) {
       const empty = Array(Math.min(intervalsElapsed, 60)).fill(0);
       currentTrend = [...empty, ...currentTrend].slice(0, 60);
       lastTime += intervalsElapsed * 10000;
     }
     currentTrend[0] += events.length;
+    nextState.trendData = currentTrend;
+    nextState.lastTrendTime = lastTime;
 
-    // Update distributions
-    const tDist = { ...state.typeDistribution };
-    const vDist = { ...state.vectorDistribution };
-    const oDist = { ...state.originDistribution };
-    const tgtDist = { ...state.targetDistribution };
-    const cDist = { ...state.corridorDistribution };
-    const apiDist = { ...state.sourceApiDistribution };
-    
-    for (const e of events) {
-      if (e.a_t in tDist) tDist[e.a_t as keyof TypeDistribution]++;
-      
-      const vName = String(e.a_n || 'Unknown').trim();
-      vDist[vName] = (vDist[vName] || 0) + 1;
-      
-      const sCo = String(e.s_co || '??').toUpperCase();
-      oDist[sCo] = (oDist[sCo] || 0) + 1;
-      
-      const dCo = String(e.d_co || '??').toUpperCase();
-      tgtDist[dCo] = (tgtDist[dCo] || 0) + 1;
+    // Flush analytics to Zustand only every 1s
+    if (now - lastAnalyticsFlush > 1000) {
+      const state = get();
+      const mergeDist = (target: Record<string, number>, source: Record<string, number>) => {
+        const out = { ...target };
+        for (const k in source) out[k] = (out[k] || 0) + source[k];
+        return out;
+      };
 
-      const corridor = `${sCo}-${dCo}`;
-      cDist[corridor] = (cDist[corridor] || 0) + 1;
-      
-      const api = String(e.source_api || 'unknown');
-      apiDist[api] = (apiDist[api] || 0) + 1;
+      nextState.typeDistribution = {
+        exploit: state.typeDistribution.exploit + pendingType.exploit,
+        malware: state.typeDistribution.malware + pendingType.malware,
+        phishing: state.typeDistribution.phishing + pendingType.phishing,
+      };
+      pendingType.exploit = 0; pendingType.malware = 0; pendingType.phishing = 0;
+
+      nextState.vectorDistribution = mergeDist(state.vectorDistribution, pendingVector);
+      for (const k in pendingVector) delete pendingVector[k];
+
+      nextState.originDistribution = mergeDist(state.originDistribution, pendingOrigin);
+      for (const k in pendingOrigin) delete pendingOrigin[k];
+
+      nextState.targetDistribution = mergeDist(state.targetDistribution, pendingTarget);
+      for (const k in pendingTarget) delete pendingTarget[k];
+
+      nextState.corridorDistribution = mergeDist(state.corridorDistribution, pendingCorridor);
+      for (const k in pendingCorridor) delete pendingCorridor[k];
+
+      nextState.sourceApiDistribution = mergeDist(state.sourceApiDistribution, pendingApi);
+      for (const k in pendingApi) delete pendingApi[k];
+
+      nextState.totalAttacks = state.totalAttacks + pendingTotal;
+      pendingTotal = 0;
+
+      lastAnalyticsFlush = now;
     }
 
-    const allArcs = state.arcs.concat(newArcs);
-    const allMarkers = state.markers.concat(newMarkers);
-
-    set({
-      recentEvents: buffer.getRecent(10),
-      arcs: allArcs,
-      markers: allMarkers,
-      activeArcCount: allArcs.length,
-      typeDistribution: tDist,
-      vectorDistribution: vDist,
-      originDistribution: oDist,
-      targetDistribution: tgtDist,
-      corridorDistribution: cDist,
-      sourceApiDistribution: apiDist,
-      trendData: currentTrend,
-      lastTrendTime: lastTime,
-      totalAttacks: state.totalAttacks + events.length,
-    });
-
+    set(nextState);
     perfTelemetry.stats.bufferSize = buffer.size;
   },
 
@@ -356,11 +406,48 @@ export const useStreamStore = create<StreamState>((set, get) => ({
           reconnectDelay = 1000;
         };
 
+        eventSource.addEventListener('attacks', (e: MessageEvent) => {
+          try {
+            const batch = JSON.parse(e.data);
+            if (!Array.isArray(batch)) return;
+
+            const validEvents: ThreatEvent[] = [];
+            for (const data of batch) {
+              if (!data.a_t || 
+                  data.s_la === undefined || data.s_lo === undefined || 
+                  data.d_la === undefined || data.d_lo === undefined) continue;
+
+              validEvents.push({
+                id: fastId(),
+                a_c: data.a_c || 1,
+                a_n: String(data.a_n || 'Unknown').slice(0, 200),
+                a_t: (['exploit', 'malware', 'phishing'].includes(data.a_t) ? data.a_t : 'exploit') as ThreatEvent['a_t'],
+                s_co: String(data.s_co || '??').slice(0, 2).toUpperCase(),
+                s_la: Math.max(-90, Math.min(90, Number(data.s_la) || 0)),
+                s_lo: Math.max(-180, Math.min(180, Number(data.s_lo) || 0)),
+                d_co: String(data.d_co || '??').slice(0, 2).toUpperCase(),
+                d_la: Math.max(-90, Math.min(90, Number(data.d_la) || 0)),
+                d_lo: Math.max(-180, Math.min(180, Number(data.d_lo) || 0)),
+                s_ip: data.s_ip || 'unknown',
+                d_ip: data.d_ip || 'unknown',
+                source_api: data.source_api || 'stream',
+                ts: new Date().toISOString(),
+                meta: data.meta || {},
+              });
+            }
+
+            if (validEvents.length > 0) {
+              get().addEvents(validEvents);
+            }
+          } catch {
+            // discard malformed events
+          }
+        });
+
+        // Also handle legacy 'attack' events just in case
         eventSource.addEventListener('attack', (e: MessageEvent) => {
           try {
             const data = JSON.parse(e.data);
-            // Validate and normalize
-            // Validate and normalize - ensure we don't drop events with 0 coordinates
             if (!data.a_t || 
                 data.s_la === undefined || data.s_lo === undefined || 
                 data.d_la === undefined || data.d_lo === undefined) return;
@@ -382,11 +469,8 @@ export const useStreamStore = create<StreamState>((set, get) => ({
               ts: new Date().toISOString(),
               meta: data.meta || {},
             };
-
             get().addEvents([event]);
-          } catch {
-            // discard malformed events
-          }
+          } catch {}
         });
 
         eventSource.addEventListener('counter', (e: MessageEvent) => {

@@ -19,37 +19,87 @@ connectDB();
 
 const PORT = process.env.PORT || 3001;
 
-// Keep track of connected clients and database toggle
-let clients = [];
-let isDatabaseEnabled = true;
+// ─── Batching infrastructure ──────────────────────────────────────────────────
+// Instead of writing one SSE message per event (which causes browser-side
+// processing storms), we queue all incoming attacks and flush them in a single
+// JSON array every BATCH_INTERVAL_MS. This cuts SSE writes and frontend
+// Zustand updates by ~50×.
 
-// Helper to broadcast events to all connected clients and save to DB
-const broadcast = async (event, data, sourceApi = 'unknown') => {
-  if (event === 'attack') {
-    console.log(`[Aggregator] ${sourceApi} attack: ${data.a_n} | src: (${data.s_la},${data.s_lo}) | dst: (${data.d_la},${data.d_lo})`);
-  }
+const BATCH_INTERVAL_MS = 300;   // flush interval – tune between 200–500ms
+const MAX_PENDING = 500;          // hard cap: drop oldest when queue overflows
+const BATCH_DB_INSERT = 25;       // bulk-insert MongoDB after accumulating N docs
 
+let pendingEvents = [];           // staging queue between flushes
+let pendingDbDocs = [];           // staging queue for bulk Mongo inserts
+
+// ─── Batch flush (runs every BATCH_INTERVAL_MS) ───────────────────────────────
+const flushBatch = () => {
+  if (pendingEvents.length === 0) return;
+
+  const batch = pendingEvents;
+  pendingEvents = [];
+
+  // Broadcast ONE SSE message with the entire array
+  const payload = JSON.stringify(batch);
   clients.forEach(client => {
-    client.res.write(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`);
+    try {
+      client.res.write(`event: attacks\ndata: ${payload}\n\n`);
+    } catch (e) {
+      // Client likely disconnected; it will be cleaned up on 'close'
+    }
   });
 
-  // Save to MongoDB if it's an attack event and database is enabled
-  if (event === 'attack' && isDatabaseEnabled) {
-    try {
-      const newThreat = new ThreatEvent({
-        ...data,
-        source_api: sourceApi,
-        s_ip: data.s_ip || 'unknown',
-        d_ip: data.d_ip || 'unknown',
-        meta: data.meta || {}
-      });
-      // Save without awaiting strictly to not block the event loop aggressively
-      newThreat.save().catch(err => console.error("[MongoDB] Error saving event:", err.message));
-    } catch (err) {
-      console.error("[MongoDB] Error saving event:", err.message);
-    }
+  // Bulk-insert into MongoDB to avoid N individual save() calls
+  if (isDatabaseEnabled && pendingDbDocs.length >= BATCH_DB_INSERT) {
+    const docs = pendingDbDocs.splice(0, pendingDbDocs.length);
+    ThreatEvent.insertMany(docs, { ordered: false })
+      .catch(err => console.error('[MongoDB] Bulk insert error:', err.message));
   }
 };
+
+setInterval(flushBatch, BATCH_INTERVAL_MS);
+
+// Heartbeat – keeps SSE connections alive through proxies / load balancers
+setInterval(() => {
+  clients.forEach(client => {
+    try { client.res.write('event: ping\ndata: {}\n\n'); } catch (_) {}
+  });
+}, 30_000);
+
+// ─── Main broadcast entry-point (called by each scraper) ─────────────────────
+const broadcast = (event, data, sourceApi = 'unknown') => {
+  if (event === 'counter') {
+    // Counter events are rare and time-sensitive – send immediately
+    const payload = JSON.stringify(data);
+    clients.forEach(client => {
+      try { client.res.write(`event: counter\ndata: ${payload}\n\n`); } catch (_) {}
+    });
+    return;
+  }
+
+  if (event !== 'attack') return;
+
+  // Enforce queue cap (drop oldest to make room) 
+  if (pendingEvents.length >= MAX_PENDING) {
+    pendingEvents.shift();
+  }
+
+  const enriched = { ...data, source_api: sourceApi };
+  pendingEvents.push(enriched);
+
+  // Stage for MongoDB bulk insert
+  if (isDatabaseEnabled) {
+    if (pendingDbDocs.length >= MAX_PENDING) pendingDbDocs.shift();
+    pendingDbDocs.push({
+      ...data,
+      source_api: sourceApi,
+      s_ip: data.s_ip || 'unknown',
+      d_ip: data.d_ip || 'unknown',
+      meta: data.meta || {},
+    });
+  }
+};
+
 
 // SSE Feed endpoint – clients connect here for live events
 app.get('/api/feed', (req, res) => {
