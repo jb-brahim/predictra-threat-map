@@ -458,14 +458,16 @@ export function Earth({ children }: { children?: React.ReactNode }) {
       <group ref={meshRef}>
         {projectionMode === '3d' ? (
           <mesh>
-            <sphereGeometry args={[1, 128, 128]} />
+            <sphereGeometry args={[1, 256, 256]} />
             <meshPhongMaterial
-              color="#040812"
-              emissive="#020408"
-              emissiveIntensity={0.3}
-              shininess={15}
+              color="#051225" // Deep Navy Blue instead of black
+              emissive="#020818"
+              emissiveIntensity={0.5}
+              shininess={25}
               displacementMap={landmask || undefined}
-              displacementScale={0.012}
+              displacementScale={0.05} // Increased significantly
+              bumpMap={landmask || undefined} // Added bump for sharper edges
+              bumpScale={0.01}
             />
           </mesh>
         ) : (
