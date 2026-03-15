@@ -1,5 +1,6 @@
 import { Canvas, useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
+import { Suspense } from 'react';
 import { OrbitControls } from '@react-three/drei';
 import { EffectComposer, Bloom, ChromaticAberration, Vignette, Scanline } from '@react-three/postprocessing';
 import { Earth } from './Earth';
@@ -82,10 +83,12 @@ export function GlobeScene() {
         </mesh>
 
         {/* Globe and Attacks */}
-        <Earth>
-          <AttackArcs />
-          <ImpactMarkers />
-        </Earth>
+        <Suspense fallback={null}>
+          <Earth>
+            <AttackArcs />
+            <ImpactMarkers />
+          </Earth>
+        </Suspense>
 
         {/* Controls */}
         <OrbitControls

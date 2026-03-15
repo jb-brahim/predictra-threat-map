@@ -3,6 +3,7 @@ import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import { useStreamStore } from '../stream/useStreamStore';
 import { CountryOutlines } from './CountryOutlines';
+import { useTexture } from '@react-three/drei';
 
 // --- Helpers ---
 
@@ -256,6 +257,9 @@ export function Earth({ children }: { children?: React.ReactNode }) {
   const config = useStreamStore(s => s.config);
   const projectionMode = useStreamStore(s => s.projectionMode);
 
+  // Landmask for displacement (Elevation)
+  const landmask = useTexture('https://unpkg.com/threejs-earth@1.0.1/dist/textures/earth-landmask.jpg');
+
   const setSelectedCountry = useStreamStore(s => s.setSelectedCountry);
   const setView = useStreamStore(s => s.setView);
 
@@ -411,17 +415,15 @@ export function Earth({ children }: { children?: React.ReactNode }) {
     <group>
       <group ref={meshRef}>
         {projectionMode === '3d' ? (
-          <mesh 
-            onClick={handlePointerDown}
-            onPointerOver={() => { document.body.style.cursor = 'pointer'; }}
-            onPointerOut={() => { document.body.style.cursor = 'default'; }}
-          >
-            <sphereGeometry args={[1, 64, 64]} />
+          <mesh>
+            <sphereGeometry args={[1, 128, 128]} />
             <meshPhongMaterial
-              color="#040812" // Darker
-              emissive="#020408" // Darker emissive
+              color="#040812"
+              emissive="#020408"
               emissiveIntensity={0.3}
               shininess={15}
+              displacementMap={landmask}
+              displacementScale={0.012}
             />
           </mesh>
         ) : (
