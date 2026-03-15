@@ -4,6 +4,7 @@ export type ConnectionStatus = 'live' | 'reconnecting' | 'paused' | 'disconnecte
 
 export interface ThreatEvent {
   id: string;
+  _id?: string;
   a_c: number;
   a_n: string;
   a_t: AttackType;

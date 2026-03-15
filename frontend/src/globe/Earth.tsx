@@ -3,6 +3,7 @@ import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import { useStreamStore } from '../stream/useStreamStore';
 import { CountryOutlines } from './CountryOutlines';
+import { getIsoCode } from '../utils/geo';
 
 // --- Helpers ---
 
@@ -445,7 +446,8 @@ export function Earth({ children }: { children?: React.ReactNode }) {
       }
     } catch (err) { console.warn('Geo-lookup failed:', err); }
 
-    setSelectedCountry(countryName);
+    let code = getIsoCode(countryName);
+    setSelectedCountry({ name: countryName, code });
     setView('country');
   };
 

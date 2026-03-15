@@ -130,11 +130,13 @@ app.get('/api/db/status', (req, res) => {
 // History Endpoint with Search
 app.get('/api/history', async (req, res) => {
   try {
-    const { q, ip } = req.query;
+    const { q, ip, country } = req.query;
     let query = {};
 
     if (ip) {
       query.$or = [{ s_ip: ip }, { d_ip: ip }];
+    } else if (country) {
+      query.$or = [{ s_co: country.toUpperCase() }, { d_co: country.toUpperCase() }];
     } else if (q) {
       const searchRegex = new RegExp(q, 'i');
       query.$or = [
