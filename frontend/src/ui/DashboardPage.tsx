@@ -42,7 +42,6 @@ function formatNumber(n: number): string {
 }
 
 export function DashboardPage() {
-  const setView = useStreamStore(s => s.setView);
   
   const totalAttacks = useStreamStore(s => s.totalAttacks);
   const counterData = useStreamStore(s => s.counterData);

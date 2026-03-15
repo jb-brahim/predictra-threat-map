@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react';
-import { useStreamStore } from '../stream/useStreamStore';
 import type { ThreatEvent } from '../stream/types';
 import { theme, getAttackColor } from '../theme/theme';
 import { GlassPanel } from './GlassPanel';
@@ -8,7 +7,6 @@ export function HistoryPage() {
   const [history, setHistory] = useState<ThreatEvent[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const setView = useStreamStore(s => s.setView);
   
   const [search, setSearch] = useState('');
 
