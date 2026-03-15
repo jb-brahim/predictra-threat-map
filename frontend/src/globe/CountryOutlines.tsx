@@ -5,7 +5,7 @@ import { useStreamStore } from '../stream/useStreamStore';
 
 // Use the 110m dataset that is proven to work
 const GEOJSON_URL = 'https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json';
-const GLOBE_RADIUS = 1.085;
+const GLOBE_RADIUS = 1.052;
 const DEG2RAD = Math.PI / 180;
 
 function latLonToVec3(lat: number, lon: number, r: number): THREE.Vector3 {

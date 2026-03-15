@@ -111,7 +111,8 @@ export function AttackArcs() {
           points = greatCirclePoints(
             arc.sourceLat, arc.sourceLon,
             arc.targetLat, arc.targetLon,
-            MAX_ARC_SEGMENTS
+            MAX_ARC_SEGMENTS,
+            1.052 // Aligned with volumetric land surface
           );
         } else {
           // 2D Projection
