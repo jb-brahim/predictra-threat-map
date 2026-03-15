@@ -1,6 +1,6 @@
 import { useStreamStore } from '../stream/useStreamStore';
 import { GlassPanel } from './GlassPanel';
-import { theme } from '../theme/theme';
+import { theme, getAttackColor } from '../theme/theme';
 
 const FLAG_FALLBACK: Record<string, string> = {
   US: '🇺🇸', CN: '🇨🇳', RU: '🇷🇺', DE: '🇩🇪', GB: '🇬🇧', BR: '🇧🇷',
@@ -155,39 +155,103 @@ export function DashboardPage() {
                 [...recentFeed].reverse().slice(0, 15).map((event, i) => (
                   <div key={event.id || i} style={{ 
                     display: 'flex', 
-                    alignItems: 'center', 
-                    gap: 16, 
-                    padding: '8px 12px', 
+                    flexDirection: 'column',
+                    gap: 8,
+                    padding: '12px 16px', 
                     background: 'rgba(255,255,255,0.02)', 
-                    borderRadius: 8,
-                    borderLeft: `3px solid ${event.a_t === 'exploit' ? theme.colors.exploit : event.a_t === 'malware' ? theme.colors.malware : theme.colors.phishing}`
+                    borderRadius: 12,
+                    borderLeft: `4px solid ${getAttackColor(event.a_t)}`,
+                    transition: 'all 0.2s ease',
                   }}>
-                    <div style={{ width: 80, fontSize: 11, fontFamily: theme.fonts.mono, color: theme.colors.textDim }}>
-                      {relativeTime(event.timestamp || event.ts)}
+                    {/* Top Row: Meta & Time */}
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                        <span style={{
+                          fontSize: 10, fontFamily: theme.fonts.display, fontWeight: 800, textTransform: 'uppercase', letterSpacing: 1,
+                          color: getAttackColor(event.a_t),
+                          padding: '2px 8px', borderRadius: 6, background: `${getAttackColor(event.a_t)}15`,
+                          border: `1px solid ${getAttackColor(event.a_t)}33`
+                        }}>
+                          {event.a_t}
+                        </span>
+                        <span style={{ fontSize: 11, fontFamily: theme.fonts.mono, color: theme.colors.textDim }}>
+                          {relativeTime(event.timestamp || event.ts)}
+                        </span>
+                      </div>
+                      <div style={{ fontSize: 10, color: theme.colors.textDim, textTransform: 'uppercase', letterSpacing: 1.5 }}>
+                        via {event.source_api || 'unknown'}
+                      </div>
                     </div>
-                    <div style={{ width: 70 }}>
-                      <span style={{
-                        fontSize: 10, fontFamily: theme.fonts.body, fontWeight: 700, textTransform: 'uppercase',
-                        color: event.a_t === 'exploit' ? theme.colors.exploit : event.a_t === 'malware' ? theme.colors.malware : theme.colors.phishing,
-                        padding: '2px 6px', borderRadius: 4, background: 'rgba(255,255,255,0.05)'
-                      }}>
-                        {event.a_t}
-                      </span>
+
+                    {/* Middle Row: Description & Source Links */}
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 20 }}>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ fontSize: 14, fontWeight: 700, color: theme.colors.textPrimary, marginBottom: 4 }}>
+                          {event.a_n}
+                        </div>
+                        {event.meta && (
+                          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                             {event.meta.malware_family && (
+                              <span style={{ fontSize: 10, background: 'rgba(204, 51, 255, 0.15)', color: '#CC33FF', padding: '1px 6px', borderRadius: 4, border: '1px solid rgba(204, 51, 255, 0.2)' }}>
+                                {event.meta.malware_family}
+                              </span>
+                            )}
+                            {event.meta.port && (
+                              <span style={{ fontSize: 10, background: 'rgba(255, 255, 255, 0.05)', color: theme.colors.textSecondary, padding: '1px 6px', borderRadius: 4, border: '1px solid rgba(255, 255, 255, 0.1)' }}>
+                                Port: {event.meta.port}
+                              </span>
+                            )}
+                            {event.meta.tags?.slice(0, 3).map((tag: string) => (
+                              <span key={tag} style={{ fontSize: 10, background: 'rgba(0, 209, 255, 0.05)', color: '#00D1FF', padding: '1px 6px', borderRadius: 4, border: '1px solid rgba(0, 209, 255, 0.1)' }}>
+                                #{tag}
+                              </span>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                      
+                      {event.meta?.url && (
+                        <a 
+                          href={event.meta.url} 
+                          target="_blank" 
+                          rel="noreferrer"
+                          style={{ 
+                            flexShrink: 0,
+                            padding: '6px 12px',
+                            background: 'rgba(0, 209, 255, 0.1)',
+                            borderRadius: 8,
+                            color: '#00D1FF',
+                            fontSize: 10,
+                            fontWeight: 700,
+                            textDecoration: 'none',
+                            border: '1px solid rgba(0, 209, 255, 0.2)',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 6
+                          }}
+                        >
+                          🔗 SOURCE LINK
+                        </a>
+                      )}
                     </div>
-                    <div style={{ flex: 1, fontSize: 13, fontWeight: 500, color: theme.colors.textPrimary, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                      {event.a_n}
-                    </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, width: 140, fontSize: 12 }}>
-                      <span style={{ fontSize: 16 }}>{getFlag(event.s_co)}</span>
-                      <span style={{ color: theme.colors.textSecondary }}>{event.s_ip || 'unknown'}</span>
-                    </div>
-                    <div style={{ color: theme.colors.textDim }}>→</div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, width: 140, fontSize: 12 }}>
-                      <span style={{ fontSize: 16 }}>{getFlag(event.d_co)}</span>
-                      <span style={{ color: theme.colors.textSecondary }}>{event.d_ip || 'unknown'}</span>
-                    </div>
-                    <div style={{ width: 80, textAlign: 'right', fontSize: 11, color: theme.colors.textDim, textTransform: 'uppercase' }}>
-                      {event.source_api}
+
+                    {/* Bottom Row: IP & Geo Context */}
+                    <div style={{ display: 'flex', gap: 24, padding: '8px 12px', background: 'rgba(0,0,0,0.2)', borderRadius: 8, border: '1px solid rgba(255,255,255,0.03)' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 10, flex: 1 }}>
+                        <span style={{ fontSize: 20 }}>{getFlag(event.s_co)}</span>
+                        <div style={{ display: 'flex', flexDirection: 'column' }}>
+                          <span style={{ fontSize: 12, fontFamily: theme.fonts.mono, fontWeight: 600, color: theme.colors.textSecondary }}>{event.s_ip || 'unknown'}</span>
+                          <span style={{ fontSize: 10, color: theme.colors.textDim }}>{event.meta?.as_name || event.s_co}</span>
+                        </div>
+                      </div>
+                      <div style={{ color: theme.colors.textDim, display: 'flex', alignItems: 'center' }}>→</div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 10, flex: 1 }}>
+                        <span style={{ fontSize: 20 }}>{getFlag(event.d_co)}</span>
+                        <div style={{ display: 'flex', flexDirection: 'column' }}>
+                          <span style={{ fontSize: 12, fontFamily: theme.fonts.mono, fontWeight: 600, color: theme.colors.textSecondary }}>{event.d_ip || 'unknown'}</span>
+                          <span style={{ fontSize: 10, color: theme.colors.textDim }}>{event.d_co} Target</span>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 ))

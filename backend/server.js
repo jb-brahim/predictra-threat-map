@@ -69,7 +69,9 @@ app.get('/api/history', async (req, res) => {
         { d_ip: searchRegex },
         { 'meta.tags': searchRegex },
         { 'meta.malware_family': searchRegex },
-        { 'meta.threat_type': searchRegex }
+        { 'meta.threat_type': searchRegex },
+        { 'meta.as_name': searchRegex },
+        { 'meta.port': String(q) } // Exact match for port if it's a number
       ];
     }
 

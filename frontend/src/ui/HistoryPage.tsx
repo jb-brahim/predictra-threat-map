@@ -92,7 +92,7 @@ export function HistoryPage() {
         <form onSubmit={handleSearch} style={{ flex: 1, display: 'flex' }}>
           <input
             type="text"
-            placeholder="Search by IP, Malware Name, Tag, or Keyword..."
+            placeholder="Search by IP, Malware Name, Tag, Port, ASN (e.g. Google), or Keyword..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             style={{
