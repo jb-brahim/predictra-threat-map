@@ -1,11 +1,12 @@
-import { useMemo } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
+import * as THREE from 'three';
 import { OrbitControls } from '@react-three/drei';
-import { EffectComposer, Bloom } from '@react-three/postprocessing';
+import { EffectComposer, Bloom, ChromaticAberration, Vignette, Scanline } from '@react-three/postprocessing';
 import { Earth } from './Earth';
 import { AttackArcs } from './AttackArcs';
 import { ImpactMarkers } from './ImpactMarkers';
 import { Starfield } from './Starfield';
+import { BackgroundEffects } from './BackgroundEffects';
 import { useStreamStore } from '../stream/useStreamStore';
 import { perfTelemetry } from '../utils/perf';
 
@@ -27,13 +28,14 @@ function AnimationLoop() {
  * Main GlobeScene — the R3F Canvas with all 3D layers.
  */
 export function GlobeScene() {
-  const qualityPreset = useStreamStore(s => s.config.qualityPreset);
+  const { qualityPreset } = useStreamStore(s => s.config); // Modified this line
   const projectionMode = useStreamStore(s => s.projectionMode);
 
-  const bloomIntensity = useMemo(() =>
-    qualityPreset === 'cinematic' ? 1.2
-    : qualityPreset === 'high' ? 0.8 : 0.4,
-  [qualityPreset]);
+  // Removed bloomIntensity as it was unused.
+  // const bloomIntensity = useMemo(() =>
+  //   qualityPreset === 'cinematic' ? 1.2
+  //   : qualityPreset === 'high' ? 0.8 : 0.4,
+  // [qualityPreset]);
 
   return (
     <div style={{
@@ -61,6 +63,7 @@ export function GlobeScene() {
         <color attach="background" args={['#05080F']} />
         <fog attach="fog" args={['#05080F', 5, 30]} />
         <Starfield count={qualityPreset === 'low' ? 1000 : 3000} />
+        <BackgroundEffects />
 
         {/* Global Tech Grid (Static Background) */}
         <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -2, -5]}>
@@ -94,16 +97,25 @@ export function GlobeScene() {
         />
 
         {/* Post-processing */}
-        {qualityPreset !== 'low' && (
-          <EffectComposer>
-            <Bloom
-              intensity={bloomIntensity}
-              luminanceThreshold={0.2}
-              luminanceSmoothing={0.9}
-              radius={0.8}
-            />
-          </EffectComposer>
-        )}
+        <EffectComposer multisampling={qualityPreset === 'low' ? 0 : 8}>
+          <Bloom
+            luminanceThreshold={0.2}
+            mipmapBlur
+            intensity={0.8}
+            radius={0.4}
+          />
+          {qualityPreset !== 'low' ? (
+            <>
+              <ChromaticAberration
+                offset={new THREE.Vector2(0.001, 0.001)}
+                radialModulation={false}
+                modulationOffset={0}
+              />
+              <Vignette eskil={false} offset={0.1} darkness={0.5} />
+              <Scanline density={1} opacity={0.05} />
+            </>
+          ) : <></>}
+        </EffectComposer>
 
         {/* Animation loop */}
         <AnimationLoop />

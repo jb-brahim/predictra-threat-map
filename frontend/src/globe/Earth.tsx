@@ -1,4 +1,4 @@
-import { useRef, useMemo } from 'react';
+import { useRef, useMemo, useState, useEffect } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import { useStreamStore } from '../stream/useStreamStore';
@@ -119,19 +119,24 @@ export function Earth({ children }: { children?: React.ReactNode }) {
 
         void main() {
           float grid = 0.0;
-          vec2 gUv = vUv * vec2(20.0, 10.0);
+          vec2 gUv = vUv * vec2(40.0, 20.0); // Tighter grid
           vec2 gridLine = abs(fract(gUv - 0.5) - 0.5) / fwidth(gUv);
           grid = 1.0 - min(min(gridLine.x, gridLine.y), 1.0);
           
-          float scanline = sin(vUv.y * 100.0 + time * 2.0) * 0.1 + 0.9;
-          vec3 finalColor = mix(color, gridColor, grid * 0.15);
+          float scanline = sin(vUv.y * 150.0 + time * 1.5) * 0.05 + 0.95;
+          
+          // Perspective-aware highlight
+          float highlight = pow(1.0 - distance(vUv, vec2(0.5, 0.5)), 2.0);
+          
+          vec3 finalColor = mix(color, gridColor, grid * 0.1);
+          finalColor += gridColor * highlight * 0.15;
           finalColor *= scanline;
           
           // Edge glow
-          float edge = pow(1.0 - min(min(vUv.x, 1.0 - vUv.x), min(vUv.y, 1.0 - vUv.y)) * 2.0, 4.0);
-          finalColor += gridColor * edge * 0.3;
+          float edge = pow(1.0 - min(min(vUv.x, 1.0 - vUv.x), min(vUv.y, 1.0 - vUv.y)) * 2.0, 8.0);
+          finalColor += gridColor * edge * 0.5;
 
-          gl_FragColor = vec4(finalColor, 0.95);
+          gl_FragColor = vec4(finalColor, 0.92);
         }
       `,
       transparent: true,
@@ -190,6 +195,7 @@ export function Earth({ children }: { children?: React.ReactNode }) {
         )}
 
         <CountryOutlines />
+        <CountryDotGrid />
 
         {projectionMode === '3d' && (
           <mesh>
@@ -266,6 +272,84 @@ function decodeTopology(topology: any): number[][][] {
       return [x * scale[0] + translate[0], y * scale[1] + translate[1]];
     });
   });
+}
+
+function CountryDotGrid() {
+  const projectionMode = useStreamStore(s => s.projectionMode);
+  const [pointsGeo, setPointsGeo] = useState<THREE.BufferGeometry | null>(null);
+
+  useEffect(() => {
+    let active = true;
+    const load = async () => {
+      try {
+        const res = await fetch('https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json');
+        const topology = await res.json();
+        const decodedArcs = decodeTopology(topology);
+        const geometries = topology.objects.countries?.geometries || [];
+        
+        const landPolygons: number[][][] = [];
+        for (const geo of geometries) {
+          if (geo.type === 'Polygon') landPolygons.push(resolveArcs(geo.arcs, decodedArcs));
+          else if (geo.type === 'MultiPolygon') {
+            for (const poly of geo.arcs) landPolygons.push(resolveArcs(poly, decodedArcs));
+          }
+        }
+
+        const points: THREE.Vector3[] = [];
+        const resX = 180;
+        const resY = 90;
+        
+        for (let ix = 0; ix < resX; ix++) {
+          const lon = (ix / resX) * 360 - 180;
+          for (let iy = 0; iy < resY; iy++) {
+            const lat = (iy / resY) * 180 - 90;
+            
+            let isLand = false;
+            for (const poly of landPolygons) {
+              if (isPointInPolygon([lon, lat], poly)) {
+                isLand = true;
+                break;
+              }
+            }
+
+            if (isLand) {
+              if (projectionMode === '3d') {
+                const phi = (90 - lat) * (Math.PI / 180);
+                const theta = (lon + 180) * (Math.PI / 180);
+                points.push(new THREE.Vector3(
+                  -(1.001 * Math.sin(phi) * Math.cos(theta)),
+                  1.001 * Math.cos(phi),
+                  1.001 * Math.sin(phi) * Math.sin(theta)
+                ));
+              } else {
+                points.push(new THREE.Vector3((lon / 180) * 2.5, (lat / 90) * 1.25, 0.005));
+              }
+            }
+          }
+        }
+        
+        if (active) setPointsGeo(new THREE.BufferGeometry().setFromPoints(points));
+      } catch (err) { console.warn('Dot-grid load failed:', err); }
+    };
+    load();
+    return () => { active = false; };
+  }, [projectionMode]);
+
+  if (!pointsGeo) return null;
+
+  return (
+    <points geometry={pointsGeo}>
+      <pointsMaterial
+        color="#00D1FF"
+        size={0.006}
+        transparent
+        opacity={0.3}
+        sizeAttenuation={true}
+        blending={THREE.AdditiveBlending}
+        depthWrite={false}
+      />
+    </points>
+  );
 }
 
 function GridLines() {

@@ -1,4 +1,5 @@
 import { useRef, useEffect, useState } from 'react';
+import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import { useStreamStore } from '../stream/useStreamStore';
 
@@ -132,11 +133,24 @@ export function CountryOutlines() {
           blending: THREE.AdditiveBlending,
         });
         const lines = new THREE.LineSegments(geometry, mat);
+        lines.userData = { baseOpacity: layer.opacity }; // For pulsing
         if (projectionMode === '3d') lines.scale.setScalar(layer.scale);
         group.add(lines);
       }
     }
   }, [loadedData, projectionMode]);
+
+  useFrame(({ clock }) => {
+    if (!groupRef.current) return;
+    const t = clock.getElapsedTime();
+    const pulse = Math.sin(t * 2.0) * 0.15 + 0.85; // Breathes between 0.7 and 1.0
+    
+    groupRef.current.children.forEach((child: any) => {
+      if (child.material) {
+        child.material.opacity = (child.userData.baseOpacity || 0.5) * pulse;
+      }
+    });
+  });
 
   return <group ref={groupRef} />;
 }
