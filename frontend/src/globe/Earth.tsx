@@ -154,12 +154,13 @@ function CountryDotGrid() {
           float sweep = fract(vPosition.x * 0.2 - time * 0.15);
           float sweepIntensity = smoothstep(0.95, 1.0, sweep);
           vec3 finalColor = mix(color, accentColor, sweepIntensity * 0.8);
-          gl_FragColor = vec4(finalColor, 0.4 + sweepIntensity * 0.6);
+          gl_FragColor = vec4(finalColor, 0.2 + sweepIntensity * 0.4);
         }
       `,
       transparent: true,
       blending: THREE.AdditiveBlending,
       depthWrite: false,
+      opacity: 0.25, // Lowered base opacity
     });
   }, []);
 
@@ -240,7 +241,7 @@ function CountryFills2D() {
               if (i === 0) shape.moveTo(x, y); else shape.lineTo(x, y);
             }
             const geometry = new THREE.ShapeGeometry(shape);
-            const mesh = new THREE.Mesh(geometry, new THREE.MeshBasicMaterial({ color: 0x00A8FF, transparent: true, opacity: 0.05, side: THREE.FrontSide, depthWrite: false }));
+            const mesh = new THREE.Mesh(geometry, new THREE.MeshBasicMaterial({ color: 0x00A8FF, transparent: true, opacity: 0.03, side: THREE.FrontSide, depthWrite: false }));
             mesh.position.z = 0.002;
             group.add(mesh);
           }
@@ -372,14 +373,14 @@ export function Earth({ children }: { children?: React.ReactNode }) {
           
           // Scanning Sweep Pulse
           float sweep = fract(vUv.x - time * 0.1);
-          float sweepLine = smoothstep(0.98, 1.0, sweep) * 0.4;
+          float sweepLine = smoothstep(0.98, 1.0, sweep) * 0.2; // Halved
           
           // Data Noise
-          float noise = hash(floor(vUv * 200.0) + floor(time * 10.0)) * 0.03;
+          float noise = hash(floor(vUv * 200.0) + floor(time * 10.0)) * 0.02; // Reduced
           
           // Perspective highlight
           float dist = distance(vUv, vec2(0.5, 0.5));
-          float highlight = pow(1.0 - dist, 3.0) * 0.2;
+          float highlight = pow(1.0 - dist, 3.0) * 0.1; // Halved
           
           // Composition
           vec3 finalColor = color;
@@ -415,14 +416,12 @@ export function Earth({ children }: { children?: React.ReactNode }) {
             onPointerOver={() => { document.body.style.cursor = 'pointer'; }}
             onPointerOut={() => { document.body.style.cursor = 'default'; }}
           >
-            <sphereGeometry args={[1, 48, 48]} />
+            <sphereGeometry args={[1, 64, 64]} />
             <meshPhongMaterial
-              color="#0A1628"
-              emissive="#030810"
-              emissiveIntensity={0.5}
-              shininess={10}
-              transparent
-              opacity={0.98}
+              color="#040812" // Darker
+              emissive="#020408" // Darker emissive
+              emissiveIntensity={0.3}
+              shininess={15}
             />
           </mesh>
         ) : (

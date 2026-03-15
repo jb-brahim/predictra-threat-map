@@ -104,9 +104,9 @@ export function GlobeScene() {
         {/* Post-processing */}
         <EffectComposer multisampling={qualityPreset === 'low' ? 0 : 8}>
           <Bloom
-            luminanceThreshold={0.2}
+            luminanceThreshold={0.25}
             mipmapBlur
-            intensity={0.8}
+            intensity={0.4}
             radius={0.4}
           />
           {qualityPreset !== 'low' ? (
