@@ -36,10 +36,12 @@ function relativeTime(isoStr?: string | Date): string {
   return `${Math.floor(diffMin / 60)}h ago`;
 }
 
-function formatNumber(n: number): string {
-  if (n >= 1_000_000) return (n / 1_000_000).toFixed(1) + 'M';
-  if (n >= 1_000) return (n / 1_000).toFixed(1) + 'K';
-  return n.toLocaleString();
+function formatNumber(n: any): string {
+  const num = Number(n);
+  if (isNaN(num)) return '0';
+  if (num >= 1_000_000) return (num / 1_000_000).toFixed(1) + 'M';
+  if (num >= 1_000) return (num / 1_000).toFixed(1) + 'K';
+  return num.toLocaleString();
 }
 
 function TypeBadge({ type }: { type: string }) {
@@ -107,9 +109,7 @@ export function Sidebar() {
       scrollbarWidth: 'thin',
       scrollbarColor: 'rgba(0, 224, 255, 0.2) transparent',
     }}>
-      {/* Live Metrics */}
-
-      {/* Live Metrics */}
+      {/* Live Metrics Container */}
       <GlassPanel>
         <div style={{ marginBottom: 8 }}>
           <div style={{
@@ -124,15 +124,16 @@ export function Sidebar() {
           </div>
           <div
             style={{
-              fontSize: 42,
+              fontSize: 48,
               fontFamily: theme.fonts.display,
               fontWeight: 900,
-              lineHeight: 1.2, // Improved from 1 to avoid clipping
-              padding: '4px 0',
+              lineHeight: 1.1,
+              color: '#00D1FF', // Solid fallback
               background: 'linear-gradient(135deg, #00D1FF, #00E0FF, #88EEFF)',
               WebkitBackgroundClip: 'text',
               WebkitTextFillColor: 'transparent',
-              marginBottom: -4,
+              display: 'block',
+              minHeight: '1.2em', // Ensure height even if text is weird
             }}
             role="status"
             aria-live="polite"
@@ -170,21 +171,21 @@ export function Sidebar() {
         </div>
         <DistributionBar
           label="Exploit"
-          count={typeDistribution.exploit}
+          count={typeDistribution.exploit || 0}
           total={distTotal}
           color={theme.colors.exploit}
           shape="◆"
         />
         <DistributionBar
           label="Malware"
-          count={typeDistribution.malware}
+          count={typeDistribution.malware || 0}
           total={distTotal}
           color={theme.colors.malware}
           shape="▲"
         />
         <DistributionBar
           label="Phishing"
-          count={typeDistribution.phishing}
+          count={typeDistribution.phishing || 0}
           total={distTotal}
           color={theme.colors.phishing}
           shape="●"
