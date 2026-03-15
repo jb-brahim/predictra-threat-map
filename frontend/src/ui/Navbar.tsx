@@ -14,10 +14,10 @@ export function Navbar() {
   return (
     <div style={{
       position: 'fixed',
-      top: '24px',
+      top: '32px',
       left: '50%',
       transform: 'translateX(-50%)',
-      zIndex: 1000,
+      zIndex: 2000,
       display: 'flex',
       alignItems: 'center',
       padding: '4px',

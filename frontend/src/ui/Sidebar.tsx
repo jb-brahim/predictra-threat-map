@@ -265,18 +265,68 @@ export function Sidebar() {
                 }}>
                   {event.a_n}
                 </div>
+
+                {/* Rich Metadata Badges */}
+                {event.meta && (
+                  <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap', marginTop: '2px' }}>
+                    {event.meta.malware_family && (
+                      <span style={{ fontSize: '9px', background: 'rgba(204, 51, 255, 0.15)', color: '#CC33FF', padding: '1px 5px', borderRadius: '4px', border: '1px solid rgba(204, 51, 255, 0.2)' }}>
+                        {event.meta.malware_family}
+                      </span>
+                    )}
+                    {event.meta.port && (
+                      <span style={{ fontSize: '9px', background: 'rgba(255, 255, 255, 0.05)', color: theme.colors.textSecondary, padding: '1px 5px', borderRadius: '4px', border: '1px solid rgba(255, 255, 255, 0.1)' }}>
+                        Port: {event.meta.port}
+                      </span>
+                    )}
+                    {event.meta.as_name && (
+                      <span style={{ fontSize: '9px', background: 'rgba(0, 209, 255, 0.05)', color: '#00D1FF', padding: '1px 5px', borderRadius: '4px', border: '1px solid rgba(0, 209, 255, 0.1)', maxWidth: '120px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {event.meta.as_name}
+                      </span>
+                    )}
+                    {event.meta.tags?.slice(0, 2).map((tag: string) => (
+                      <span key={tag} style={{ fontSize: '9px', background: 'rgba(255, 138, 0, 0.1)', color: '#FF8A00', padding: '1px 5px', borderRadius: '4px', border: '1px solid rgba(255, 138, 0, 0.2)' }}>
+                        #{tag}
+                      </span>
+                    ))}
+                  </div>
+                )}
+
                 <div style={{
                   fontSize: 11,
                   color: theme.colors.textSecondary,
                   display: 'flex',
                   alignItems: 'center',
                   gap: 4,
+                  marginTop: 4,
                 }}>
                   <span>{getFlag(event.s_co)}</span>
                   <span style={{ color: theme.colors.textDim }}>{event.s_co}</span>
                   <span style={{ color: theme.colors.textDim, margin: '0 2px' }}>→</span>
                   <span>{getFlag(event.d_co)}</span>
                   <span style={{ color: theme.colors.textDim }}>{event.d_co}</span>
+                  
+                  {event.meta?.url && (
+                    <a 
+                      href={event.meta.url} 
+                      target="_blank" 
+                      rel="noreferrer"
+                      style={{ 
+                        marginLeft: 'auto', 
+                        color: '#00D1FF', 
+                        fontSize: '9px', 
+                        textDecoration: 'none',
+                        opacity: 0.7,
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '2px'
+                      }}
+                      onMouseOver={e => e.currentTarget.style.opacity = '1'}
+                      onMouseOut={e => e.currentTarget.style.opacity = '0.7'}
+                    >
+                      🔗 LINK
+                    </a>
+                  )}
                 </div>
               </div>
             ))

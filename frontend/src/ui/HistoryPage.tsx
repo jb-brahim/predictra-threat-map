@@ -57,7 +57,7 @@ export function HistoryPage() {
       zIndex: 100,
       background: 'rgba(5, 8, 15, 0.95)',
       backdropFilter: 'blur(20px)',
-      padding: '40px',
+      padding: '100px 40px 40px 40px',
       overflow: 'hidden',
       display: 'flex',
       flexDirection: 'column',
@@ -87,31 +87,6 @@ export function HistoryPage() {
             Displaying the last 100 recorded threat events from MongoDB
           </p>
         </div>
-        <button
-          onClick={() => setView('map')}
-          style={{
-            background: 'rgba(0, 209, 255, 0.1)',
-            border: '1px solid rgba(0, 209, 255, 0.3)',
-            color: '#00D1FF',
-            padding: '10px 24px',
-            borderRadius: '8px',
-            cursor: 'pointer',
-            fontFamily: theme.fonts.display,
-            fontWeight: 600,
-            fontSize: '14px',
-            transition: 'all 0.2s ease',
-          }}
-          onMouseOver={(e) => {
-            e.currentTarget.style.background = 'rgba(0, 209, 255, 0.2)';
-            e.currentTarget.style.transform = 'translateY(-1px)';
-          }}
-          onMouseOut={(e) => {
-            e.currentTarget.style.background = 'rgba(0, 209, 255, 0.1)';
-            e.currentTarget.style.transform = 'translateY(0)';
-          }}
-        >
-          BACK TO LIVE MAP
-        </button>
       </div>
 
       {/* Search Header */}
@@ -267,14 +242,32 @@ export function HistoryPage() {
                         ))}
                       </div>
                     )}
+                    {event.meta?.url && (
+                      <div style={{ marginTop: '6px' }}>
+                        <a 
+                          href={event.meta.url} 
+                          target="_blank" 
+                          rel="noreferrer"
+                          style={{ fontSize: '10px', color: '#00D1FF', textDecoration: 'none', opacity: 0.8 }}
+                          onMouseOver={e => e.currentTarget.style.opacity = '1'}
+                          onMouseOut={e => e.currentTarget.style.opacity = '0.8'}
+                        >
+                          🔗 SOURCE LINK
+                        </a>
+                      </div>
+                    )}
                   </td>
                   <td style={{ padding: '16px 20px' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <span style={{ fontSize: '18px' }}>{getFlagEmoji(event.s_co)}</span>
-                      <div style={{ display: 'flex', flexDirection: 'column' }}>
-                        <span style={{ color: '#fff' }}>{event.s_ip || 'unknown'}</span>
-                        <span style={{ fontSize: '11px', color: theme.colors.textDim }}>{event.s_co}</span>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <span style={{ fontSize: '18px' }}>{getFlagEmoji(event.s_co)}</span>
+                        <code style={{ color: theme.colors.textSecondary, fontSize: '12px' }}>{event.s_ip}</code>
                       </div>
+                      {event.meta?.as_name && (
+                        <div style={{ fontSize: '10px', color: theme.colors.textDim, marginLeft: '26px' }}>
+                          ISP/ASN: {event.meta.as_name}
+                        </div>
+                      )}
                     </div>
                   </td>
                   <td style={{ padding: '16px 20px' }}>

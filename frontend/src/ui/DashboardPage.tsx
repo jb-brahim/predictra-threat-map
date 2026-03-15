@@ -81,7 +81,7 @@ export function DashboardPage() {
       zIndex: 100,
       background: 'rgba(5, 8, 15, 0.95)',
       backdropFilter: 'blur(30px)',
-      padding: '40px',
+      padding: '100px 40px 40px 40px',
       overflowY: 'auto',
       overflowX: 'hidden',
       display: 'flex',
@@ -125,32 +125,6 @@ export function DashboardPage() {
             </div>
           </div>
         </div>
-
-        <button
-          onClick={() => setView('map')}
-          style={{
-            background: 'rgba(0, 209, 255, 0.1)',
-            border: '1px solid rgba(0, 209, 255, 0.3)',
-            color: '#00D1FF',
-            padding: '10px 24px',
-            borderRadius: '8px',
-            cursor: 'pointer',
-            fontFamily: theme.fonts.display,
-            fontWeight: 600,
-            fontSize: '14px',
-            transition: 'all 0.2s ease',
-          }}
-          onMouseOver={(e) => {
-            e.currentTarget.style.background = 'rgba(0, 209, 255, 0.2)';
-            e.currentTarget.style.transform = 'translateY(-1px)';
-          }}
-          onMouseOut={(e) => {
-            e.currentTarget.style.background = 'rgba(0, 209, 255, 0.1)';
-            e.currentTarget.style.transform = 'translateY(0)';
-          }}
-        >
-          BACK TO LIVE MAP
-        </button>
       </div>
 
       {/* Main Grid */}

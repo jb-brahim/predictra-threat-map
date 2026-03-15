@@ -53,12 +53,32 @@ export function Earth({ children }: { children?: React.ReactNode }) {
     });
   }, []);
 
+  const setSelectedCountry = useStreamStore(s => s.setSelectedCountry);
+  const setView = useStreamStore(s => s.setView);
+
+  const handlePointerDown = (e: any) => {
+    e.stopPropagation();
+    const point = e.point;
+    const vector = new THREE.Vector3().copy(point).normalize();
+    
+    // Map 3D point to Lat/Lon
+    const lat = Math.asin(vector.y) * (180 / Math.PI);
+    const lon = Math.atan2(vector.z, -vector.x) * (180 / Math.PI);
+
+    setSelectedCountry(`Region at ${lat.toFixed(1)}°, ${lon.toFixed(1)}°`);
+    setView('country');
+  };
+
   return (
     <group>
       {/* Rotating Planet Group */}
       <group ref={meshRef}>
-        {/* Main Earth sphere surface — 48x48 segments (vs 64x64, still smooth) */}
-        <mesh>
+        {/* Main Earth sphere surface */}
+        <mesh 
+          onClick={handlePointerDown}
+          onPointerOver={() => { document.body.style.cursor = 'pointer'; }}
+          onPointerOut={() => { document.body.style.cursor = 'default'; }}
+        >
           <sphereGeometry args={[1, 48, 48]} />
           <meshPhongMaterial
             color="#0A1628"
