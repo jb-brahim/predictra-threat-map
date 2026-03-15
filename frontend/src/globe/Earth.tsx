@@ -3,7 +3,6 @@ import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import { useStreamStore } from '../stream/useStreamStore';
 import { CountryOutlines } from './CountryOutlines';
-import { CountryLabels } from './CountryLabels';
 
 /**
  * Earth sphere with dark surface, wireframe country outlines,
@@ -18,7 +17,7 @@ export function Earth({ children }: { children?: React.ReactNode }) {
   const setSelectedCountry = useStreamStore(s => s.setSelectedCountry);
   const setView = useStreamStore(s => s.setView);
 
-  // Atmospheric glow shader (Fresnel)
+  // Atmospheric glow shader
   const glowMaterial = useMemo(() => {
     return new THREE.ShaderMaterial({
       uniforms: {
@@ -29,65 +28,32 @@ export function Earth({ children }: { children?: React.ReactNode }) {
         varying float vIntensity;
         void main() {
           vec3 vNormal = normalize(normalMatrix * normal);
-          vec3 vView = normalize(-((modelViewMatrix * vec4(position, 1.0)).xyz));
-          vIntensity = pow(0.6 - dot(vNormal, vView), 4.0);
-          gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+          vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
+          vec3 vNormel = normalize(-mvPosition.xyz);
+          vIntensity = pow(0.7 - dot(vNormal, vNormel), 3.0);
+          gl_Position = projectionMatrix * mvPosition;
         }
       `,
       fragmentShader: `
         uniform vec3 glowColor;
         varying float vIntensity;
         void main() {
-          gl_FragColor = vec4(glowColor, vIntensity * 0.8);
+          gl_FragColor = vec4(glowColor, vIntensity * 0.6);
           if (gl_FragColor.a < 0.01) discard;
         }
       `,
-      side: THREE.BackSide,
+      side: THREE.FrontSide,
       blending: THREE.AdditiveBlending,
       transparent: true,
       depthWrite: false,
     });
   }, []);
 
-  // Aurora / Polar Glow Shader
-  const auroraMaterial = useMemo(() => {
-    return new THREE.ShaderMaterial({
-      uniforms: {
-        time: { value: 0 },
-        color: { value: new THREE.Color(0x00FF88) },
-      },
-      vertexShader: `
-        varying vec2 vUv;
-        varying float vOpacity;
-        void main() {
-          vUv = uv;
-          vOpacity = pow(1.0 - abs(position.y), 2.0); // Focus on poles
-          gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-        }
-      `,
-      fragmentShader: `
-        uniform float time;
-        uniform vec3 color;
-        varying vec2 vUv;
-        varying float vOpacity;
-        void main() {
-          float pulse = 0.5 + 0.5 * sin(time * 0.5 + vUv.x * 20.0);
-          gl_FragColor = vec4(color, vOpacity * pulse * 0.15);
-          if (gl_FragColor.a < 0.001) discard;
-        }
-      `,
-      transparent: true,
-      blending: THREE.AdditiveBlending,
-      depthWrite: false,
-      side: THREE.DoubleSide,
-    });
-  }, []);
-
-  useFrame(({ clock }, delta) => {
+  // Auto-rotation (only in 3D)
+  useFrame((_, delta) => {
     if (config.rotation && meshRef.current && projectionMode === '3d') {
       meshRef.current.rotation.y += delta * 0.05;
     }
-    auroraMaterial.uniforms.time.value = clock.getElapsedTime();
   });
 
   const handlePointerDown = async (e: any) => {
@@ -130,43 +96,109 @@ export function Earth({ children }: { children?: React.ReactNode }) {
     setView('country');
   };
 
+  // 2D Map Shader Material
+  const map2DMaterial = useMemo(() => {
+    return new THREE.ShaderMaterial({
+      uniforms: {
+        time: { value: 0 },
+        color: { value: new THREE.Color(0x0A1628) },
+        gridColor: { value: new THREE.Color(0x00A8FF) },
+      },
+      vertexShader: `
+        varying vec2 vUv;
+        void main() {
+          vUv = uv;
+          gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+        }
+      `,
+      fragmentShader: `
+        uniform float time;
+        uniform vec3 color;
+        uniform vec3 gridColor;
+        varying vec2 vUv;
+
+        void main() {
+          float grid = 0.0;
+          vec2 gUv = vUv * vec2(20.0, 10.0);
+          vec2 gridLine = abs(fract(gUv - 0.5) - 0.5) / fwidth(gUv);
+          grid = 1.0 - min(min(gridLine.x, gridLine.y), 1.0);
+          
+          float scanline = sin(vUv.y * 100.0 + time * 2.0) * 0.1 + 0.9;
+          vec3 finalColor = mix(color, gridColor, grid * 0.15);
+          finalColor *= scanline;
+          
+          // Edge glow
+          float edge = pow(1.0 - min(min(vUv.x, 1.0 - vUv.x), min(vUv.y, 1.0 - vUv.y)) * 2.0, 4.0);
+          finalColor += gridColor * edge * 0.3;
+
+          gl_FragColor = vec4(finalColor, 0.95);
+        }
+      `,
+      transparent: true,
+    });
+  }, []);
+
+  useFrame(({ clock }) => {
+    if (map2DMaterial.uniforms.time) {
+      map2DMaterial.uniforms.time.value = clock.getElapsedTime();
+    }
+  });
+
   return (
     <group>
       <group ref={meshRef}>
-        {/* Main Earth surface - Darker, Matte */}
-        <mesh 
-          onClick={handlePointerDown}
-          onPointerOver={() => { document.body.style.cursor = 'pointer'; }}
-          onPointerOut={() => { document.body.style.cursor = 'default'; }}
-        >
-          {projectionMode === '3d' ? (
-            <sphereGeometry args={[1, 64, 64]} />
-          ) : (
-            <planeGeometry args={[5, 2.5]} />
-          )}
-          <meshPhongMaterial
-            color="#081018"
-            emissive="#020408"
-            emissiveIntensity={0.4}
-            shininess={5}
-            specular="#111111"
-            transparent
-            opacity={0.99}
-          />
-        </mesh>
+        {projectionMode === '3d' ? (
+          <mesh 
+            onClick={handlePointerDown}
+            onPointerOver={() => { document.body.style.cursor = 'pointer'; }}
+            onPointerOut={() => { document.body.style.cursor = 'default'; }}
+          >
+            <sphereGeometry args={[1, 48, 48]} />
+            <meshPhongMaterial
+              color="#0A1628"
+              emissive="#030810"
+              emissiveIntensity={0.5}
+              shininess={10}
+              transparent
+              opacity={0.98}
+            />
+          </mesh>
+        ) : (
+          <group>
+            {/* Main Map Plane */}
+            <mesh 
+              onClick={handlePointerDown}
+              onPointerOver={() => { document.body.style.cursor = 'pointer'; }}
+              onPointerOut={() => { document.body.style.cursor = 'default'; }}
+            >
+              <planeGeometry args={[5, 2.5]} />
+              <primitive object={map2DMaterial} attach="material" />
+            </mesh>
+            
+            {/* Map Frame/Border */}
+            <mesh position={[0, 0, -0.01]}>
+              <planeGeometry args={[5.1, 2.6]} />
+              <meshBasicMaterial color="#00A8FF" transparent opacity={0.1} />
+            </mesh>
+            
+            {/* Atmospheric Underglow */}
+            <mesh position={[0, 0, -0.05]} scale={[1.1, 1.1, 1]}>
+              <planeGeometry args={[5, 2.5]} />
+              <meshBasicMaterial color="#00A8FF" transparent opacity={0.05} />
+            </mesh>
+          </group>
+        )}
 
         <CountryOutlines />
-        <CountryLabels />
 
-        {/* Subtle matrix-like grid (Kaspersky style) */}
         {projectionMode === '3d' && (
           <mesh>
-            <icosahedronGeometry args={[1.002, 4]} />
+            <icosahedronGeometry args={[1.001, 3]} />
             <meshBasicMaterial
-              color="#00ffaa"
+              color="#00B4FF"
               wireframe
               transparent
-              opacity={0.03}
+              opacity={0.06}
               depthWrite={false}
             />
           </mesh>
@@ -176,28 +208,18 @@ export function Earth({ children }: { children?: React.ReactNode }) {
         {children}
       </group>
 
-      {/* Atmospheric Effects */}
       {projectionMode === '3d' && (
         <group>
-          {/* Rim glow */}
-          <mesh scale={[1.18, 1.18, 1.18]}>
+          <mesh scale={[1.15, 1.15, 1.15]}>
             <sphereGeometry args={[1, 32, 32]} />
             <primitive object={glowMaterial} attach="material" />
           </mesh>
-          
-          {/* Aurora/Polar Glow Mesh */}
-          <mesh rotation={[Math.PI / 2, 0, 0]} scale={[1.4, 1.4, 1.4]}>
-            <cylinderGeometry args={[1, 1, 0.5, 64, 1, true]} />
-            <primitive object={auroraMaterial} attach="material" />
-          </mesh>
-
-          {/* Halo volume */}
-          <mesh scale={[1.08, 1.08, 1.08]}>
+          <mesh scale={[1.05, 1.05, 1.05]}>
             <sphereGeometry args={[1, 32, 32]} />
             <meshBasicMaterial
-              color="#00D4FF"
+              color="#00A8FF"
               transparent
-              opacity={0.04}
+              opacity={0.03}
               side={THREE.BackSide}
               depthWrite={false}
             />

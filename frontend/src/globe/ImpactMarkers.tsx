@@ -2,12 +2,13 @@ import { useRef, useEffect } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import { useStreamStore } from '../stream/useStreamStore';
-import { easeOutExpo } from '../utils/easing';
+import { pulseEasing, easeOutExpo } from '../utils/easing';
 
-// ── Shared geometry pool ──
+// ── Shared geometry pool (created once, reused for all markers) ──
+
 const _sharedCoreGeo = new THREE.CircleGeometry(0.012, 12);
-const _sharedPillarGeo = new THREE.CylinderGeometry(0.005, 0.008, 0.2, 8, 1, true);
-const _sharedGlowGeo = new THREE.SphereGeometry(0.03, 12, 12);
+const _sharedRing1Geo = new THREE.RingGeometry(0.015, 0.022, 24);
+const _sharedRing2Geo = new THREE.RingGeometry(0.025, 0.030, 24);
 
 const _materialProps = {
   transparent: true,
@@ -24,6 +25,12 @@ function getMarkerColorHex(type: string): number {
   }
 }
 
+/**
+ * Renders animated impact markers at source/destination positions.
+ * Uses imperative Three.js objects with shared geometries for performance.
+ * Source: expanding halo pulse
+ * Destination: shockwave ripple
+ */
 export function ImpactMarkers() {
   const groupRef = useRef<THREE.Group>(null);
   const markers = useStreamStore(s => s.markers);
@@ -31,8 +38,8 @@ export function ImpactMarkers() {
 
   const markerObjectsRef = useRef<Map<string, {
     core: THREE.Mesh;
-    pillar: THREE.Mesh;
-    glow: THREE.Mesh;
+    ring1: THREE.Mesh;
+    ring2: THREE.Mesh | null;
     isSource: boolean;
   }>>(new Map());
 
@@ -41,16 +48,16 @@ export function ImpactMarkers() {
     const group = groupRef.current;
     if (!group) return;
 
+    // Clear everything if mode changes or if we want a fresh sync
     while (group.children.length > 0) {
       const child = group.children[0] as any;
-      if (child.geometry && child.geometry !== _sharedCoreGeo && child.geometry !== _sharedPillarGeo && child.geometry !== _sharedGlowGeo) {
-         child.geometry.dispose();
-      }
+      if (child.geometry) child.geometry.dispose();
       if (child.material) child.material.dispose();
       group.remove(child);
     }
     markerObjectsRef.current.clear();
 
+    // Re-add all markers
     for (const marker of markers) {
       const colorHex = getMarkerColorHex(marker.attackType);
       
@@ -60,39 +67,39 @@ export function ImpactMarkers() {
       if (projectionMode === '3d') {
         pos = new THREE.Vector3(...marker.position);
         const normal = pos.clone().normalize();
-        quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), normal); // Pillars face normal
+        quaternion.setFromUnitVectors(new THREE.Vector3(0, 0, 1), normal);
       } else {
-        pos = new THREE.Vector3((marker.lon / 180) * 2.5, (marker.lat / 90) * 1.25, 0.02);
+        const x = (marker.lon / 180) * 2.5;
+        const y = (marker.lat / 90) * 1.25;
+        pos = new THREE.Vector3(x, y, 0.02);
       }
 
-      // Core glow dot
       const coreMat = new THREE.MeshBasicMaterial({ ..._materialProps, color: colorHex, opacity: 0.9 });
       const core = new THREE.Mesh(_sharedCoreGeo, coreMat);
       core.position.copy(pos);
-      if (projectionMode === '3d') {
-        const cQuat = new THREE.Quaternion();
-        cQuat.setFromUnitVectors(new THREE.Vector3(0, 0, 1), pos.clone().normalize());
-        core.quaternion.copy(cQuat);
+      core.quaternion.copy(quaternion);
+
+      const ring1Mat = new THREE.MeshBasicMaterial({ ..._materialProps, color: colorHex, opacity: 0.6 });
+      const ring1 = new THREE.Mesh(_sharedRing1Geo, ring1Mat);
+      ring1.position.copy(pos);
+      ring1.quaternion.copy(quaternion);
+
+      let ring2: THREE.Mesh | null = null;
+      if (!marker.isSource) {
+        const ring2Mat = new THREE.MeshBasicMaterial({ ..._materialProps, color: colorHex, opacity: 0.3 });
+        ring2 = new THREE.Mesh(_sharedRing2Geo, ring2Mat);
+        ring2.position.copy(pos);
+        ring2.quaternion.copy(quaternion);
+        group.add(ring2);
       }
 
-      // 3D Pillar (Histogram style)
-      const pillarMat = new THREE.MeshBasicMaterial({ ..._materialProps, color: colorHex, opacity: 0.6 });
-      const pillar = new THREE.Mesh(_sharedPillarGeo, pillarMat);
-      pillar.position.copy(pos).add(pos.clone().normalize().multiplyScalar(0.1)); // Offset to stand on surface
-      pillar.quaternion.copy(quaternion);
-
-      // Sphere Glow
-      const glowMat = new THREE.MeshBasicMaterial({ ..._materialProps, color: colorHex, opacity: 0.2 });
-      const glow = new THREE.Mesh(_sharedGlowGeo, glowMat);
-      glow.position.copy(pos);
-
       group.add(core);
-      group.add(pillar);
-      group.add(glow);
-      markerObjectsRef.current.set(marker.id, { core, pillar, glow, isSource: marker.isSource });
+      group.add(ring1);
+      markerObjectsRef.current.set(marker.id, { core, ring1, ring2, isSource: marker.isSource });
     }
   }, [markers, projectionMode]);
 
+  // Animate markers each frame
   useFrame(() => {
     for (const marker of markers) {
       const obj = markerObjectsRef.current.get(marker.id);
@@ -100,22 +107,42 @@ export function ImpactMarkers() {
 
       const p = marker.progress;
       if (p <= 0) {
-        obj.core.visible = obj.pillar.visible = obj.glow.visible = false;
+        obj.core.visible = false;
+        obj.ring1.visible = false;
+        if (obj.ring2) obj.ring2.visible = false;
         continue;
       }
 
-      obj.core.visible = obj.pillar.visible = obj.glow.visible = true;
+      obj.core.visible = true;
+      obj.ring1.visible = true;
 
-      const scale = easeOutExpo(Math.min(p * 4, 1));
-      const fadeOut = Math.max(0, 1 - easeOutExpo(p));
+      if (obj.isSource) {
+        // Source: expanding pulse with fade
+        const pulseScale = 1 + easeOutExpo(p) * 0.1;
+        const pulseOpacity = pulseEasing(p);
 
-      obj.pillar.scale.set(1, scale * 1.5, 1);
-      (obj.pillar.material as THREE.MeshBasicMaterial).opacity = fadeOut * 0.7;
-      
-      obj.glow.scale.setScalar(scale * 1.2);
-      (obj.glow.material as THREE.MeshBasicMaterial).opacity = fadeOut * (obj.isSource ? 0.4 : 0.6);
+        obj.ring1.scale.setScalar(pulseScale);
+        (obj.ring1.material as THREE.MeshBasicMaterial).opacity = pulseOpacity * 0.6;
 
-      (obj.core.material as THREE.MeshBasicMaterial).opacity = fadeOut * 0.9;
+        const coreOpacity = Math.max(0, 1 - easeOutExpo(p));
+        (obj.core.material as THREE.MeshBasicMaterial).opacity = coreOpacity * 0.9;
+      } else {
+        // Destination: shockwave ripple
+        const ripple1 = easeOutExpo(Math.min(p * 2, 1));
+        const fadeOut = Math.max(0, 1 - easeOutExpo(p));
+
+        obj.ring1.scale.setScalar(1 + ripple1 * 0.15);
+        (obj.ring1.material as THREE.MeshBasicMaterial).opacity = fadeOut * 0.5;
+
+        if (obj.ring2) {
+          obj.ring2.visible = true;
+          const ripple2 = easeOutExpo(Math.min(Math.max(p - 0.3, 0) * 2, 1));
+          obj.ring2.scale.setScalar(1 + ripple2 * 0.1);
+          (obj.ring2.material as THREE.MeshBasicMaterial).opacity = fadeOut * 0.3;
+        }
+
+        (obj.core.material as THREE.MeshBasicMaterial).opacity = fadeOut * 0.9;
+      }
     }
   });
 

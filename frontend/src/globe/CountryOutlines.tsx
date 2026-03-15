@@ -118,8 +118,9 @@ export function CountryOutlines() {
     if (linePoints.length > 0) {
       const geometry = new THREE.BufferGeometry().setFromPoints(linePoints);
       const layers = [
-        { color: new THREE.Color(0x004466).multiplyScalar(1.5), opacity: 0.6, scale: 1.0 },
-        { color: new THREE.Color(0x002233).multiplyScalar(1.2), opacity: 0.3, scale: 1.001 },
+        { color: new THREE.Color(0x00E8FF).multiplyScalar(2.0), opacity: 0.8, scale: 1.0 },
+        { color: new THREE.Color(0x00D0FF).multiplyScalar(1.5), opacity: 0.45, scale: 1.002 },
+        { color: new THREE.Color(0x00BBFF).multiplyScalar(1.2), opacity: 0.25, scale: 1.004 },
       ];
 
       for (const layer of layers) {

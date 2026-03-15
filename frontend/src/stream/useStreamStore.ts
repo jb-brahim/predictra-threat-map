@@ -380,6 +380,7 @@ export const useStreamStore = create<StreamState>((set, get) => ({
               d_ip: data.d_ip || 'unknown',
               source_api: data.source_api || 'stream',
               ts: new Date().toISOString(),
+              meta: data.meta || {},
             };
 
             get().addEvents([event]);

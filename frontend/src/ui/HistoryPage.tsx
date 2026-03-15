@@ -238,6 +238,11 @@ export function HistoryPage() {
                             #{tag}
                           </span>
                         ))}
+                        {event.meta.confidence && (
+                          <span style={{ fontSize: '10px', background: 'rgba(0, 255, 130, 0.1)', color: '#00FF82', padding: '2px 6px', borderRadius: '4px' }}>
+                            Confidence: {event.meta.confidence}%
+                          </span>
+                        )}
                       </div>
                     )}
                     {event.meta?.url && (

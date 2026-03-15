@@ -289,6 +289,11 @@ export function Sidebar() {
                         #{tag}
                       </span>
                     ))}
+                    {event.meta.confidence && (
+                      <span style={{ fontSize: '9px', background: 'rgba(0, 255, 130, 0.1)', color: '#00FF82', padding: '1px 5px', borderRadius: '4px', border: '1px solid rgba(0, 255, 130, 0.2)' }}>
+                        Confidence: {event.meta.confidence}%
+                      </span>
+                    )}
                   </div>
                 )}
 

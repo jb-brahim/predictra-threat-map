@@ -22,7 +22,7 @@ function getLineMaterial(type: string): THREE.LineBasicMaterial {
     _lineMaterials[type] = new THREE.LineBasicMaterial({
       color: getArcColorHex(type),
       transparent: true,
-      opacity: 0.4, // Subtler lines
+      opacity: 0.9,
       depthWrite: false,
       blending: THREE.AdditiveBlending,
     });
@@ -123,7 +123,7 @@ export function AttackArcs() {
           // Cubic Bezier for 2D arc
           const curve = new THREE.QuadraticBezierCurve3(
             new THREE.Vector3(x1, y1, 0.02),
-            new THREE.Vector3((x1 + x2) / 2, (y1 + y2) / 2, 0.5), // Arch height
+            new THREE.Vector3((x1 + x2) / 2, (y1 + y2) / 2, 0.8), // Increased arch height for better 3D look in 2D
             new THREE.Vector3(x2, y2, 0.02)
           );
           points = curve.getPoints(MAX_ARC_SEGMENTS);

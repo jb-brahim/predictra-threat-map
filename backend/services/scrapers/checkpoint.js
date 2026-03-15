@@ -41,7 +41,11 @@ function startCheckpoint(broadcast) {
         d_ip: data.d_ip || 'unknown',
         d_co: data.d_co || 'UN',
         d_la: Number(d_la_mapped) || 0,
-        d_lo: Number(d_lo_mapped) || 0
+        d_lo: Number(d_lo_mapped) || 0,
+        meta: {
+          service_name: data.a_n,
+          original_type: data.a_t
+        }
       };
 
       broadcast('attack', mappedEvent, 'checkpoint');
