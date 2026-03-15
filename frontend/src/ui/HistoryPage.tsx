@@ -9,23 +9,46 @@ export function HistoryPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const setView = useStreamStore(s => s.setView);
+  
+  const [search, setSearch] = useState('');
+
+  const fetchHistory = async (query = '', ip = '') => {
+    setLoading(true);
+    try {
+      const url = new URL('/api/history', window.location.origin);
+      if (query) url.searchParams.set('q', query);
+      if (ip) url.searchParams.set('ip', ip);
+      
+      const response = await fetch(url.toString());
+      if (!response.ok) throw new Error('Failed to fetch history');
+      const data = await response.json();
+      setHistory(data);
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    const fetchHistory = async () => {
-      try {
-        const response = await fetch('/api/history');
-        if (!response.ok) throw new Error('Failed to fetch history');
-        const data = await response.json();
-        setHistory(data);
-      } catch (err: any) {
-        setError(err.message);
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchHistory();
   }, []);
+
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    fetchHistory(search);
+  };
+
+  const handleCheckMyIP = async () => {
+    try {
+      const res = await fetch('https://api.ipify.org?format=json');
+      const data = await res.json();
+      setSearch(data.ip);
+      fetchHistory('', data.ip);
+    } catch (err) {
+      setError('Could not detect your IP');
+    }
+  };
 
   return (
     <div style={{
@@ -88,6 +111,58 @@ export function HistoryPage() {
           }}
         >
           BACK TO LIVE MAP
+        </button>
+      </div>
+
+      {/* Search Header */}
+      <div style={{ display: 'flex', gap: '12px' }}>
+        <form onSubmit={handleSearch} style={{ flex: 1, display: 'flex' }}>
+          <input
+            type="text"
+            placeholder="Search by IP, Malware Name, Tag, or Keyword..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            style={{
+              flex: 1,
+              background: 'rgba(255, 255, 255, 0.05)',
+              border: '1px solid rgba(255, 255, 255, 0.1)',
+              borderRadius: '8px 0 0 8px',
+              padding: '12px 20px',
+              color: '#fff',
+              fontSize: '14px',
+              outline: 'none',
+              fontFamily: theme.fonts.body,
+            }}
+          />
+          <button
+            type="submit"
+            style={{
+              padding: '0 24px',
+              background: '#00D1FF',
+              color: '#000',
+              border: 'none',
+              borderRadius: '0 8px 8px 0',
+              fontWeight: 600,
+              cursor: 'pointer',
+            }}
+          >
+            SEARCH
+          </button>
+        </form>
+        <button
+          onClick={handleCheckMyIP}
+          style={{
+            background: 'rgba(255, 255, 255, 0.05)',
+            border: '1px solid rgba(255, 255, 255, 0.1)',
+            color: '#fff',
+            padding: '0 20px',
+            borderRadius: '8px',
+            cursor: 'pointer',
+            fontSize: '12px',
+            fontWeight: 600,
+          }}
+        >
+          CHECK MY IP
         </button>
       </div>
 
@@ -172,7 +247,26 @@ export function HistoryPage() {
                     </span>
                   </td>
                   <td style={{ padding: '16px 20px', fontWeight: 500, color: '#fff' }}>
-                    {event.a_n}
+                    <div>{event.a_n}</div>
+                    {event.meta && (
+                      <div style={{ display: 'flex', gap: '4px', marginTop: '4px', flexWrap: 'wrap' }}>
+                        {event.meta.malware_family && (
+                          <span style={{ fontSize: '10px', background: 'rgba(204, 51, 255, 0.2)', color: '#CC33FF', padding: '2px 6px', borderRadius: '4px' }}>
+                            {event.meta.malware_family}
+                          </span>
+                        )}
+                        {event.meta.port && (
+                          <span style={{ fontSize: '10px', background: 'rgba(255, 255, 255, 0.1)', color: '#fff', padding: '2px 6px', borderRadius: '4px' }}>
+                            Port: {event.meta.port}
+                          </span>
+                        )}
+                        {event.meta.tags?.slice(0, 3).map((tag: string) => (
+                          <span key={tag} style={{ fontSize: '10px', background: 'rgba(0, 209, 255, 0.1)', color: '#00D1FF', padding: '2px 6px', borderRadius: '4px' }}>
+                            #{tag}
+                          </span>
+                        ))}
+                      </div>
+                    )}
                   </td>
                   <td style={{ padding: '16px 20px' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>

@@ -78,7 +78,7 @@ export function Sidebar() {
   const recentEvents = useStreamStore(s => s.recentEvents);
   const activeArcCount = useStreamStore(s => s.activeArcCount);
   const currentView = useStreamStore(s => s.currentView);
-  const setView = useStreamStore(s => s.setView) as (view: 'map' | 'history' | 'dashboard') => void;
+  const setView = useStreamStore(s => s.setView);
   
   const vectorDistribution = useStreamStore(s => s.vectorDistribution);
   const originDistribution = useStreamStore(s => s.originDistribution);

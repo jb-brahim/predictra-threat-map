@@ -81,6 +81,13 @@ async function startKaspersky(broadcast) {
           d_co: target.cc,
           d_la: target.lat + (Math.random() - 0.5) * 5,
           d_lo: target.lon + (Math.random() - 0.5) * 5,
+          meta: {
+            malware_family: entry.malware,
+            as_name: entry.as_name,
+            as_number: entry.as_number,
+            port: entry.port,
+            last_online: entry.last_online
+          }
         };
 
         broadcast('attack', mappedEvent, 'kaspersky');

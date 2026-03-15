@@ -48,7 +48,13 @@ async function pollFortinet(broadcast) {
             d_ip: ev.dest_ip || 'unknown',
             d_co: ev.dest_country || 'UN',
             d_la: ev.dest_lat,
-            d_lo: ev.dest_long
+            d_lo: ev.dest_long,
+            meta: {
+              vulnerability: ev.vuln_name,
+              outbreak_id,
+              severity: ev.severity,
+              threat_score: ev.threat_score
+            }
           };
 
           broadcast('attack', mappedEvent);

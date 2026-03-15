@@ -12,8 +12,9 @@ const threatEventSchema = new mongoose.Schema({
     d_lo: { type: Number, required: true },
     s_ip: { type: String, default: 'unknown' },
     d_ip: { type: String, default: 'unknown' },
-    timestamp: { type: Date, default: Date.now, expires: 3600 },
-    source_api: { type: String, required: true } // e.g., 'bitdefender', 'fortinet', 'kaspersky', 'checkpoint'
+    meta: { type: mongoose.Schema.Types.Mixed, default: {} },
+    timestamp: { type: Date, default: Date.now, expires: 2592000 },
+    source_api: { type: String, required: true } 
 });
 
 const ThreatEvent = mongoose.model('ThreatEvent', threatEventSchema);

@@ -16,7 +16,9 @@ interface StreamState {
   reconnectAttempts: number;
 
   // Navigation
-  currentView: 'map' | 'history' | 'dashboard';
+  currentView: 'map' | 'history' | 'dashboard' | 'country';
+  selectedCountry: string | null;
+  historySearch: { q: string; ip: string };
 
   // Events
   eventBuffer: RingBuffer<ThreatEvent>;
@@ -63,7 +65,9 @@ interface StreamState {
   incrementReconnect: () => void;
   tick: (now: number) => void;
   setConfig: (key: string, value: unknown) => void;
-  setView: (view: 'map' | 'history') => void;
+  setView: (view: 'map' | 'history' | 'dashboard' | 'country') => void;
+  setSelectedCountry: (co: string | null) => void;
+  setHistorySearch: (search: { q: string, ip: string }) => void;
   initStream: () => void;
   _cleanup: (() => void) | null;
 }
@@ -72,6 +76,8 @@ export const useStreamStore = create<StreamState>((set, get) => ({
   status: 'disconnected',
   reconnectAttempts: 0,
   currentView: 'map',
+  selectedCountry: null,
+  historySearch: { q: '', ip: '' },
   eventBuffer: new RingBuffer<ThreatEvent>(MAX_EVENTS),
   recentEvents: [],
   counterData: null,
@@ -295,8 +301,16 @@ export const useStreamStore = create<StreamState>((set, get) => ({
     }));
   },
 
-  setView: (view: 'map' | 'history' | 'dashboard') => {
+  setView: (view: 'map' | 'history' | 'dashboard' | 'country') => {
     set({ currentView: view });
+  },
+
+  setSelectedCountry: (co: string | null) => {
+    set({ selectedCountry: co });
+  },
+
+  setHistorySearch: (search: { q: string, ip: string }) => {
+    set({ historySearch: search });
   },
 
   initStream: () => {

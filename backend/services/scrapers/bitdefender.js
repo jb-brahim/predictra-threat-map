@@ -96,7 +96,13 @@ function startBitdefender(broadcast) {
         d_ip: (to && (to.ip || to.host)) || 'unknown',
         d_co: countryCode((to && (to.c || to.c_iso)) || 'UN'),
         d_la: Number(d_la),
-        d_lo: Number(d_lo)
+        d_lo: Number(d_lo),
+        meta: {
+          service: event.n,
+          threat_name: event.v,
+          attacker_info: from,
+          victim_info: to
+        }
       };
 
       broadcast('attack', mappedEvent);

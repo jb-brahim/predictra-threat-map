@@ -19,7 +19,18 @@ export interface ThreatEvent {
   severity?: 1 | 2 | 3 | 4 | 5;
   ts?: string;
   timestamp?: string | Date;
-  meta?: Record<string, unknown>;
+  meta?: {
+    malware_family?: string;
+    tags?: string[];
+    port?: number | string;
+    as_name?: string;
+    as_number?: string;
+    confidence?: number;
+    url?: string;
+    vulnerability?: string;
+    threat_type?: string;
+    [key: string]: any;
+  };
 }
 
 export interface CounterData {

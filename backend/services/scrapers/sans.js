@@ -47,7 +47,12 @@ async function startSans(broadcast) {
                             s_lo: lon,
                             d_co: target.cc,
                             d_la: target.lat + (Math.random() - 0.5) * 5,
-                            d_lo: target.lon + (Math.random() - 0.5) * 5
+                            d_lo: target.lon + (Math.random() - 0.5) * 5,
+                            meta: {
+                                port: item.port,
+                                attacks_count: item.attacks,
+                                last_seen: item.lastseen
+                            }
                         };
 
                         broadcast('attack', mappedEvent, 'sans');

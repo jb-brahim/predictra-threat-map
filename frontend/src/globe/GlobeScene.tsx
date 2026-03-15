@@ -1,4 +1,5 @@
 import { useMemo } from 'react';
+import * as THREE from 'three';
 import { Canvas, useFrame } from '@react-three/fiber';
 import { OrbitControls } from '@react-three/drei';
 import { EffectComposer, Bloom } from '@react-three/postprocessing';
@@ -34,6 +35,29 @@ export function GlobeScene() {
     : qualityPreset === 'high' ? 0.8 : 0.4,
   [qualityPreset]);
 
+  const setSelectedCountry = useStreamStore(s => s.setSelectedCountry);
+  const setView = useStreamStore(s => s.setView);
+
+  const handleGlobeClick = (e: any) => {
+    // Only handle direct clicks on the globe
+    const mesh = e.intersections?.[0]?.object;
+    if (!mesh) return;
+
+    const point = e.intersections[0].point;
+    const vector = new THREE.Vector3().copy(point).normalize();
+    
+    // Convert 3D point to Lat/Lon
+    const lat = Math.asin(vector.y) * (180 / Math.PI);
+    const lon = Math.atan2(vector.z, -vector.x) * (180 / Math.PI);
+
+    // We'll use a simple "selected" state for now. 
+    // In a real app we'd use a geo-lookup library here.
+    // For now, we'll set it to a generic "Selected Region" and show the dashboard.
+    // We can enhance this later with a geo-lookup util.
+    setSelectedCountry(`Region at ${lat.toFixed(1)}°, ${lon.toFixed(1)}°`);
+    setView('country');
+  };
+
   return (
     <div style={{
       position: 'fixed',
@@ -42,6 +66,7 @@ export function GlobeScene() {
       background: '#05080F',
     }}>
       <Canvas
+        onClick={handleGlobeClick}
         camera={{ position: [0, 0, 2.8], fov: 45, near: 0.1, far: 1000 }}
         gl={{
           antialias: qualityPreset !== 'low',

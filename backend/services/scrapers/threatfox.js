@@ -89,6 +89,14 @@ async function startThreatFox(broadcast) {
           d_co: target.cc,
           d_la: target.lat + (Math.random() - 0.5) * 5,
           d_lo: target.lon + (Math.random() - 0.5) * 5,
+          meta: {
+            confidence: item.confidence_level,
+            malware_family: item.malware_printable,
+            malware_alias: item.malware_alias,
+            tags: item.tags || [],
+            ioc_type: item.ioc_type,
+            reference: item.reference
+          }
         };
 
         broadcast('attack', mappedEvent, 'threatfox');

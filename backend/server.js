@@ -40,7 +40,8 @@ const broadcast = async (event, data, sourceApi = 'unknown') => {
         ...data,
         source_api: sourceApi,
         s_ip: data.s_ip || 'unknown',
-        d_ip: data.d_ip || 'unknown'
+        d_ip: data.d_ip || 'unknown',
+        meta: data.meta || {}
       });
       // Save without awaiting strictly to not block the event loop aggressively
       newThreat.save().catch(err => console.error("[MongoDB] Error saving event:", err.message));
@@ -50,48 +51,31 @@ const broadcast = async (event, data, sourceApi = 'unknown') => {
   }
 };
 
-// SSE Endpoint
-app.get('/api/feed', (req, res) => {
-  res.writeHead(200, {
-    'Content-Type': 'text/event-stream',
-    'Cache-Control': 'no-cache',
-    'Connection': 'keep-alive'
-  });
+// ... existing code ... (DB toggle endpoints)
 
-  // Initial flush to establish connection
-  res.write(': connected\n\n');
-
-  const clientId = Date.now();
-  const newClient = { id: clientId, res };
-  clients.push(newClient);
-
-  console.log(`[SSE] Client connected: ${clientId} | Total clients: ${clients.length}`);
-
-  req.on('close', () => {
-    console.log(`[SSE] Client disconnected: ${clientId}`);
-    clients = clients.filter(c => c.id !== clientId);
-  });
-});
-
-// Database Toggle Endpoints
-app.get('/api/db/on', (req, res) => {
-  isDatabaseEnabled = true;
-  console.log('[Database] Storage ENABLED via URL');
-  res.send('MongoDB Storage is now ENABLED. Attacks will be saved.');
-});
-
-app.get('/api/db/off', (req, res) => {
-  isDatabaseEnabled = false;
-  console.log('[Database] Storage DISABLED via URL');
-  res.send('MongoDB Storage is now DISABLED. Attacks will not be saved.');
-});
-
-// History Endpoint
+// History Endpoint with Search
 app.get('/api/history', async (req, res) => {
   try {
-    const history = await ThreatEvent.find()
+    const { q, ip } = req.query;
+    let query = {};
+
+    if (ip) {
+      query.$or = [{ s_ip: ip }, { d_ip: ip }];
+    } else if (q) {
+      const searchRegex = new RegExp(q, 'i');
+      query.$or = [
+        { a_n: searchRegex },
+        { s_ip: searchRegex },
+        { d_ip: searchRegex },
+        { 'meta.tags': searchRegex },
+        { 'meta.malware_family': searchRegex },
+        { 'meta.threat_type': searchRegex }
+      ];
+    }
+
+    const history = await ThreatEvent.find(query)
       .sort({ timestamp: -1 })
-      .limit(100)
+      .limit(200)
       .lean();
     res.json(history);
   } catch (error) {

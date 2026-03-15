@@ -89,6 +89,13 @@ async function startUrlhaus(broadcast) {
           d_co: target.cc,
           d_la: target.lat + (Math.random() - 0.5) * 4,
           d_lo: target.lon + (Math.random() - 0.5) * 4,
+          meta: {
+            threat_type: item.threat,
+            tags: item.tags || [],
+            url: item.url,
+            reporter: item.reporter,
+            status: item.url_status
+          }
         };
 
         broadcast('attack', mappedEvent, 'urlhaus');
