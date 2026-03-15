@@ -45,7 +45,12 @@ export function GlobeScene() {
       background: '#05080F',
     }}>
       <Canvas
-        camera={{ position: [0, 0, projectionMode === '3d' ? 2.8 : 3.5], fov: 45, near: 0.1, far: 1000 }}
+        camera={{ 
+          position: projectionMode === '3d' ? [0, 0, 2.8] : [0, -0.8, 3.2], 
+          fov: 45, 
+          near: 0.1, 
+          far: 1000 
+        }}
         gl={{
           antialias: qualityPreset !== 'low',
           alpha: false,
@@ -89,11 +94,11 @@ export function GlobeScene() {
           maxDistance={6}
           enableDamping
           dampingFactor={0.05}
-          rotateSpeed={projectionMode === '3d' ? 0.5 : 0}
+          rotateSpeed={projectionMode === '3d' ? 0.5 : 0.1} // Allow slight tilt in 2D
           zoomSpeed={0.8}
           autoRotate={false}
-          maxPolarAngle={projectionMode === '3d' ? Math.PI : Math.PI / 2}
-          minPolarAngle={projectionMode === '3d' ? 0 : Math.PI / 2}
+          maxPolarAngle={projectionMode === '3d' ? Math.PI : Math.PI / 1.8} // Prevent flipping in 2D
+          minPolarAngle={projectionMode === '3d' ? 0 : Math.PI / 4} // Allow looking "ahead"
         />
 
         {/* Post-processing */}

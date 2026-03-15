@@ -120,10 +120,10 @@ export function AttackArcs() {
           const x2 = (arc.targetLon / 180) * 2.5;
           const y2 = (arc.targetLat / 90) * 1.25;
           
-          // Cubic Bezier for 2D arc
+          // Cubic Bezier for 2D arc - Sleeker Tactical Height
           const curve = new THREE.QuadraticBezierCurve3(
             new THREE.Vector3(x1, y1, 0.02),
-            new THREE.Vector3((x1 + x2) / 2, (y1 + y2) / 2, 0.8), // Increased arch height for better 3D look in 2D
+            new THREE.Vector3((x1 + x2) / 2, (y1 + y2) / 2, 0.4), // Sleeker 0.4 instead of 0.8
             new THREE.Vector3(x2, y2, 0.02)
           );
           points = curve.getPoints(MAX_ARC_SEGMENTS);
@@ -138,6 +138,11 @@ export function AttackArcs() {
         const line = new THREE.Line(geometry, getLineMaterial(arc.attackType));
         const tracer = new THREE.Mesh(_sharedTracerGeo, getTracerMaterial(arc.attackType));
         const tracerGlow = new THREE.Mesh(_sharedGlowGeo, getGlowMaterial(arc.attackType));
+
+        if (projectionMode === '2d') {
+          tracer.scale.setScalar(1.5);
+          tracerGlow.scale.setScalar(1.5);
+        }
 
         group.add(line);
         group.add(tracer);
