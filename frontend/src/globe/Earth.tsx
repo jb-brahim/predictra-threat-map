@@ -3,7 +3,6 @@ import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import { useStreamStore } from '../stream/useStreamStore';
 import { CountryOutlines } from './CountryOutlines';
-import { useTexture } from '@react-three/drei';
 
 // --- Helpers ---
 
@@ -256,9 +255,52 @@ export function Earth({ children }: { children?: React.ReactNode }) {
   const meshRef = useRef<THREE.Group>(null);
   const config = useStreamStore(s => s.config);
   const projectionMode = useStreamStore(s => s.projectionMode);
+  const [landmask, setLandmask] = useState<THREE.Texture | null>(null);
 
-  // Landmask for displacement (Elevation)
-  const landmask = useTexture('https://unpkg.com/threejs-earth@1.0.1/dist/textures/earth-landmask.jpg');
+  useEffect(() => {
+    // Generate landmask locally from GeoJSON to avoid CORS/Network issues
+    const generateMask = async () => {
+      try {
+        const res = await fetch('https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json');
+        const topology = await res.json();
+        const decodedArcs = decodeTopology(topology);
+        const geometries = topology.objects.countries?.geometries || [];
+        
+        const canvas = document.createElement('canvas');
+        canvas.width = 2048;
+        canvas.height = 1024;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) return;
+
+        ctx.fillStyle = 'black';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.fillStyle = 'white';
+
+        for (const geo of geometries) {
+          const polygons = [];
+          if (geo.type === 'Polygon') polygons.push(resolveArcs(geo.arcs, decodedArcs));
+          else if (geo.type === 'MultiPolygon') {
+            for (const poly of geo.arcs) polygons.push(resolveArcs(poly, decodedArcs));
+          }
+          for (const poly of polygons) {
+            ctx.beginPath();
+            for (let i = 0; i < poly.length; i++) {
+              const x = ((poly[i][0] + 180) / 360) * canvas.width;
+              const y = ((90 - poly[i][1]) / 180) * canvas.height;
+              if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+            }
+            ctx.fill();
+          }
+        }
+        const tex = new THREE.CanvasTexture(canvas);
+        tex.needsUpdate = true;
+        setLandmask(tex);
+      } catch (err) {
+        console.warn('Landmask generation failed:', err);
+      }
+    };
+    generateMask();
+  }, []);
 
   const setSelectedCountry = useStreamStore(s => s.setSelectedCountry);
   const setView = useStreamStore(s => s.setView);
@@ -422,7 +464,7 @@ export function Earth({ children }: { children?: React.ReactNode }) {
               emissive="#020408"
               emissiveIntensity={0.3}
               shininess={15}
-              displacementMap={landmask}
+              displacementMap={landmask || undefined}
               displacementScale={0.012}
             />
           </mesh>
