@@ -522,9 +522,6 @@ export function Earth({ children }: { children?: React.ReactNode }) {
   const config = useStreamStore(s => s.config);
   const projectionMode = useStreamStore(s => s.projectionMode);
 
-  const setSelectedCountry = useStreamStore(s => s.setSelectedCountry);
-  const setView = useStreamStore(s => s.setView);
-
   // Atmospheric glow shader
   const glowMaterial = useMemo(() => {
     return new THREE.ShaderMaterial({
