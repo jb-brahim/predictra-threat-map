@@ -78,9 +78,10 @@ export function CountryDashboard() {
       position: 'fixed', inset: 0, zIndex: 100,
       background: 'rgba(5, 8, 15, 0.98)', backdropFilter: 'blur(30px)',
       display: 'flex', flexDirection: 'column', fontFamily: theme.fonts.body,
+      paddingTop: '64px',
     }}>
       {/* Header */}
-      <div style={{ padding: '30px 40px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: `1px solid ${theme.colors.panelBorder}` }}>
+      <div style={{ padding: '24px 40px 30px 40px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: `1px solid ${theme.colors.panelBorder}` }}>
         <div>
           <h1 style={{ fontFamily: theme.fonts.display, fontSize: '28px', fontWeight: 800, color: '#fff', margin: 0, textTransform: 'uppercase', letterSpacing: '2px' }}>
             {countryName} <span style={{color: theme.colors.textDim, fontSize: 16, marginLeft: 10}}>[{countryCode}]</span>
