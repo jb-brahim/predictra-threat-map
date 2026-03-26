@@ -2,7 +2,7 @@ import { useStreamStore } from '../stream/useStreamStore';
 import { GlassPanel } from './GlassPanel';
 import { theme, getAttackColor } from '../theme/theme';
 import { useState, useMemo, useEffect, useRef, useCallback } from 'react';
-import type { ThreatEvent } from '../stream/types';
+import type { ThreatEvent, TypeDistribution } from '../stream/types';
 
 /* ─── helpers ─────────────────────────────────────────────────────────────── */
 
@@ -64,16 +64,90 @@ type SortMode = 'count' | 'alpha';
 /* ─── main component ──────────────────────────────────────────────────────── */
 
 export function DashboardPage() {
-  const totalAttacks    = useStreamStore(s => s.totalAttacks);
+  const totalAttacks_raw    = useStreamStore(s => s.totalAttacks);
   const counterData     = useStreamStore(s => s.counterData);
-  const typeDistribution  = useStreamStore(s => s.typeDistribution);
-  const vectorDistribution  = useStreamStore(s => s.vectorDistribution);
-  const originDistribution  = useStreamStore(s => s.originDistribution);
-  const targetDistribution  = useStreamStore(s => s.targetDistribution);
-  const corridorDistribution = useStreamStore(s => s.corridorDistribution);
-  const sourceApiDistribution = useStreamStore(s => s.sourceApiDistribution);
-  const recentFeed      = useStreamStore(s => s.recentEvents);
+  const typeDistribution_raw  = useStreamStore(s => s.typeDistribution);
+  const vectorDistribution_raw  = useStreamStore(s => s.vectorDistribution);
+  const originDistribution_raw  = useStreamStore(s => s.originDistribution);
+  const targetDistribution_raw  = useStreamStore(s => s.targetDistribution);
+  const corridorDistribution_raw = useStreamStore(s => s.corridorDistribution);
+  const sourceApiDistribution_raw = useStreamStore(s => s.sourceApiDistribution);
+  const recentFeed_raw      = useStreamStore(s => s.recentEvents);
   const trendData       = useStreamStore(s => s.trendData);
+  const eventBuffer     = useStreamStore(s => s.eventBuffer);
+
+  const [timeMode, setTimeMode] = useState<'live' | 5 | 15 | 60>('live');
+
+  const dvrData = useMemo(() => {
+    if (timeMode === 'live') return null;
+    const now = Date.now();
+    const cutoff = now - timeMode * 60 * 1000;
+    const events = eventBuffer.getAll().filter(e => new Date(e.ts || e.timestamp || now).getTime() >= cutoff);
+    
+    const typeDist = { exploit: 0, malware: 0, phishing: 0 };
+    const vectorDist: Record<string, number> = {};
+    const originDist: Record<string, number> = {};
+    const targetDist: Record<string, number> = {};
+    const corridorDist: Record<string, number> = {};
+    const sourceApiDist: Record<string, number> = {};
+    
+    events.forEach(e => {
+        if (e.a_t === 'exploit' || e.a_t === 'malware' || e.a_t === 'phishing') typeDist[e.a_t]++;
+        if (e.a_n) vectorDist[e.a_n] = (vectorDist[e.a_n] || 0) + 1;
+        if (e.s_co) originDist[e.s_co] = (originDist[e.s_co] || 0) + 1;
+        if (e.d_co) targetDist[e.d_co] = (targetDist[e.d_co] || 0) + 1;
+        if (e.s_co && e.d_co) corridorDist[`${e.s_co}-${e.d_co}`] = (corridorDist[`${e.s_co}-${e.d_co}`] || 0) + 1;
+        if (e.source_api) sourceApiDist[e.source_api] = (sourceApiDist[e.source_api] || 0) + 1;
+    });
+
+    return {
+      totalAttacks: events.length,
+      typeDistribution: typeDist as TypeDistribution,
+      vectorDistribution: vectorDist,
+      originDistribution: originDist,
+      targetDistribution: targetDist,
+      corridorDistribution: corridorDist,
+      sourceApiDistribution: sourceApiDist,
+      recentFeed: events.slice(-40),
+    };
+  }, [timeMode, totalAttacks_raw, eventBuffer]);
+
+  const activeData = dvrData || {
+    totalAttacks: totalAttacks_raw,
+    typeDistribution: typeDistribution_raw,
+    vectorDistribution: vectorDistribution_raw,
+    originDistribution: originDistribution_raw,
+    targetDistribution: targetDistribution_raw,
+    corridorDistribution: corridorDistribution_raw,
+    sourceApiDistribution: sourceApiDistribution_raw,
+    recentFeed: recentFeed_raw
+  };
+
+  const totalAttacks = activeData.totalAttacks;
+  const typeDistribution = activeData.typeDistribution;
+  const vectorDistribution = activeData.vectorDistribution;
+  const originDistribution = activeData.originDistribution;
+  const targetDistribution = activeData.targetDistribution;
+  const corridorDistribution = activeData.corridorDistribution;
+  const sourceApiDistribution = activeData.sourceApiDistribution;
+  const recentFeed = activeData.recentFeed;
+
+  const handleExportCSV = useCallback(() => {
+    const dataToExport = dvrData ? eventBuffer.getAll().filter(e => new Date(e.ts || e.timestamp || Date.now()).getTime() >= Date.now() - (timeMode as number) * 60 * 1000) : eventBuffer.getAll();
+    if (dataToExport.length === 0) return alert('No data to export');
+    const headers = ['ID', 'Timestamp', 'Type', 'Name', 'Source_IP', 'Source_Country', 'Dest_IP', 'Dest_Country', 'API'];
+    const rows = dataToExport.map(e => [
+      e.id, e.ts || e.timestamp, e.a_t, `"${e.a_n}"`, e.s_ip, e.s_co, e.d_ip, e.d_co, e.source_api
+    ].join(','));
+    const csvContent = "data:text/csv;charset=utf-8," + [headers.join(','), ...rows].join('\\n');
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", `threat_export_${new Date().toISOString()}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  }, [dvrData, eventBuffer, timeMode]);
 
   /* filter state */
   const [searchQuery, setSearchQuery]   = useState('');
@@ -122,7 +196,7 @@ export function DashboardPage() {
   const hasFilters = searchQuery || activeTypes.size > 0 || activeSource || activeCountry;
 
   /* computed totals */
-  const total = counterData?.today || totalAttacks;
+  const total = timeMode === 'live' ? (counterData?.today || totalAttacks) : totalAttacks;
   const distTotal = (typeDistribution.exploit + typeDistribution.malware + typeDistribution.phishing) || 1;
 
   /* trend analysis: compare recent 5 buckets vs previous 5 */
@@ -212,6 +286,28 @@ export function DashboardPage() {
               Real-time Threat Intelligence · Interactive Analytics
             </p>
           </div>
+          
+          <div style={{ display: 'flex', background: 'rgba(255,255,255,0.05)', borderRadius: 8, padding: 4 }}>
+            {(['live', 5, 15, 60] as const).map(mode => (
+              <button
+                key={mode}
+                onClick={() => setTimeMode(mode)}
+                style={{
+                  padding: '6px 12px', background: timeMode === mode ? 'rgba(0,209,255,0.2)' : 'transparent',
+                  border: 'none', borderRadius: 6, color: timeMode === mode ? '#fff' : theme.colors.textDim,
+                  fontSize: 12, fontFamily: theme.fonts.display, fontWeight: timeMode === mode ? 700 : 400,
+                  cursor: 'pointer', transition: 'all 0.2s', textTransform: 'uppercase', letterSpacing: 1
+                }}
+              >
+                {mode === 'live' ? 'Live' : `${mode}m`}
+              </button>
+            ))}
+          </div>
+
+          <button onClick={handleExportCSV} style={{ padding: '8px 16px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 8, color: '#fff', fontSize: 12, fontFamily: theme.fonts.display, textTransform: 'uppercase', letterSpacing: 1, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, transition: 'background 0.2s' }}>
+            📥 Export CSV
+          </button>
+
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '6px 16px', background: `${threatLevel.color}15`, border: `1px solid ${threatLevel.color}50`, borderRadius: 10 }}>
             <div style={{ width: 10, height: 10, borderRadius: '50%', background: threatLevel.color, boxShadow: `0 0 10px ${threatLevel.color}`, animation: 'pulse 2s infinite' }} />
             <div style={{ display: 'flex', flexDirection: 'column' }}>
@@ -302,7 +398,7 @@ export function DashboardPage() {
 
       {/* ── KPI Row ────────────────────────────────────────────────────────── */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16 }}>
-        <KPICard title="Total Attacks (24h)" value={fmt(total)} color={theme.colors.exploit}
+        <KPICard title={timeMode === 'live' ? "Total Attacks (24h)" : `Total Attacks (${timeMode}m)`} value={fmt(total)} color={theme.colors.exploit}
           trend={trendUp ? 'up' : 'down'}
           onClick={() => { setActiveTypes(new Set()); setActiveSource(null); }}
           active={activeTypes.size === 0 && !activeSource}
