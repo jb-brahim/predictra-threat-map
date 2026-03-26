@@ -6,7 +6,6 @@ import { PerfOverlay } from './ui/PerfOverlay';
 import { HistoryPage } from './ui/HistoryPage';
 import { DashboardPage } from './ui/DashboardPage';
 import { CountryDashboard } from './ui/CountryDashboard';
-import { Navbar } from './ui/Navbar';
 import { useStreamStore } from './stream/useStreamStore';
 import './index.css';
 
@@ -55,7 +54,6 @@ function App() {
 
       {/* UI Panels */}
       <StatusBar />
-      <Navbar />
       <Sidebar />
       <PerfOverlay />
 
