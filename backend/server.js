@@ -31,6 +31,8 @@ const BATCH_DB_INSERT = 25;       // bulk-insert MongoDB after accumulating N do
 
 let pendingEvents = [];           // staging queue between flushes
 let pendingDbDocs = [];           // staging queue for bulk Mongo inserts
+let isDatabaseEnabled = true;     // Database persistance flag (Must be true to store attacks)
+let clients = [];                 // SSE connected clients
 
 // ─── Batch flush (runs every BATCH_INTERVAL_MS) ───────────────────────────────
 const flushBatch = () => {
@@ -62,7 +64,7 @@ setInterval(flushBatch, BATCH_INTERVAL_MS);
 // Heartbeat – keeps SSE connections alive through proxies / load balancers
 setInterval(() => {
   clients.forEach(client => {
-    try { client.res.write('event: ping\ndata: {}\n\n'); } catch (_) {}
+    try { client.res.write('event: ping\ndata: {}\n\n'); } catch (_) { }
   });
 }, 30_000);
 
@@ -72,7 +74,7 @@ const broadcast = (event, data, sourceApi = 'unknown') => {
     // Counter events are rare and time-sensitive – send immediately
     const payload = JSON.stringify(data);
     clients.forEach(client => {
-      try { client.res.write(`event: counter\ndata: ${payload}\n\n`); } catch (_) {}
+      try { client.res.write(`event: counter\ndata: ${payload}\n\n`); } catch (_) { }
     });
     return;
   }
@@ -117,10 +119,20 @@ app.get('/api/feed', (req, res) => {
   });
 });
 
-// Toggle DB persistence
+// DB persistence management
 app.post('/api/db/toggle', (req, res) => {
   isDatabaseEnabled = !isDatabaseEnabled;
   res.json({ enabled: isDatabaseEnabled });
+});
+
+app.get('/api/db/on', (req, res) => {
+  isDatabaseEnabled = true;
+  res.json({ status: 'Database logging ENABLED', enabled: isDatabaseEnabled });
+});
+
+app.get('/api/db/off', (req, res) => {
+  isDatabaseEnabled = false;
+  res.json({ status: 'Database logging DISABLED', enabled: isDatabaseEnabled });
 });
 
 app.get('/api/db/status', (req, res) => {
