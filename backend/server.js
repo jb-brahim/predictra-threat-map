@@ -3,10 +3,6 @@ const express = require('express');
 const cors = require('cors');
 const connectDB = require('./config/db');
 const ThreatEvent = require('./models/ThreatEvent');
-const { startBitdefender } = require('./services/scrapers/bitdefender');
-const { startFortinet } = require('./services/scrapers/fortinet');
-const { startKaspersky } = require('./services/scrapers/kaspersky');
-const { startCheckpoint } = require('./services/scrapers/checkpoint');
 const { startSans } = require('./services/scrapers/sans');
 const { startThreatFox } = require('./services/scrapers/threatfox');
 const { startUrlhaus } = require('./services/scrapers/urlhaus');
@@ -257,11 +253,7 @@ app.get('/api/stats/timeline', async (req, res) => {
   }
 });
 
-// Start Scraping Services
-startBitdefender((ev, data) => broadcast(ev, data, 'bitdefender'));
-startFortinet((ev, data) => broadcast(ev, data, 'fortinet'));
-startKaspersky((ev, data) => broadcast(ev, data, 'kaspersky'));
-startCheckpoint((ev, data) => broadcast(ev, data, 'checkpoint'));
+// Start REAL Scraping Services only
 startSans((ev, data) => broadcast(ev, data, 'sans'));
 startThreatFox((ev, data) => broadcast(ev, data, 'threatfox'));
 startUrlhaus((ev, data) => broadcast(ev, data, 'urlhaus'));
