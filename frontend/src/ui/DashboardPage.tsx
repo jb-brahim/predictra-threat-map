@@ -135,15 +135,23 @@ export function DashboardPage() {
   const handleExportCSV = useCallback(() => {
     const dataToExport = dvrData ? eventBuffer.getAll().filter(e => new Date(e.ts || e.timestamp || Date.now()).getTime() >= Date.now() - (timeMode as number) * 60 * 1000) : eventBuffer.getAll();
     if (dataToExport.length === 0) return alert('No data to export');
-    const headers = ['ID', 'Timestamp', 'Type', 'Name', 'Source_IP', 'Source_Country', 'Dest_IP', 'Dest_Country', 'API'];
-    const rows = dataToExport.map(e => [
-      e.id, e.ts || e.timestamp, e.a_t, `"${e.a_n}"`, e.s_ip, e.s_co, e.d_ip, e.d_co, e.source_api
-    ].join(','));
-    const csvContent = "data:text/csv;charset=utf-8," + [headers.join(','), ...rows].join('\\n');
-    const encodedUri = encodeURI(csvContent);
+    
+    const BOM = "\uFEFF";
+    const headers = ['Event ID', 'Local Time', 'Threat Type', 'Attack Vector', 'Source IP', 'Source Country', 'Target IP', 'Target Country', 'Intel Source'];
+    
+    const rows = dataToExport.map(e => {
+      const date = new Date(e.ts || e.timestamp || Date.now()).toLocaleString();
+      const type = e.a_t.toUpperCase();
+      const name = `"${String(e.a_n || '').replace(/"/g, '""')}"`;
+      return [
+        e.id, `"${date}"`, type, name, e.s_ip, e.s_co, e.d_ip, e.d_co, e.source_api
+      ].join(',');
+    });
+    
+    const csvContent = "data:text/csv;charset=utf-8," + encodeURIComponent(BOM + headers.join(',') + '\n' + rows.join('\n'));
     const link = document.createElement("a");
-    link.setAttribute("href", encodedUri);
-    link.setAttribute("download", `threat_export_${new Date().toISOString()}.csv`);
+    link.setAttribute("href", csvContent);
+    link.setAttribute("download", `Threat_Report_${new Date().toISOString().slice(0,10)}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
