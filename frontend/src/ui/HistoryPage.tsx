@@ -90,6 +90,12 @@ export function HistoryPage() {
       {/* Search Header */}
       <div style={{ display: 'flex', gap: '12px' }}>
         <form onSubmit={handleSearch} style={{ flex: 1, display: 'flex' }}>
+          <div style={{
+            display: 'flex', alignItems: 'center', background: 'rgba(255, 255, 255, 0.05)',
+            border: '1px solid rgba(255, 255, 255, 0.1)', borderRadius: '8px 0 0 8px', padding: '0 16px'
+          }}>
+            <span style={{ color: theme.colors.textDim }}>🔍</span>
+          </div>
           <input
             type="text"
             placeholder="Search by IP, Malware Name, Tag, Port, ASN (e.g. Google), or Keyword..."
@@ -99,27 +105,32 @@ export function HistoryPage() {
               flex: 1,
               background: 'rgba(255, 255, 255, 0.05)',
               border: '1px solid rgba(255, 255, 255, 0.1)',
-              borderRadius: '8px 0 0 8px',
-              padding: '12px 20px',
+              borderLeft: 'none',
+              padding: '16px 20px 16px 0',
               color: '#fff',
               fontSize: '14px',
+              fontFamily: theme.fonts.mono,
               outline: 'none',
-              fontFamily: theme.fonts.body,
             }}
           />
           <button
             type="submit"
             style={{
-              padding: '0 24px',
-              background: '#00D1FF',
+              padding: '0 32px',
+              background: 'linear-gradient(45deg, #00D1FF, #00A8FF)',
               color: '#000',
               border: 'none',
               borderRadius: '0 8px 8px 0',
-              fontWeight: 600,
+              fontWeight: 800,
+              fontFamily: theme.fonts.display,
+              letterSpacing: 1,
               cursor: 'pointer',
+              transition: 'background 0.3s',
             }}
+            onMouseOver={e => e.currentTarget.style.filter = 'brightness(1.2)'}
+            onMouseOut={e => e.currentTarget.style.filter = 'brightness(1)'}
           >
-            SEARCH
+            EXECUTE
           </button>
         </form>
         <button
@@ -128,177 +139,203 @@ export function HistoryPage() {
             background: 'rgba(255, 255, 255, 0.05)',
             border: '1px solid rgba(255, 255, 255, 0.1)',
             color: '#fff',
-            padding: '0 20px',
+            padding: '0 24px',
             borderRadius: '8px',
             cursor: 'pointer',
             fontSize: '12px',
-            fontWeight: 600,
+            fontWeight: 700,
+            fontFamily: theme.fonts.display,
+            letterSpacing: 1,
+            transition: 'all 0.2s',
           }}
+          onMouseOver={e => e.currentTarget.style.background = 'rgba(255,255,255,0.1)'}
+          onMouseOut={e => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'}
         >
-          CHECK MY IP
+          TARGET MY IP
         </button>
       </div>
 
-      <GlassPanel style={{ 
-        padding: 0, 
+      {/* Quick Filters */}
+      <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+        {[
+          { label: 'All', query: '' },
+          { label: 'Ransomware Leaks', query: 'ransomwatch' },
+          { label: 'C2 Infrastructure', query: 'c2tracker' },
+          { label: 'Dark Web Intel', query: 'alienvault' },
+          { label: 'Malware Payloads', query: 'urlhaus' }
+        ].map(filter => (
+          <button
+            key={filter.label}
+            onClick={() => { setSearch(filter.query); fetchHistory(filter.query); }}
+            style={{
+              background: search === filter.query ? 'rgba(0, 209, 255, 0.2)' : 'rgba(255,255,255,0.03)',
+              border: `1px solid ${search === filter.query ? theme.colors.exploit : 'rgba(255,255,255,0.1)'}`,
+              color: search === filter.query ? '#fff' : theme.colors.textDim,
+              padding: '6px 12px',
+              borderRadius: '100px',
+              fontSize: '11px',
+              fontWeight: 600,
+              fontFamily: theme.fonts.display,
+              cursor: 'pointer',
+              textTransform: 'uppercase',
+              letterSpacing: 0.5,
+              transition: 'all 0.2s',
+            }}
+          >
+            {filter.label}
+          </button>
+        ))}
+      </div>
+
+      <div style={{ 
         overflowY: 'auto', 
         flex: 1, 
         minHeight: 0,
-        background: 'rgba(255, 255, 255, 0.02)',
-        border: `1px solid ${theme.colors.panelBorder}`,
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '8px',
+        paddingRight: '8px' // scrollbar spacing
       }}>
-        <table style={{
-          width: '100%',
-          borderCollapse: 'collapse',
-          textAlign: 'left',
-          fontSize: '14px',
-        }}>
-          <thead style={{
-            position: 'sticky',
-            top: 0,
-            zIndex: 10,
-            background: 'rgba(10, 15, 25, 0.95)',
-            backdropFilter: 'blur(10px)',
-            color: theme.colors.textDim,
-            textTransform: 'uppercase',
-            letterSpacing: '1px',
-            fontSize: '11px',
-            fontWeight: 700,
-            borderBottom: `1px solid ${theme.colors.panelBorder}`,
-          }}>
-            <tr>
-              <th style={{ padding: '16px 20px' }}>Timestamp</th>
-              <th style={{ padding: '16px 20px' }}>Type</th>
-              <th style={{ padding: '16px 20px' }}>Attack Description</th>
-              <th style={{ padding: '16px 20px' }}>Source (IP/Country)</th>
-              <th style={{ padding: '16px 20px' }}>Victim (IP/Country)</th>
-              <th style={{ padding: '16px 20px' }}>Provider</th>
-            </tr>
-          </thead>
-          <tbody>
-            {loading ? (
-              <tr>
-                <td colSpan={6} style={{ padding: '60px', textAlign: 'center', color: theme.colors.textDim }}>
-                  Loading encrypted history logs...
-                </td>
-              </tr>
-            ) : error ? (
-              <tr>
-                <td colSpan={6} style={{ padding: '60px', textAlign: 'center', color: theme.colors.danger }}>
-                  Error: {error}
-                </td>
-              </tr>
-            ) : history.length === 0 ? (
-              <tr>
-                <td colSpan={6} style={{ padding: '60px', textAlign: 'center', color: theme.colors.textDim }}>
-                  No attack logs found in database.
-                </td>
-              </tr>
-            ) : (
-              history.map((event, idx) => (
-                <tr 
-                  key={event.id || idx}
-                  style={{
-                    borderTop: `1px solid rgba(255, 255, 255, 0.03)`,
-                    background: idx % 2 === 0 ? 'transparent' : 'rgba(255, 255, 255, 0.01)',
-                    transition: 'background 0.2s ease',
-                  }}
-                  onMouseOver={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.04)'}
-                  onMouseOut={(e) => e.currentTarget.style.background = idx % 2 === 0 ? 'transparent' : 'rgba(255, 255, 255, 0.01)'}
-                >
-                  <td style={{ padding: '16px 20px', color: theme.colors.textSecondary, fontFamily: theme.fonts.mono, fontSize: '12px' }}>
-                    {new Date(event.timestamp || event.ts || Date.now()).toLocaleString()}
-                  </td>
-                  <td style={{ padding: '16px 20px' }}>
-                    <span style={{
-                      color: getAttackColor(event.a_t),
-                      fontWeight: 700,
-                      textTransform: 'uppercase',
-                      fontSize: '11px',
+        {loading ? (
+          <div style={{ padding: '60px', textAlign: 'center', color: theme.colors.textDim, fontFamily: theme.fonts.mono }}>
+            Decrypting threat logs...
+          </div>
+        ) : error ? (
+          <div style={{ padding: '60px', textAlign: 'center', color: theme.colors.danger, fontFamily: theme.fonts.mono }}>
+            DATABASE ERROR: {error}
+          </div>
+        ) : history.length === 0 ? (
+          <div style={{ padding: '60px', textAlign: 'center', color: theme.colors.textDim, fontFamily: theme.fonts.mono }}>
+            NO INTELLIGENCE LOGS FOUND MATCHING SECURE QUERY.
+          </div>
+        ) : (
+          history.map((event, idx) => {
+            const threatColor = getAttackColor(event.a_t);
+            return (
+              <GlassPanel 
+                key={event.id || idx}
+                style={{
+                  padding: '16px 24px',
+                  display: 'grid',
+                  gridTemplateColumns: 'minmax(140px, 1fr) 2.5fr 1.5fr 1.5fr minmax(100px, 1fr)',
+                  alignItems: 'center',
+                  gap: '24px',
+                  background: 'rgba(10, 16, 24, 0.4)',
+                  border: '1px solid rgba(255,255,255,0.03)',
+                  borderLeft: `4px solid ${threatColor}`,
+                  borderRadius: '8px',
+                  transition: 'all 0.2s ease',
+                  cursor: 'default',
+                }}
+                onMouseOver={(e: any) => {
+                  e.currentTarget.style.background = 'rgba(255,255,255,0.05)';
+                  e.currentTarget.style.boxShadow = `0 4px 20px ${threatColor}20`;
+                  e.currentTarget.style.transform = 'translateX(4px)';
+                }}
+                onMouseOut={(e: any) => {
+                  e.currentTarget.style.background = 'rgba(10, 16, 24, 0.4)';
+                  e.currentTarget.style.boxShadow = 'none';
+                  e.currentTarget.style.transform = 'translateX(0)';
+                }}
+              >
+                {/* 1. Timestamp & Threat Icon */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    {event.a_t === 'malware' ? '💀' : event.a_t === 'phishing' ? '🎣' : '🐛'}
+                    <span style={{ 
+                      color: threatColor, fontWeight: 800, textTransform: 'uppercase', 
+                      fontSize: '11px', fontFamily: theme.fonts.display, letterSpacing: 1
                     }}>
                       {event.a_t}
                     </span>
-                  </td>
-                  <td style={{ padding: '16px 20px', fontWeight: 500, color: '#fff' }}>
-                    <div>{event.a_n}</div>
-                    {event.meta && (
-                      <div style={{ display: 'flex', gap: '4px', marginTop: '4px', flexWrap: 'wrap' }}>
-                        {event.meta.malware_family && (
-                          <span style={{ fontSize: '10px', background: 'rgba(204, 51, 255, 0.2)', color: '#CC33FF', padding: '2px 6px', borderRadius: '4px' }}>
-                            {event.meta.malware_family}
-                          </span>
-                        )}
-                        {event.meta.port && (
-                          <span style={{ fontSize: '10px', background: 'rgba(255, 255, 255, 0.1)', color: '#fff', padding: '2px 6px', borderRadius: '4px' }}>
-                            Port: {event.meta.port}
-                          </span>
-                        )}
-                        {event.meta.tags?.slice(0, 3).map((tag: string) => (
-                          <span key={tag} style={{ fontSize: '10px', background: 'rgba(0, 209, 255, 0.1)', color: '#00D1FF', padding: '2px 6px', borderRadius: '4px' }}>
-                            #{tag}
-                          </span>
-                        ))}
-                        {event.meta.confidence && (
-                          <span style={{ fontSize: '10px', background: 'rgba(0, 255, 130, 0.1)', color: '#00FF82', padding: '2px 6px', borderRadius: '4px' }}>
-                            Confidence: {event.meta.confidence}%
-                          </span>
-                        )}
-                      </div>
-                    )}
-                    {event.meta?.url && (
-                      <div style={{ marginTop: '6px' }}>
-                        <a 
-                          href={event.meta.url} 
-                          target="_blank" 
-                          rel="noreferrer"
-                          style={{ fontSize: '10px', color: '#00D1FF', textDecoration: 'none', opacity: 0.8 }}
-                          onMouseOver={e => e.currentTarget.style.opacity = '1'}
-                          onMouseOut={e => e.currentTarget.style.opacity = '0.8'}
-                        >
-                          🔗 SOURCE LINK
+                  </div>
+                  <span style={{ color: theme.colors.textDim, fontFamily: theme.fonts.mono, fontSize: '11px' }}>
+                    {new Date(event.timestamp || event.ts || Date.now()).toLocaleTimeString()} <br/>
+                    {new Date(event.timestamp || event.ts || Date.now()).toLocaleDateString()}
+                  </span>
+                </div>
+
+                {/* 2. Attack Description & Metadata */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  <span style={{ color: '#fff', fontWeight: 600, fontSize: '14px', lineHeight: 1.4 }}>
+                    {event.a_n}
+                  </span>
+                  
+                  {event.meta && (
+                    <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                      {event.meta.malware_family && (
+                        <span style={{ fontSize: '10px', background: 'rgba(204, 51, 255, 0.15)', border: '1px solid rgba(204,51,255,0.3)', color: '#D466FF', padding: '2px 8px', borderRadius: '100px', fontFamily: theme.fonts.mono }}>
+                          {event.meta.malware_family}
+                        </span>
+                      )}
+                      {event.meta.port && (
+                        <span style={{ fontSize: '10px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', padding: '2px 8px', borderRadius: '100px', fontFamily: theme.fonts.mono }}>
+                          PORT: {event.meta.port}
+                        </span>
+                      )}
+                      {event.meta.tags?.slice(0, 3).map((tag: string) => (
+                        <span key={tag} style={{ fontSize: '10px', background: 'rgba(0, 209, 255, 0.1)', border: '1px solid rgba(0,209,255,0.2)', color: '#00D1FF', padding: '2px 8px', borderRadius: '100px', fontFamily: theme.fonts.mono }}>
+                          #{tag.replace('#','')}
+                        </span>
+                      ))}
+                      {event.meta?.url && (
+                        <a href={event.meta.url} target="_blank" rel="noreferrer" style={{ fontSize: '10px', background: 'rgba(0, 255, 136, 0.1)', border: '1px solid rgba(0,255,136,0.3)', color: '#00FF88', padding: '2px 8px', borderRadius: '100px', fontFamily: theme.fonts.display, textDecoration: 'none', fontWeight: 600, letterSpacing: 0.5 }}>
+                          VIEW SOURCE ↗
                         </a>
-                      </div>
-                    )}
-                  </td>
-                  <td style={{ padding: '16px 20px' }}>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <span style={{ fontSize: '18px' }}>{getFlagEmoji(event.s_co)}</span>
-                        <code style={{ color: theme.colors.textSecondary, fontSize: '12px' }}>{event.s_ip}</code>
-                      </div>
-                      {event.meta?.as_name && (
-                        <div style={{ fontSize: '10px', color: theme.colors.textDim, marginLeft: '26px' }}>
-                          ISP/ASN: {event.meta.as_name}
-                        </div>
                       )}
                     </div>
-                  </td>
-                  <td style={{ padding: '16px 20px' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <span style={{ fontSize: '18px' }}>{getFlagEmoji(event.d_co)}</span>
-                      <div style={{ display: 'flex', flexDirection: 'column' }}>
-                        <span style={{ color: '#fff' }}>{event.d_ip || 'unknown'}</span>
-                        <span style={{ fontSize: '11px', color: theme.colors.textDim }}>{event.d_co}</span>
-                      </div>
-                    </div>
-                  </td>
-                  <td style={{ padding: '16px 20px' }}>
-                    <span style={{
-                      padding: '4px 8px',
-                      background: 'rgba(255, 255, 255, 0.05)',
-                      borderRadius: '4px',
-                      fontSize: '11px',
-                      color: theme.colors.textDim,
-                    }}>
-                      {event.source_api || 'unknown'}
+                  )}
+                </div>
+
+                {/* 3. Source IP */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                  <span style={{ fontSize: '10px', color: theme.colors.textDim, textTransform: 'uppercase', letterSpacing: 1 }}>Origin / Attacker</span>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <span style={{ fontSize: '16px' }}>{getFlagEmoji(event.s_co)}</span>
+                    <code style={{ color: theme.colors.textSecondary, fontSize: '13px', fontFamily: theme.fonts.mono }}>
+                      {event.s_ip}
+                    </code>
+                  </div>
+                  {event.meta?.as_name && (
+                    <span style={{ fontSize: '10px', color: theme.colors.textDim, marginLeft: '24px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '140px' }}>
+                      {event.meta.as_name}
                     </span>
-                  </td>
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
-      </GlassPanel>
+                  )}
+                </div>
+
+                {/* 4. Target IP */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                  <span style={{ fontSize: '10px', color: theme.colors.textDim, textTransform: 'uppercase', letterSpacing: 1 }}>Victim</span>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <span style={{ fontSize: '16px' }}>{getFlagEmoji(event.d_co)}</span>
+                    <code style={{ color: '#fff', fontSize: '13px', fontFamily: theme.fonts.mono }}>
+                      {event.d_ip || 'Internal Asset'}
+                    </code>
+                  </div>
+                </div>
+
+                {/* 5. Provider / Feeds */}
+                <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                  <span style={{
+                    padding: '4px 12px',
+                    background: 'rgba(255, 255, 255, 0.03)',
+                    border: '1px solid rgba(255,255,255,0.08)',
+                    borderRadius: '100px',
+                    fontSize: '10px',
+                    fontFamily: theme.fonts.display,
+                    color: theme.colors.textDim,
+                    textTransform: 'uppercase',
+                    letterSpacing: 1
+                  }}>
+                    {event.source_api || 'unknown'}
+                  </span>
+                </div>
+
+              </GlassPanel>
+            );
+          })
+        )}
+      </div>
     </div>
   );
 }
