@@ -111,42 +111,42 @@ export function isValidCoordinate(lat: number, lon: number): boolean {
   );
 }
 
-// Map UI country names to backend ISO 3166-1 Alpha-2 Codes
-const COUNTRY_CODES: Record<string, string> = {
-  'United States of America': 'US', 'United States': 'US', 'United Kingdom': 'GB',
-  'Germany': 'DE', 'France': 'FR', 'China': 'CN', 'Russia': 'RU',
-  'Japan': 'JP', 'India': 'IN', 'Brazil': 'BR', 'Canada': 'CA',
-  'Australia': 'AU', 'Italy': 'IT', 'Spain': 'ES', 'Mexico': 'MX',
-  'South Korea': 'KR', 'Netherlands': 'NL', 'Turkey': 'TR', 'Indonesia': 'ID',
-  'Saudi Arabia': 'SA', 'Switzerland': 'CH', 'Poland': 'PL', 'Sweden': 'SE',
-  'Belgium': 'BE', 'Argentina': 'AR', 'Thailand': 'TH', 'South Africa': 'ZA',
-  'Nigeria': 'NG', 'Egypt': 'EG', 'Israel': 'IL', 'Ireland': 'IE',
-  'Denmark': 'DK', 'Finland': 'FI', 'Norway': 'NO', 'Austria': 'AT',
-  'Romania': 'RO', 'Ukraine': 'UA', 'Czechia': 'CZ', 'Czech Republic': 'CZ',
-  'Portugal': 'PT', 'Greece': 'GR', 'Hungary': 'HU', 'Vietnam': 'VN',
-  'Philippines': 'PH', 'Colombia': 'CO', 'Chile': 'CL', 'Malaysia': 'MY',
-  'Pakistan': 'PK', 'Bangladesh': 'BD', 'Peru': 'PE', 'Singapore': 'SG',
-  'Hong Kong': 'HK', 'Taiwan': 'TW', 'New Zealand': 'NZ', 'Iran': 'IR',
-  'Iraq': 'IQ', 'Morocco': 'MA', 'Algeria': 'DZ', 'Kenya': 'KE',
-  'Bulgaria': 'BG', 'Croatia': 'HR', 'Slovakia': 'SK', 'Lithuania': 'LT',
-  'Latvia': 'LV', 'Estonia': 'EE', 'Slovenia': 'SI', 'Serbia': 'RS'
-};
+import { getCountryInfo } from './countryNames';
+
+// Build a reverse lookup: country name → alpha2 code from the comprehensive table
+const _nameToAlpha2Cache: Record<string, string> = {};
+
+let _cacheBuilt = false;
+function ensureCache() {
+  if (_cacheBuilt) return;
+  _cacheBuilt = true;
+  for (let i = 0; i < 1000; i++) {
+    const info = getCountryInfo(String(i));
+    if (info.alpha2 !== '??') {
+      _nameToAlpha2Cache[info.name.toLowerCase()] = info.alpha2;
+    }
+  }
+  // Common aliases
+  _nameToAlpha2Cache['united states'] = 'US';
+  _nameToAlpha2Cache['usa'] = 'US';
+  _nameToAlpha2Cache['uk'] = 'GB';
+  _nameToAlpha2Cache['czech republic'] = 'CZ';
+  _nameToAlpha2Cache['ivory coast'] = 'CI';
+  _nameToAlpha2Cache['burma'] = 'MM';
+  _nameToAlpha2Cache['swaziland'] = 'SZ';
+  _nameToAlpha2Cache['macedonia'] = 'MK';
+}
 
 export function getIsoCode(countryName: string): string {
   if (!countryName || countryName.startsWith('Region')) return '??';
+  ensureCache();
   
-  // Exact match override
-  if (COUNTRY_CODES[countryName]) {
-    return COUNTRY_CODES[countryName];
-  }
+  const lower = countryName.toLowerCase();
+  if (_nameToAlpha2Cache[lower]) return _nameToAlpha2Cache[lower];
   
-  // Fallback to strict 3166-2 conventions if missing (e.g prefix matching)
-  for (const [name, code] of Object.entries(COUNTRY_CODES)) {
-    if (countryName.toLowerCase().includes(name.toLowerCase())) {
-      return code;
-    }
+  for (const [name, code] of Object.entries(_nameToAlpha2Cache)) {
+    if (lower.includes(name) || name.includes(lower)) return code;
   }
 
-  // Last resort fallback (try grabbing first 2 uppercase letters as a guess if valid otherwise unknown)
   return '??';
 }

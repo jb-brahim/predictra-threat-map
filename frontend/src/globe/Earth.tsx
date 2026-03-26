@@ -3,7 +3,7 @@ import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import { useStreamStore } from '../stream/useStreamStore';
 import { CountryOutlines } from './CountryOutlines';
-import { getIsoCode } from '../utils/geo';
+import { getCountryInfo } from '../utils/countryNames';
 
 // --- Helpers ---
 
@@ -253,8 +253,9 @@ function VolumetricLand() {
             for (const poly of geo.arcs) landPolygons.push(resolveArcs(poly, decodedArcs));
           }
 
-          const countryName = geo.properties?.name || `Country #${geo.id}`;
-          const code = getIsoCode(countryName);
+          const info = getCountryInfo(String(geo.id));
+          const countryName = info.name;
+          const code = info.alpha2;
           const userData = { countryName, code };
 
           for (const poly of landPolygons) {
@@ -440,8 +441,9 @@ function CountryFills2D() {
             for (const poly of geo.arcs) polygons.push(resolveArcs(poly, decodedArcs));
           }
           
-          const countryName = geo.properties?.name || `Country #${geo.id}`;
-          const code = getIsoCode(countryName);
+          const info = getCountryInfo(String(geo.id));
+          const countryName = info.name;
+          const code = info.alpha2;
 
           for (const poly of polygons) {
             const shape = new THREE.Shape();
