@@ -39,12 +39,25 @@ export function HistoryPage() {
 
   const handleCheckMyIP = async () => {
     try {
-      const res = await fetch('https://api.ipify.org?format=json');
-      const data = await res.json();
-      setSearch(data.ip);
-      fetchHistory('', data.ip);
+      let ip = '';
+      try {
+        // Attempt 1: ipify
+        const res = await fetch('https://api.ipify.org?format=json');
+        const data = await res.json();
+        ip = data.ip;
+      } catch (e) {
+        // Attempt 2: jsonip fallback (often bypasses adblockers)
+        const res2 = await fetch('https://jsonip.com');
+        const data2 = await res2.json();
+        ip = data2.ip;
+      }
+      
+      setSearch(ip);
+      // Use the general query search so it matches across all fields, rather than strict exact-match
+      fetchHistory(ip); 
     } catch (err) {
-      setError('Could not detect your IP');
+      console.error(err);
+      setError('Could not detect your IP through browser security. Please type it manually.');
     }
   };
 
@@ -135,6 +148,7 @@ export function HistoryPage() {
         </form>
         <button
           onClick={handleCheckMyIP}
+          type="button"
           style={{
             background: 'rgba(255, 255, 255, 0.05)',
             border: '1px solid rgba(255, 255, 255, 0.1)',
