@@ -3,6 +3,8 @@ import { GlassPanel } from './GlassPanel';
 import { theme, getAttackColor } from '../theme/theme';
 import { useState, useMemo, useEffect, useRef, useCallback } from 'react';
 import type { ThreatEvent, TypeDistribution } from '../stream/types';
+import * as ExcelJS from 'exceljs';
+import { saveAs } from 'file-saver';
 
 /* ─── helpers ─────────────────────────────────────────────────────────────── */
 
@@ -155,6 +157,81 @@ export function DashboardPage() {
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+  }, [dvrData, eventBuffer, timeMode]);
+
+  const handleExportJSON = useCallback(() => {
+    const dataToExport = dvrData ? eventBuffer.getAll().filter(e => new Date(e.ts || e.timestamp || Date.now()).getTime() >= Date.now() - (timeMode as number) * 60 * 1000) : eventBuffer.getAll();
+    if (dataToExport.length === 0) return alert('No data to export');
+
+    const json = JSON.stringify(dataToExport, null, 2);
+    const blob = new Blob([json], { type: "application/json" });
+    saveAs(blob, `Threat_Report_${new Date().toISOString().slice(0,10)}.json`);
+  }, [dvrData, eventBuffer, timeMode]);
+
+  const handleExportExcel = useCallback(async () => {
+    const dataToExport = dvrData ? eventBuffer.getAll().filter(e => new Date(e.ts || e.timestamp || Date.now()).getTime() >= Date.now() - (timeMode as number) * 60 * 1000) : eventBuffer.getAll();
+    if (dataToExport.length === 0) return alert('No data to export');
+
+    const workbook = new ExcelJS.Workbook();
+    const sheet = workbook.addWorksheet('Threat Intel Report');
+
+    sheet.mergeCells('A1', 'I2');
+    const titleCell = sheet.getCell('A1');
+    titleCell.value = 'Global Command Center - Threat Intel Report';
+    titleCell.font = { size: 16, bold: true, color: { argb: 'FFFFFFFF' } };
+    titleCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1A233A' } };
+    titleCell.alignment = { vertical: 'middle', horizontal: 'center' };
+
+    sheet.getRow(4).values = ['Event ID', 'Local Time', 'Threat Type', 'Attack Vector', 'Source IP', 'Source Country', 'Target IP', 'Target Country', 'Intel Source'];
+    const headerRow = sheet.getRow(4);
+    headerRow.font = { bold: true, color: { argb: 'FFFFFFFF' } };
+    headerRow.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF00D1FF' } };
+    headerRow.alignment = { vertical: 'middle', horizontal: 'center' };
+
+    sheet.columns = [
+        { key: 'id', width: 32 },
+        { key: 'time', width: 22 },
+        { key: 'type', width: 14 },
+        { key: 'name', width: 40 },
+        { key: 'sip', width: 16 },
+        { key: 'sco', width: 16 },
+        { key: 'dip', width: 16 },
+        { key: 'dco', width: 16 },
+        { key: 'api', width: 15 },
+    ];
+
+    dataToExport.forEach(e => {
+        const row = sheet.addRow({
+            id: e.id,
+            time: new Date(e.ts || e.timestamp || Date.now()).toLocaleString(),
+            type: e.a_t.toUpperCase(),
+            name: e.a_n,
+            sip: e.s_ip,
+            sco: e.s_co,
+            dip: e.d_ip,
+            dco: e.d_co,
+            api: e.source_api
+        });
+        
+        const typeCell = row.getCell('type');
+        typeCell.font = { bold: true, color: { argb: e.a_t === 'exploit' ? 'FFFF4444' : e.a_t === 'malware' ? 'FFFFD700' : 'FFCC33FF' } };
+    });
+
+    sheet.eachRow((row, rowNumber) => {
+        if (rowNumber >= 4) {
+            row.eachCell(cell => {
+                cell.border = {
+                    top: {style:'thin', color: {argb:'FFEEEEEE'}},
+                    left: {style:'thin', color: {argb:'FFEEEEEE'}},
+                    bottom: {style:'thin', color: {argb:'FFEEEEEE'}},
+                    right: {style:'thin', color: {argb:'FFEEEEEE'}}
+                };
+            });
+        }
+    });
+
+    const buffer = await workbook.xlsx.writeBuffer();
+    saveAs(new Blob([buffer]), `Threat_Report_${new Date().toISOString().slice(0,10)}.xlsx`);
   }, [dvrData, eventBuffer, timeMode]);
 
   /* filter state */
@@ -312,9 +389,17 @@ export function DashboardPage() {
             ))}
           </div>
 
-          <button onClick={handleExportCSV} style={{ padding: '8px 16px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 8, color: '#fff', fontSize: 12, fontFamily: theme.fonts.display, textTransform: 'uppercase', letterSpacing: 1, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, transition: 'background 0.2s' }}>
-            📥 Export CSV
-          </button>
+          <div style={{ display: 'flex', gap: 6 }}>
+            <button onClick={handleExportCSV} style={{ padding: '6px 14px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 6, color: '#fff', fontSize: 11, fontFamily: theme.fonts.display, cursor: 'pointer', letterSpacing: 1, transition: 'background 0.2s' }}>
+              CSV
+            </button>
+            <button onClick={handleExportJSON} style={{ padding: '6px 14px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 6, color: '#fff', fontSize: 11, fontFamily: theme.fonts.display, cursor: 'pointer', letterSpacing: 1, transition: 'background 0.2s' }}>
+              JSON
+            </button>
+            <button onClick={handleExportExcel} style={{ padding: '6px 14px', background: 'rgba(0,209,255,0.15)', border: '1px solid rgba(0,209,255,0.3)', borderRadius: 6, color: '#00d1ff', fontSize: 11, fontFamily: theme.fonts.display, fontWeight: 700, cursor: 'pointer', letterSpacing: 1, transition: 'background 0.2s', display: 'flex', alignItems: 'center', gap: 4 }}>
+              <span style={{ fontSize: 13 }}>📥</span> EXCEL
+            </button>
+          </div>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '6px 16px', background: `${threatLevel.color}15`, border: `1px solid ${threatLevel.color}50`, borderRadius: 10 }}>
             <div style={{ width: 10, height: 10, borderRadius: '50%', background: threatLevel.color, boxShadow: `0 0 10px ${threatLevel.color}`, animation: 'pulse 2s infinite' }} />
