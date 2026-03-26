@@ -264,7 +264,9 @@ const NUMERIC_TO_COUNTRY: Record<string, CountryInfo> = {
  * Returns { name, alpha2 } or a fallback if unknown.
  */
 export function getCountryInfo(numericId: string): CountryInfo {
-  return NUMERIC_TO_COUNTRY[numericId] || { name: `Region #${numericId}`, alpha2: '??' };
+  // Strip leading zeros: '032' → '32', '004' → '4'
+  const normalized = String(parseInt(numericId, 10));
+  return NUMERIC_TO_COUNTRY[normalized] || NUMERIC_TO_COUNTRY[numericId] || { name: `Region #${numericId}`, alpha2: '??' };
 }
 
 /**

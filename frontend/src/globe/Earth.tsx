@@ -254,7 +254,7 @@ function VolumetricLand() {
           }
 
           const info = getCountryInfo(String(geo.id));
-          const countryName = info.name;
+          const countryName = geo.properties?.name || info.name;
           const code = info.alpha2;
           const userData = { countryName, code };
 
@@ -442,7 +442,7 @@ function CountryFills2D() {
           }
           
           const info = getCountryInfo(String(geo.id));
-          const countryName = info.name;
+          const countryName = geo.properties?.name || info.name;
           const code = info.alpha2;
 
           for (const poly of polygons) {
