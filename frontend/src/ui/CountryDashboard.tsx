@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { useStreamStore } from '../stream/useStreamStore';
 import { GlassPanel } from './GlassPanel';
 import { theme } from '../theme/theme';
@@ -16,6 +16,7 @@ interface CountryStats {
 export function CountryDashboard() {
   const selectedCountry = useStreamStore(s => s.selectedCountry);
   const setView = useStreamStore(s => s.setView);
+  const recentEvents = useStreamStore(s => s.recentEvents);
   
   const [history, setHistory] = useState<ThreatEvent[]>([]);
   const [stats, setStats] = useState<CountryStats>({ fromCount: 0, onCount: 0, totalWorld: 1 });
@@ -62,6 +63,38 @@ export function CountryDashboard() {
 
     return () => clearInterval(interval);
   }, [countryCode]);
+
+  // Merge live events from store with polled history
+  const combinedHistory = useMemo(() => {
+    if (!countryCode || countryCode === '??') return history;
+    
+    // Filter live events for this country
+    const liveCountryEvents = recentEvents.filter(ev => ev.s_co === countryCode || ev.d_co === countryCode);
+    
+    // Merge arrays and remove duplicates
+    const merged = [...liveCountryEvents, ...history];
+    const unique = [];
+    const seen = new Set();
+    
+    for (const ev of merged) {
+      // API events use _id, stream events use id
+      const evtId = ev._id || ev.id;
+      if (evtId && !seen.has(evtId)) {
+        seen.add(evtId);
+        unique.push(ev);
+      }
+    }
+    
+    // Sort combined by newest first
+    unique.sort((a, b) => {
+        const tA = new Date(a.timestamp || a.ts || 0).getTime();
+        const tB = new Date(b.timestamp || b.ts || 0).getTime();
+        return tB - tA;
+    });
+
+    // Return top 200
+    return unique.slice(0, 200);
+  }, [recentEvents, history, countryCode]);
 
   // Calculate Threat Level dynamically
   const activityRatio = (stats.fromCount + stats.onCount) / Math.max(stats.totalWorld, 1);
@@ -132,14 +165,14 @@ export function CountryDashboard() {
                   {loading && <span style={{ fontSize: 10, color: theme.colors.textDim, animation: 'pulse 1.5s infinite' }}>LOADING...</span>}
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 10, flex: 1, overflowY: 'auto', paddingRight: 5 }}>
-                    {history.length === 0 && !loading && (
+                    {combinedHistory.length === 0 && !loading && (
                       <div style={{ padding: 20, textAlign: 'center', color: theme.colors.textDim, fontSize: 12 }}>No recent attacks found for this region.</div>
                     )}
-                    {history.map((ev, i) => (
-                        <div key={ev._id || i} style={{ padding: 12, background: 'rgba(255,255,255,0.03)', borderRadius: 8, fontSize: 12, borderLeft: `2px solid ${getAttackColor(ev.a_t)}` }}>
+                    {combinedHistory.map((ev, i) => (
+                        <div key={ev._id || ev.id || i} style={{ padding: 12, background: 'rgba(255,255,255,0.03)', borderRadius: 8, fontSize: 12, borderLeft: `2px solid ${getAttackColor(ev.a_t)}` }}>
                             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
                               <span style={{ color: getAttackColor(ev.a_t), fontWeight: 700, textTransform: 'uppercase', fontSize: 10, letterSpacing: 1 }}>{ev.a_t}</span>
-                              <span style={{ color: theme.colors.textDim, fontSize: 10 }}>{new Date(ev.timestamp!).toLocaleTimeString()}</span>
+                              <span style={{ color: theme.colors.textDim, fontSize: 10 }}>{new Date(ev.timestamp || ev.ts || Date.now()).toLocaleTimeString()}</span>
                             </div>
                             <div style={{ color: '#fff', fontWeight: 600, marginBottom: 4 }}>{ev.a_n}</div>
                             <div style={{ color: theme.colors.textDim, fontSize: 10, fontFamily: theme.fonts.mono }}>
