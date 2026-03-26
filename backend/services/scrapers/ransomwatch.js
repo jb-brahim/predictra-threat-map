@@ -18,15 +18,15 @@ async function startRansomWatch(broadcast) {
 
   const poll = async () => {
     try {
-      // Open source community project index of ransomware leak sites (e.g. Lockbit, ALPHV, etc.)
-      const response = await axios.get('https://raw.githubusercontent.com/joshhighet/ransomwatch/main/posts.json', {
+      // Since ransomwatch is archived, we have successfully migrated to Ransomlook.io which is actively maintained!
+      const response = await axios.get('https://www.ransomlook.io/api/recent', {
         timeout: 15000,
       });
 
       const posts = response.data;
       if (!Array.isArray(posts)) return;
 
-      // On first run, just establish a baseline, or take the top 15 leaks
+      // Ensure we don't bombard the UI on first load. Grab latest 15.
       let newLeaks = [];
       if (lastRecordCount === 0) {
         newLeaks = posts.slice(0, 15); 
@@ -57,8 +57,9 @@ async function startRansomWatch(broadcast) {
             threat_type: 'Ransomware Extortion',
             malware_family: item.group_name,
             tags: ['#ransomware', '#dataleak', `#${item.group_name}`],
-            description: item.description || 'Data published on ransomware actor TOR site.',
-            published_date: item.published || item.discovered
+            description: 'Data published on active ransomware actor TOR site.',
+            url: item.link ? `https://www.ransomlook.io${item.link}` : '',
+            published_date: new Date().toISOString()
           }
         };
 
@@ -68,9 +69,9 @@ async function startRansomWatch(broadcast) {
         emitted++;
       });
 
-      console.log(`[RansomWatch] Emitted ${emitted} dark web ransomware leaks.`);
+      console.log(`[RansomLook API] Emitted ${emitted} active dark web ransomware leaks.`);
     } catch (err) {
-      console.error('[RansomWatch] Error polling dark web:', err.message);
+      console.error('[RansomLook API] Error polling dark web:', err.message);
     }
   };
 

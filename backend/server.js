@@ -12,6 +12,7 @@ const { startThreatFox } = require('./services/scrapers/threatfox');
 const { startUrlhaus } = require('./services/scrapers/urlhaus');
 const { startAlienVault } = require('./services/scrapers/alienvault');
 const { startRansomWatch } = require('./services/scrapers/ransomwatch');
+const { startC2Tracker } = require('./services/scrapers/c2tracker');
 
 const app = express();
 app.use(cors());
@@ -266,6 +267,7 @@ startThreatFox((ev, data) => broadcast(ev, data, 'threatfox'));
 startUrlhaus((ev, data) => broadcast(ev, data, 'urlhaus'));
 startAlienVault((ev, data) => broadcast(ev, data, 'alienvault'));
 startRansomWatch((ev, data) => broadcast(ev, data, 'ransomwatch'));
+startC2Tracker((ev, data) => broadcast(ev, data, 'c2tracker'));
 
 app.listen(PORT, () => {
   console.log(`[Server] SSE Backend listening on http://localhost:${PORT}`);
