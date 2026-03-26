@@ -17,6 +17,7 @@ export function GlassPanel({ children, className, style, hoverable = false, ...r
     <div
       className={`glass-panel ${hoverable ? 'glass-panel--hoverable' : ''} ${className || ''}`}
       style={{
+        flexShrink: 0,
         background: theme.colors.panel,
         backdropFilter: `blur(${theme.blur.panel})`,
         WebkitBackdropFilter: `blur(${theme.blur.panel})`,
