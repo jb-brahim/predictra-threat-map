@@ -99,9 +99,6 @@ export function Sidebar() {
       right: 24,
       bottom: 24,
       width: 380,
-      display: 'flex',
-      flexDirection: 'column',
-      gap: 40, // More breathing room
       zIndex: 10,
       overflowY: 'auto',
       overflowX: 'hidden',
@@ -109,6 +106,12 @@ export function Sidebar() {
       scrollbarWidth: 'thin',
       scrollbarColor: 'rgba(0, 224, 255, 0.2) transparent',
     }}>
+      <div style={{
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 40,
+        minHeight: 'min-content',
+      }}>
       {/* Live Metrics Container */}
       <GlassPanel>
         <div style={{ marginBottom: 8 }}>
@@ -337,6 +340,7 @@ export function Sidebar() {
           )}
         </div>
       </GlassPanel>
+    </div>
     </div>
   );
 }
