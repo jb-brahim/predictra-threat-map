@@ -1,6 +1,7 @@
 import { useRef, useEffect, useState } from 'react';
 import * as THREE from 'three';
 import { useStreamStore } from '../stream/useStreamStore';
+import { getCountryInfo } from '../utils/countryNames';
 
 const GEOJSON_URL = 'https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json';
 
@@ -10,15 +11,28 @@ export function CountryHologram() {
   const [geometry, setGeometry] = useState<THREE.BufferGeometry | null>(null);
 
   useEffect(() => {
+    if (!selectedCountry?.code || selectedCountry.code === '??') {
+      setGeometry(null);
+      return;
+    }
+
     fetch(GEOJSON_URL)
       .then(res => res.json())
       .then(topology => {
         const decodedArcs = decodeTopology(topology);
         const geometries = topology.objects.countries?.geometries || [];
         
-        // Find geometry by name
-        const targetGeo = geometries.find((g: any) => g.properties?.name === selectedCountry) || 
-                          geometries[Math.floor(Math.random() * geometries.length)];
+        // Find geometry by matching alpha2 code from the numeric ID lookup
+        const targetGeo = geometries.find((g: any) => {
+          const info = getCountryInfo(String(g.id));
+          return info.alpha2 === selectedCountry.code;
+        });
+
+        if (!targetGeo) {
+          console.warn(`CountryHologram: No geometry found for code ${selectedCountry.code}`);
+          setGeometry(null);
+          return;
+        }
         
         const polygons: number[][][] = [];
         if (targetGeo.type === 'Polygon') {
@@ -52,6 +66,8 @@ export function CountryHologram() {
           
           setGeometry(geo);
           if (groupRef.current) groupRef.current.scale.setScalar(scale);
+        } else {
+          setGeometry(null);
         }
       });
   }, [selectedCountry]);
