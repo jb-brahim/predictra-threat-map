@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { GlobeScene } from './globe/GlobeScene';
+
 import { Sidebar } from './ui/Sidebar';
 import { StatusBar } from './ui/StatusBar';
 import { PerfOverlay } from './ui/PerfOverlay';
@@ -18,17 +18,13 @@ function App() {
   const currentView = useStreamStore(s => s.currentView);
 
   useEffect(() => {
-    // Check reduced motion preference
     const prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     if (prefersReduced) {
       useStreamStore.getState().setConfig('reducedMotion', true);
       useStreamStore.getState().setConfig('rotation', false);
       useStreamStore.getState().setConfig('trails', false);
     }
-
-    // Initialize stream
     initStream();
-
     return () => {
       const cleanup = useStreamStore.getState()._cleanup;
       if (cleanup) cleanup();
@@ -36,30 +32,21 @@ function App() {
   }, [initStream]);
 
   return (
-    <>
-      {/* Full-screen 3D Globe - only active in map view */}
-      {currentView === 'map' && <GlobeScene />}
-
-      {/* History Page overlay */}
-      {currentView === 'history' && <HistoryPage />}
-
-      {/* Dashboard Page overlay */}
-      {currentView === 'dashboard' && <DashboardPage />}
-
-      {/* Country Dashboard overlay */}
-      {currentView === 'country' && <CountryDashboard />}
-
-      {/* Background grid overlay */}
-      <div className="grid-overlay" />
-
-      {/* UI Panels */}
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', width: '100vw', background: '#050B14', overflow: 'hidden' }}>
       <StatusBar />
-      <Sidebar />
-      <PerfOverlay />
+      
+      <div style={{ display: 'flex', flex: 1, marginTop: 64, overflow: 'hidden' }}>
+        <Sidebar />
+        
+        <div style={{ flex: 1, position: 'relative', overflowY: 'auto', padding: '24px' }}>
+          {(currentView === 'map' || currentView === 'dashboard') && <DashboardPage />}
+          {currentView === 'history' && <HistoryPage />}
+          {currentView === 'country' && <CountryDashboard />}
+        </div>
+      </div>
 
-      {/* Scan line effect */}
-      <div className="scan-line" />
-    </>
+      <PerfOverlay />
+    </div>
   );
 }
 

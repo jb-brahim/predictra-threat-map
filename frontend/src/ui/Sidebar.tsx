@@ -94,15 +94,14 @@ export function Sidebar() {
 
   return (
     <div style={{
-      position: 'fixed',
-      top: 100,
-      right: 24,
-      bottom: 24,
-      width: 380,
-      zIndex: 10,
+      width: 320,
+      flexShrink: 0,
+      display: 'flex',
+      flexDirection: 'column',
+      gap: 16,
+      borderRight: `1px solid ${theme.colors.panelBorder}`,
+      padding: '24px',
       overflowY: 'auto',
-      overflowX: 'hidden',
-      paddingRight: 8,
       scrollbarWidth: 'thin',
       scrollbarColor: 'rgba(0, 224, 255, 0.2) transparent',
     }}>

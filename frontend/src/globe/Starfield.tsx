@@ -33,9 +33,9 @@ export function Starfield({ count = 3000 }: { count?: number }) {
       <primitive object={geometry} attach="geometry" />
       <pointsMaterial
         color="#FFFFFF"
-        size={0.15}
+        size={0.2}
         transparent
-        opacity={0.6}
+        opacity={0.8}
         depthWrite={false}
         sizeAttenuation
       />

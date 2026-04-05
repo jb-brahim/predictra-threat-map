@@ -1,4 +1,5 @@
 import { useStreamStore } from '../stream/useStreamStore';
+import { GlobeScene } from '../globe/GlobeScene';
 import { GlassPanel } from './GlassPanel';
 import { theme, getAttackColor } from '../theme/theme';
 import { useState, useMemo, useEffect, useRef, useCallback } from 'react';
@@ -271,12 +272,7 @@ export function DashboardPage() {
     return () => window.removeEventListener('keydown', handler);
   }, []);
 
-  const clearAllFilters = useCallback(() => {
-    setSearchQuery('');
-    setActiveTypes(new Set());
-    setActiveSource(null);
-    setActiveCountry(null);
-  }, []);
+
 
   const hasFilters = searchQuery || activeTypes.size > 0 || activeSource || activeCountry;
 
@@ -351,11 +347,6 @@ export function DashboardPage() {
 
   return (
     <div style={{
-      position: 'fixed', inset: 0, zIndex: 100,
-      background: 'rgba(5, 8, 15, 0.97)',
-      backdropFilter: 'blur(30px)',
-      padding: '90px 32px 32px 32px',
-      overflowY: 'auto', overflowX: 'hidden',
       display: 'flex', flexDirection: 'column', gap: '20px',
       fontFamily: theme.fonts.body,
     }}>
@@ -435,59 +426,7 @@ export function DashboardPage() {
       </div>
 
       {/* ── Filter Chips ───────────────────────────────────────────────────── */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-        <span style={{ fontSize: 11, fontFamily: theme.fonts.display, textTransform: 'uppercase', letterSpacing: 1.5, color: theme.colors.textDim, marginRight: 4 }}>Filter:</span>
-        {(['exploit', 'malware', 'phishing'] as AttackType[]).map(type => {
-          const active = activeTypes.has(type);
-          const color = getAttackColor(type);
-          const count = typeDistribution[type];
-          return (
-            <FilterChip
-              key={type}
-              label={type.toUpperCase()}
-              count={count}
-              active={active}
-              color={color}
-              onClick={() => {
-                const next = new Set(activeTypes);
-                if (active) next.delete(type); else next.add(type);
-                setActiveTypes(next);
-              }}
-            />
-          );
-        })}
-        <div style={{ width: 1, height: 20, background: theme.colors.panelBorder, margin: '0 4px' }} />
-        {topApis.slice(0, 6).map(([api, count]) => {
-          const active = activeSource === api;
-          return (
-            <FilterChip
-              key={api}
-              label={api}
-              count={count}
-              active={active}
-              color={`hsl(${api.length * 40 + 180}, 80%, 60%)`}
-              onClick={() => setActiveSource(active ? null : api)}
-            />
-          );
-        })}
-        {activeCountry && (
-          <>
-            <div style={{ width: 1, height: 20, background: theme.colors.panelBorder, margin: '0 4px' }} />
-            <FilterChip
-              label={`${getFlag(activeCountry)} ${activeCountry}`}
-              count={null}
-              active={true}
-              color={theme.colors.warning}
-              onClick={() => setActiveCountry(null)}
-            />
-          </>
-        )}
-        {hasFilters && (
-          <button onClick={clearAllFilters} style={{ marginLeft: 4, padding: '3px 10px', background: 'rgba(255,68,68,0.1)', border: '1px solid rgba(255,68,68,0.3)', borderRadius: 20, color: '#ff6666', fontSize: 11, fontFamily: theme.fonts.display, textTransform: 'uppercase', letterSpacing: 1, cursor: 'pointer' }}>
-            × Clear All  <kbd style={{ fontSize: 10, opacity: 0.6, fontFamily: theme.fonts.mono }}>Esc</kbd>
-          </button>
-        )}
-      </div>
+      {/* User requested removal to save space */}
 
       {/* ── KPI Row ────────────────────────────────────────────────────────── */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16 }}>
@@ -515,6 +454,13 @@ export function DashboardPage() {
 
       {/* ── Main Grid ──────────────────────────────────────────────────────── */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: 20 }}>
+      
+        {/* Globe Map Area – spans 4 cols (full width) */}
+        <div style={{ gridColumn: 'span 4' }}>
+          <div style={{ height: '600px', borderRadius: '12px', overflow: 'hidden', border: `1px solid ${theme.colors.panelBorder}`, background: 'transparent' }}>
+            <GlobeScene />
+          </div>
+        </div>
 
         {/* Live Feed – spans 3 cols */}
         <div style={{ gridColumn: 'span 3' }}>
@@ -703,34 +649,7 @@ export function DashboardPage() {
   );
 }
 
-/* ─── FilterChip ──────────────────────────────────────────────────────────── */
 
-function FilterChip({ label, count, active, color, onClick }: { label: string; count: number | null; active: boolean; color: string; onClick: () => void }) {
-  return (
-    <button
-      onClick={onClick}
-      style={{
-        display: 'flex', alignItems: 'center', gap: 5,
-        padding: '3px 10px', borderRadius: 20,
-        background: active ? `${color}20` : 'rgba(255,255,255,0.04)',
-        border: `1px solid ${active ? color + '70' : 'rgba(255,255,255,0.08)'}`,
-        color: active ? color : theme.colors.textDim,
-        fontSize: 11, fontFamily: theme.fonts.display,
-        textTransform: 'uppercase', letterSpacing: 1,
-        cursor: 'pointer',
-        boxShadow: active ? `0 0 12px ${color}30` : 'none',
-        transition: 'all 0.2s',
-      }}
-    >
-      {label}
-      {count !== null && (
-        <span style={{ fontSize: 10, padding: '0 5px', background: active ? `${color}30` : 'rgba(255,255,255,0.06)', borderRadius: 10, color: active ? color : theme.colors.textDim }}>
-          {fmt(count)}
-        </span>
-      )}
-    </button>
-  );
-}
 
 /* ─── KPICard ─────────────────────────────────────────────────────────────── */
 

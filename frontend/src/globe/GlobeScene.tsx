@@ -39,14 +39,15 @@ export function GlobeScene() {
 
   return (
     <div style={{
-      position: 'fixed',
-      inset: 0,
-      zIndex: 0,
-      background: '#05080F',
+      width: '100%',
+      height: '100%',
+      position: 'relative',
+      background: '#050B14',
+      overflow: 'hidden',
     }}>
       <Canvas
         camera={{ 
-          position: projectionMode === '3d' ? [0, 0, 2.8] : [0, -0.8, 3.2], 
+          position: projectionMode === '3d' ? [0, 0, 2.8] : [0, 0, 3.2], 
           fov: 45, 
           near: 0.1, 
           far: 1000 
@@ -59,16 +60,22 @@ export function GlobeScene() {
         }}
         dpr={qualityPreset === 'low' ? 1 : Math.min(window.devicePixelRatio, 2)}
       >
-        {/* Lighting */}
-        <ambientLight intensity={0.15} color="#4488CC" />
-        <directionalLight position={[5, 3, 5]} intensity={0.4} color="#88BBFF" />
-        <directionalLight position={[-5, -2, -5]} intensity={0.1} color="#0044AA" />
+        {/* Lighting (Deep Space in 3D, Even in 2D) */}
+        <ambientLight intensity={projectionMode === '3d' ? 0.05 : 0.15} color="#ffffff" />
+        <directionalLight 
+          position={projectionMode === '3d' ? [10, 5, 5] : [5, 3, 5]} 
+          intensity={projectionMode === '3d' ? 1.5 : 0.4} 
+          color="#ffffee" 
+        />
+        {projectionMode !== '3d' && (
+          <directionalLight position={[-5, -2, -5]} intensity={0.1} color="#0044AA" />
+        )}
 
         {/* Background */}
-        <color attach="background" args={['#05080F']} />
-        <fog attach="fog" args={['#05080F', 5, 30]} />
+        <color attach="background" args={[projectionMode === '3d' ? '#000000' : '#050B14']} />
+        <fog attach="fog" args={[projectionMode === '3d' ? '#000000' : '#050B14', 5, 30]} />
         <Starfield count={qualityPreset === 'low' ? 1000 : 3000} />
-        <BackgroundEffects />
+        {projectionMode !== '3d' && <BackgroundEffects />}
 
         {/* Global Tech Grid (Static Background) */}
         <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -2, -5]}>

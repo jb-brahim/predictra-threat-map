@@ -597,7 +597,8 @@ export function Earth({ children }: { children?: React.ReactNode }) {
                          smoothstep(0.01, 0.0, vUv.y) + smoothstep(0.99, 1.0, vUv.y);
           finalColor += gridColor * border * 0.1;
 
-          gl_FragColor = vec4(finalColor, 1.0);
+          float alpha = max(grid * 0.15, border * 0.4);
+          gl_FragColor = vec4(finalColor, alpha);
         }
       `,
       transparent: true,
@@ -627,23 +628,9 @@ export function Earth({ children }: { children?: React.ReactNode }) {
           <group>
             {/* Main Map Plane */}
             <mesh>
-              <planeGeometry args={[5, 2.5]} />
+              <planeGeometry args={[5.2, 2.6]} />
               <primitive object={map2DMaterial} attach="material" />
             </mesh>
-            
-            {/* Map Frame/Border */}
-            <mesh position={[0, 0, -0.01]}>
-              <planeGeometry args={[5.1, 2.6]} />
-              <meshBasicMaterial color="#00A8FF" transparent opacity={0.1} />
-            </mesh>
-            
-            {/* Atmospheric Underglow */}
-            <mesh position={[0, 0, -0.05]} scale={[1.1, 1.1, 1]}>
-              <planeGeometry args={[5, 2.5]} />
-              <meshBasicMaterial color="#00A8FF" transparent opacity={0.05} />
-            </mesh>
-            {/* HUD Elements */}
-            <HUDBrackets />
           </group>
         )}
 
