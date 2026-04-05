@@ -302,11 +302,11 @@ function VolumetricLand() {
             geometry.setIndex(sideIndices);
             geometry.computeVertexNormals();
 
-            // Side material (Neon)
+            // Side material (Matte Outline)
             const sideMesh = new THREE.Mesh(geometry, new THREE.MeshPhongMaterial({ 
-              color: 0x00D1FF, 
-              emissive: 0x00A8FF, 
-              emissiveIntensity: 0.5, 
+              color: 0x1E293B, 
+              emissive: 0x1E293B, 
+              emissiveIntensity: 0.1, 
               side: THREE.DoubleSide 
             }));
             sideMesh.userData = userData;
@@ -334,9 +334,9 @@ function VolumetricLand() {
             topGeom.computeVertexNormals();
             
             const topMesh = new THREE.Mesh(topGeom, new THREE.MeshPhongMaterial({ 
-              color: 0x0A244D, 
-              specular: 0x00A8FF, 
-              shininess: 30,
+              color: 0x0F172A, 
+              specular: 0x1E293B, 
+              shininess: 10,
               emissive: 0x000000,
               emissiveIntensity: 0
             }));
@@ -358,23 +358,23 @@ function VolumetricLand() {
       if (child.userData?.countryName === hoveredCountryName) {
         // Boost emissive for selection
         if (child.material) {
-          if (child.material.color.getHex() === 0x0A244D) {
+          if (child.material.color.getHex() === 0x0F172A) {
             // Top face logic
-            child.material.emissive.setHex(0x00A8FF);
-            child.material.emissiveIntensity = 0.4;
+            child.material.emissive.setHex(0x3B82F6);
+            child.material.emissiveIntensity = 0.2;
           } else {
             // Side walls logic
-            child.material.emissiveIntensity = 1.0;
+            child.material.emissiveIntensity = 0.3;
           }
         }
       } else {
         // Reset
         if (child.material) {
-          if (child.material.color.getHex() === 0x0A244D) {
+          if (child.material.color.getHex() === 0x0F172A) {
             child.material.emissive.setHex(0x000000);
             child.material.emissiveIntensity = 0;
           } else {
-            child.material.emissiveIntensity = 0.5;
+            child.material.emissiveIntensity = 0.1;
           }
         }
       }
@@ -454,9 +454,9 @@ function CountryFills2D() {
             }
             const geometry = new THREE.ShapeGeometry(shape);
             const material = new THREE.MeshBasicMaterial({ 
-              color: 0x00A8FF, 
+              color: 0x3B82F6, 
               transparent: true, 
-              opacity: 0.03, 
+              opacity: 0.1, 
               side: THREE.FrontSide, 
               depthWrite: false 
             });
@@ -464,7 +464,7 @@ function CountryFills2D() {
             mesh.position.z = 0.002;
             
             // Attach data for raycasting
-            mesh.userData = { countryName, code, originalColor: 0x00A8FF, originalOpacity: 0.03 };
+            mesh.userData = { countryName, code, originalColor: 0x3B82F6, originalOpacity: 0.1 };
             group.add(mesh);
           }
         }
@@ -479,7 +479,7 @@ function CountryFills2D() {
     meshes.children.forEach((child: any) => {
       const isHovered = child.userData.countryName === hoveredCountryName;
       if (child.material) {
-        child.material.color.setHex(isHovered ? 0x00FF82 : child.userData.originalColor);
+        child.material.color.setHex(isHovered ? 0x94A3B8 : child.userData.originalColor);
         child.material.opacity = isHovered ? 0.3 : child.userData.originalOpacity;
       }
     });
@@ -565,14 +565,13 @@ export function Earth({ children }: { children?: React.ReactNode }) {
 
 
 
-  // 2D Map Shader Material (Tactical Overhaul)
+  // 2D Map Shader Material (Enterprise Overhaul)
   const map2DMaterial = useMemo(() => {
     return new THREE.ShaderMaterial({
       uniforms: {
         time: { value: 0 },
-        color: { value: new THREE.Color(0x02050A) }, // Even darker
-        gridColor: { value: new THREE.Color(0x00A8FF) },
-        accentColor: { value: new THREE.Color(0x00FF82) },
+        color: { value: new THREE.Color(0x0F172A) }, // Slate background
+        gridColor: { value: new THREE.Color(0xFFFFFF) }, // Subtle white grid
       },
       vertexShader: `
         varying vec2 vUv;
@@ -582,44 +581,21 @@ export function Earth({ children }: { children?: React.ReactNode }) {
         }
       `,
       fragmentShader: `
-        uniform float time;
         uniform vec3 color;
         uniform vec3 gridColor;
-        uniform vec3 accentColor;
         varying vec2 vUv;
 
-        float hash(vec2 p) {
-          return fract(sin(dot(p, vec2(12.71, 311.7))) * 43758.5453123);
-        }
-
         void main() {
-          // Dynamic Grid
+          // Subtle Static Grid
           vec2 gUv = vUv * vec2(60.0, 30.0);
           vec2 gridLine = abs(fract(gUv - 0.5) - 0.5) / fwidth(gUv);
           float grid = 1.0 - min(min(gridLine.x, gridLine.y), 1.0);
           
-          // Scanning Sweep Pulse
-          float sweep = fract(vUv.x - time * 0.1);
-          float sweepLine = smoothstep(0.98, 1.0, sweep) * 0.2; // Halved
+          vec3 finalColor = color + gridColor * grid * 0.02; 
           
-          // Data Noise
-          float noise = hash(floor(vUv * 200.0) + floor(time * 10.0)) * 0.02; // Reduced
-          
-          // Perspective highlight
-          float dist = distance(vUv, vec2(0.5, 0.5));
-          float highlight = pow(1.0 - dist, 3.0) * 0.1; // Halved
-          
-          // Composition
-          vec3 finalColor = color;
-          finalColor += gridColor * grid * 0.08; // Subtle grid
-          finalColor += accentColor * sweepLine; // Tactical sweep
-          finalColor += gridColor * highlight; // Central highlight
-          finalColor += noise; // "Digital stream" noise
-          
-          // Edge borders
           float border = smoothstep(0.01, 0.0, vUv.x) + smoothstep(0.99, 1.0, vUv.x) +
                          smoothstep(0.01, 0.0, vUv.y) + smoothstep(0.99, 1.0, vUv.y);
-          finalColor += gridColor * border * 0.5;
+          finalColor += gridColor * border * 0.1;
 
           gl_FragColor = vec4(finalColor, 1.0);
         }
@@ -641,10 +617,10 @@ export function Earth({ children }: { children?: React.ReactNode }) {
           <mesh>
             <sphereGeometry args={[1, 64, 64]} />
             <meshPhongMaterial
-              color="#051225"
-              emissive="#020818"
-              emissiveIntensity={0.5}
-              shininess={25}
+              color="#0F172A"
+              emissive="#020617"
+              emissiveIntensity={0.2}
+              shininess={10}
             />
           </mesh>
         ) : (

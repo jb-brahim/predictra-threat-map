@@ -129,12 +129,9 @@ export function Sidebar() {
             style={{
               fontSize: 48,
               fontFamily: theme.fonts.display,
-              fontWeight: 900,
+              fontWeight: 800,
               lineHeight: 1.1,
-              color: '#00D1FF', // Solid fallback
-              background: 'linear-gradient(135deg, #00D1FF, #00E0FF, #88EEFF)',
-              WebkitBackgroundClip: 'text',
-              WebkitTextFillColor: 'transparent',
+              color: theme.colors.textPrimary,
               display: 'block',
               minHeight: '1.2em', // Ensure height even if text is weird
             }}
@@ -282,7 +279,7 @@ export function Sidebar() {
                       </span>
                     )}
                     {event.meta.as_name && (
-                      <span style={{ fontSize: '9px', background: 'rgba(0, 209, 255, 0.05)', color: '#00D1FF', padding: '1px 5px', borderRadius: '4px', border: '1px solid rgba(0, 209, 255, 0.1)', maxWidth: '120px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      <span style={{ fontSize: '9px', background: 'rgba(59, 130, 246, 0.05)', color: theme.colors.phishing, padding: '1px 5px', borderRadius: '4px', border: '1px solid rgba(59, 130, 246, 0.1)', maxWidth: '120px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                         {event.meta.as_name}
                       </span>
                     )}
@@ -320,7 +317,7 @@ export function Sidebar() {
                       rel="noreferrer"
                       style={{ 
                         marginLeft: 'auto', 
-                        color: '#00D1FF', 
+                        color: theme.colors.phishing, 
                         fontSize: '9px', 
                         textDecoration: 'none',
                         opacity: 0.7,
@@ -483,7 +480,7 @@ function TopList({ title, items, isCountry = false, color }: { title: string; it
   const max = Math.max(...items.map(i => i[1]), 1);
 
   return (
-    <GlassPanel style={{ padding: '14px 18px', borderTop: `1px solid ${color}40`, background: `linear-gradient(180deg, ${color}08 0%, rgba(10,16,24,0) 100%)` }}>
+    <GlassPanel style={{ padding: '14px 18px', borderTop: `1px solid ${color}40`, background: `linear-gradient(180deg, ${color}08 0%, rgba(15,23,42,0) 100%)` }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}>
         <div style={{ width: 6, height: 6, borderRadius: '50%', background: color, boxShadow: `0 0 8px ${color}` }} />
         <div style={{ fontSize: 11, fontFamily: theme.fonts.display, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 2, color: theme.colors.textPrimary }}>

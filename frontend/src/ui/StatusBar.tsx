@@ -88,9 +88,7 @@ export function StatusBar() {
             fontWeight: 900,
             margin: 0,
             letterSpacing: 2,
-            background: 'linear-gradient(135deg, #00D1FF, #00E0FF 50%, #88EEFF)',
-            WebkitBackgroundClip: 'text',
-            WebkitTextFillColor: 'transparent',
+            color: theme.colors.textPrimary,
           }}>
             THREAT MAP
           </h1>
@@ -190,8 +188,8 @@ export function StatusBar() {
         >
           <div style={{
             width: 6, height: 6, borderRadius: '50%',
-            background: projectionMode === '3d' ? '#00D1FF' : '#fff',
-            boxShadow: projectionMode === '3d' ? '0 0 8px #00D1FF' : 'none'
+            background: projectionMode === '3d' ? theme.colors.phishing : '#fff',
+            boxShadow: 'none'
           }} />
           {projectionMode === '3d' ? '3D' : '2D'}
         </button>

@@ -1,4 +1,4 @@
-@import url("https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;800;900&family=Rajdhani:wght@300;400;500;600;700&family=JetBrains+Mono:wght@300;400;500;600;700&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@300;400;500;600;700&display=swap");
 
 /* ========================
    CSS RESET & GLOBALS
@@ -17,9 +17,9 @@ body,
   width: 100%;
   height: 100%;
   overflow: hidden;
-  background: #05080f;
-  color: #e6f1ff;
-  font-family: "Rajdhani", "Inter", system-ui, sans-serif;
+  background: #050B14;
+  color: #F8FAFC;
+  font-family: "Inter", system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
@@ -28,8 +28,8 @@ body,
    SELECTION
    ======================== */
 ::selection {
-  background: rgba(0, 209, 255, 0.3);
-  color: #e6f1ff;
+  background: rgba(59, 130, 246, 0.3);
+  color: #FFFFFF;
 }
 
 /* ========================
@@ -44,12 +44,12 @@ body,
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgba(0, 209, 255, 0.2);
+  background: rgba(148, 163, 184, 0.2);
   border-radius: 2px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(0, 209, 255, 0.4);
+  background: rgba(148, 163, 184, 0.4);
 }
 
 /* ========================
@@ -60,70 +60,24 @@ body,
   overflow: hidden;
 }
 
-.glass-panel::before {
-  content: "";
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 1px;
-  background: linear-gradient(
-    90deg,
-    transparent,
-    rgba(0, 224, 255, 0.3),
-    transparent
-  );
-}
-
 .glass-panel--hoverable:hover {
-  border-color: rgba(0, 224, 255, 0.5) !important;
+  border-color: rgba(255, 255, 255, 0.15) !important;
   transform: translateY(-1px);
-  box-shadow:
-    0 8px 32px rgba(0, 0, 0, 0.4),
-    0 0 20px rgba(0, 209, 255, 0.05);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
 }
 
 /* ========================
    BACKGROUND GRID OVERLAY
    ======================== */
 .grid-overlay {
-  position: fixed;
-  inset: 0;
-  z-index: 1;
-  pointer-events: none;
-  background:
-    linear-gradient(rgba(0, 255, 255, 0.015) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(0, 255, 255, 0.015) 1px, transparent 1px);
-  background-size: 80px 80px;
-  animation: grid-scroll 60s linear infinite;
-  opacity: 0.5;
-}
-
-@keyframes grid-scroll {
-  from {
-    transform: translate(0, 0);
-  }
-  to {
-    transform: translate(80px, 80px);
-  }
+  display: none;
 }
 
 /* ========================
    SCAN LINE EFFECT
    ======================== */
 .scan-line {
-  position: fixed;
-  inset: 0;
-  z-index: 2;
-  pointer-events: none;
-  background: repeating-linear-gradient(
-    0deg,
-    transparent,
-    transparent 2px,
-    rgba(0, 0, 0, 0.03) 2px,
-    rgba(0, 0, 0, 0.03) 4px
-  );
-  opacity: 0.4;
+  display: none;
 }
 
 /* ========================
@@ -145,14 +99,6 @@ body,
    REDUCED MOTION
    ======================== */
 @media (prefers-reduced-motion: reduce) {
-  .grid-overlay {
-    animation: none !important;
-  }
-
-  .scan-line {
-    display: none;
-  }
-
   @keyframes pulse-dot {
     0%,
     100% {
@@ -171,6 +117,6 @@ body,
    ======================== */
 @media (max-width: 1200px) {
   .glass-panel {
-    border-radius: 16px !important;
+    border-radius: 8px !important;
   }
 }

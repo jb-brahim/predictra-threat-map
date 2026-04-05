@@ -1,7 +1,7 @@
 import { Canvas, useFrame } from '@react-three/fiber';
-import * as THREE from 'three';
+
 import { OrbitControls } from '@react-three/drei';
-import { EffectComposer, Bloom, ChromaticAberration, Vignette, Scanline } from '@react-three/postprocessing';
+import { EffectComposer, Bloom } from '@react-three/postprocessing';
 import { Earth } from './Earth';
 import { AttackArcs } from './AttackArcs';
 import { ImpactMarkers } from './ImpactMarkers';
@@ -104,22 +104,11 @@ export function GlobeScene() {
         {/* Post-processing */}
         <EffectComposer multisampling={qualityPreset === 'low' ? 0 : 8}>
           <Bloom
-            luminanceThreshold={0.25}
+            luminanceThreshold={0.5}
             mipmapBlur
-            intensity={0.4}
+            intensity={0.2}
             radius={0.4}
           />
-          {qualityPreset !== 'low' ? (
-            <>
-              <ChromaticAberration
-                offset={new THREE.Vector2(0.001, 0.001)}
-                radialModulation={false}
-                modulationOffset={0}
-              />
-              <Vignette eskil={false} offset={0.1} darkness={0.5} />
-              <Scanline density={1} opacity={0.05} />
-            </>
-          ) : <></>}
         </EffectComposer>
 
         {/* Animation loop */}
