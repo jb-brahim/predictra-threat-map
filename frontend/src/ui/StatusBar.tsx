@@ -59,6 +59,7 @@ export function StatusBar() {
     { id: 'map', label: 'LIVE MAP' },
     { id: 'history', label: 'HISTORY' },
     { id: 'dashboard', label: 'DASHBOARD' },
+    { id: 'analytics', label: 'ANALYTICS' },
   ] as const;
 
   return (

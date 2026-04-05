@@ -6,6 +6,7 @@ import { PerfOverlay } from './ui/PerfOverlay';
 import { HistoryPage } from './ui/HistoryPage';
 import { DashboardPage } from './ui/DashboardPage';
 import { CountryDashboard } from './ui/CountryDashboard';
+import { AnalyticsPage } from './ui/AnalyticsPage';
 import { useStreamStore } from './stream/useStreamStore';
 import './index.css';
 
@@ -42,6 +43,7 @@ function App() {
           {(currentView === 'map' || currentView === 'dashboard') && <DashboardPage />}
           {currentView === 'history' && <HistoryPage />}
           {currentView === 'country' && <CountryDashboard />}
+          {currentView === 'analytics' && <AnalyticsPage />}
         </div>
       </div>
 
