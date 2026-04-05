@@ -94,35 +94,6 @@ function GridLines() {
   );
 }
 
-function HUDBrackets() {
-  const color = "#00D1FF";
-  const size = 0.3;
-  const thickness = 0.02;
-  const gap = 2.5;
-  const vGap = 1.25;
-
-  return (
-    <group position={[0, 0, 0.02]}>
-      {/* Corner Brackets */}
-      <group position={[-gap, vGap, 0]}>
-        <mesh position={[size/2, 0, 0]}><boxGeometry args={[size, thickness, thickness]} /><meshBasicMaterial color={color} /></mesh>
-        <mesh position={[0, -size/2, 0]}><boxGeometry args={[thickness, size, thickness]} /><meshBasicMaterial color={color} /></mesh>
-      </group>
-      <group position={[gap, vGap, 0]}>
-        <mesh position={[-size/2, 0, 0]}><boxGeometry args={[size, thickness, thickness]} /><meshBasicMaterial color={color} /></mesh>
-        <mesh position={[0, -size/2, 0]}><boxGeometry args={[thickness, size, thickness]} /><meshBasicMaterial color={color} /></mesh>
-      </group>
-      <group position={[-gap, -vGap, 0]}>
-        <mesh position={[size/2, 0, 0]}><boxGeometry args={[size, thickness, thickness]} /><meshBasicMaterial color={color} /></mesh>
-        <mesh position={[0, size/2, 0]}><boxGeometry args={[thickness, size, thickness]} /><meshBasicMaterial color={color} /></mesh>
-      </group>
-      <group position={[gap, -vGap, 0]}>
-        <mesh position={[-size/2, 0, 0]}><boxGeometry args={[size, thickness, thickness]} /><meshBasicMaterial color={color} /></mesh>
-        <mesh position={[0, size/2, 0]}><boxGeometry args={[thickness, size, thickness]} /><meshBasicMaterial color={color} /></mesh>
-      </group>
-    </group>
-  );
-}
 
 function CountryDotGrid() {
   const projectionMode = useStreamStore(s => s.projectionMode);
