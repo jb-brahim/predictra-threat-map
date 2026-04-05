@@ -17,7 +17,7 @@ interface CombinedSector { name: string; total: number; }
 type Tab = 'countries' | 'trends' | 'sectors' | 'combined';
 type Period = '24h' | '7d' | '30d';
 
-const API = import.meta.env.VITE_API_URL || '';
+const API = (import.meta.env.VITE_API_URL || '').replace(/\/+$/, '');
 
 const FLAG: Record<string, string> = {
   US:'🇺🇸',CN:'🇨🇳',RU:'🇷🇺',DE:'🇩🇪',GB:'🇬🇧',BR:'🇧🇷',IN:'🇮🇳',JP:'🇯🇵',AU:'🇦🇺',FR:'🇫🇷',
