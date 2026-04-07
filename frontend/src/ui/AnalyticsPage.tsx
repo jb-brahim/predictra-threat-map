@@ -33,18 +33,39 @@ function flag(co: string) {
 function fmt(n: number) { if (n >= 1e6) return (n/1e6).toFixed(1)+'M'; if (n >= 1e3) return (n/1e3).toFixed(1)+'K'; return n.toLocaleString(); }
 
 const SECTOR_ICONS: Record<string, string> = {
-  'IT Infrastructure': '🖥️', 'Web Services': '🌐', 'Enterprise IT': '🏢',
-  'Finance / Healthcare': '🏦', 'Finance / Business': '💼', 'Email / Communication': '📧',
-  'Database Services': '🗄️', 'Enterprise SMB': '📁', 'Enterprise RDP': '🖱️',
-  'Telecommunications': '📡', 'General / Other': '📊',
+  'IT Infrastructure': '🖥️', 
+  'Web Services': '🌐', 
+  'Finance / Business': '💼', 
+  'Healthcare / Medical': '🏥',
+  'Government / Defense': '🏛️',
+  'Education / Academic': '🎓',
+  'Energy / Utilities': '⚡',
+  'Industrial Manufacturing': '🏗️',
+  'Retail / Commerce': '🛒',
+  'Telecommunications': '📡',
+  'Database Services': '🗄️',
+  'Email / Communication': '📧',
+  'Enterprise Network': '🏢',
+  'General / Other': '📊',
 };
 
 const SECTOR_COLORS: Record<string, string> = {
-  'IT Infrastructure': '#3B82F6', 'Web Services': '#10B981', 'Enterprise IT': '#8B5CF6',
-  'Finance / Healthcare': '#EF4444', 'Finance / Business': '#F59E0B', 'Email / Communication': '#06B6D4',
-  'Database Services': '#EC4899', 'Enterprise SMB': '#F97316', 'Enterprise RDP': '#14B8A6',
-  'Telecommunications': '#6366F1', 'General / Other': '#64748B',
+  'IT Infrastructure': '#3B82F6', 
+  'Web Services': '#10B981', 
+  'Finance / Business': '#F59E0B', 
+  'Healthcare / Medical': '#EF4444',
+  'Government / Defense': '#6366F1',
+  'Education / Academic': '#A855F7',
+  'Energy / Utilities': '#EAB308',
+  'Industrial Manufacturing': '#F97316',
+  'Retail / Commerce': '#EC4899',
+  'Telecommunications': '#14B8A6',
+  'Database Services': '#475569',
+  'Email / Communication': '#06B6D4',
+  'Enterprise Network': '#8B5CF6',
+  'General / Other': '#64748B',
 };
+
 
 /* ─── Main Component ──────────────────────────────────────────────────────── */
 
@@ -458,9 +479,10 @@ function SectorsTab({ sectors, total }: { sectors: SectorRow[]; total: number })
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-      <div style={{ padding: '8px 14px', background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.2)', borderRadius: 8, fontSize: 11, color: '#F59E0B', fontFamily: theme.fonts.display }}>
-        ⚠️ Sectors are estimated from port numbers, attack signatures, and intel source analysis — not from actual target industry data.
+      <div style={{ padding: '8px 14px', background: 'rgba(59,130,246,0.08)', border: '1px solid rgba(59,130,246,0.2)', borderRadius: 8, fontSize: 11, color: '#3B82F6', fontFamily: theme.fonts.display }}>
+        🛡️ Sectors are classified using the Intelligence Enrichment Service based on victim names, corporate databases, and malware targeting signatures.
       </div>
+
 
       <div style={{ display: 'grid', gridTemplateColumns: '280px 1fr', gap: 20 }}>
         {/* Donut */}
