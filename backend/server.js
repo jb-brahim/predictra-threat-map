@@ -10,6 +10,8 @@ const { startUrlhaus } = require('./services/scrapers/urlhaus');
 const { startAlienVault } = require('./services/scrapers/alienvault');
 const { startRansomWatch } = require('./services/scrapers/ransomwatch');
 const { startC2Tracker } = require('./services/scrapers/c2tracker');
+const { getEnrichedSector } = require('./services/enrichment');
+
 
 const app = express();
 app.use(cors());
@@ -255,49 +257,11 @@ app.get('/api/stats/timeline', async (req, res) => {
 });
 
 // ─── Sector mapping utility ──────────────────────────────────────────────────
-// Heuristic-based: none of the scrapers provide actual target industry data,
-// so we derive an "estimated sector" from port numbers, attack names, source_api, and meta.
-const SECTOR_PORT_MAP = {
-  22: 'IT Infrastructure', 23: 'IT Infrastructure',
-  25: 'Email / Communication', 587: 'Email / Communication', 465: 'Email / Communication', 110: 'Email / Communication', 143: 'Email / Communication',
-  53: 'IT Infrastructure',
-  80: 'Web Services', 443: 'Web Services', 8080: 'Web Services', 8443: 'Web Services',
-  445: 'Enterprise SMB', 139: 'Enterprise SMB',
-  3389: 'Enterprise RDP',
-  3306: 'Database Services', 5432: 'Database Services', 1433: 'Database Services', 27017: 'Database Services',
-  21: 'IT Infrastructure',
-  161: 'IT Infrastructure',
-  1723: 'IT Infrastructure',
-  5060: 'Telecommunications', 5061: 'Telecommunications',
-};
-
+// Now using the intelligent Enrichment Service for "Real Data" classification.
 function estimateSector(event) {
-  // 1) Port-based
-  const port = event.meta?.port;
-  if (port && SECTOR_PORT_MAP[port]) return SECTOR_PORT_MAP[port];
-
-  // 2) Attack-name / meta-based keywords
-  const name = (event.a_n || '').toLowerCase();
-  const threatType = (event.meta?.threat_type || '').toLowerCase();
-  const combined = name + ' ' + threatType;
-
-  if (/ransomware|ransom|extortion/.test(combined)) return 'Finance / Healthcare';
-  if (/phishing|credential|harvesting|impersonation|brand/.test(combined)) return 'Finance / Business';
-  if (/c2|command.and.control|botnet|rat\b|remote access/.test(combined)) return 'Enterprise IT';
-  if (/sql injection|xss|cross.site|web server|http request/.test(combined)) return 'Web Services';
-  if (/log4j|rce|remote code|buffer overflow|exploit/.test(combined)) return 'IT Infrastructure';
-  if (/dga|trojan|backdoor|cryptominer/.test(combined)) return 'Enterprise IT';
-  if (/port scan|firewall|probe/.test(combined)) return 'IT Infrastructure';
-
-  // 3) Source-API based fallback
-  const src = event.source_api || '';
-  if (src === 'ransomwatch') return 'Finance / Healthcare';
-  if (src === 'c2tracker') return 'Enterprise IT';
-  if (src === 'urlhaus') return 'Web Services';
-  if (src === 'sans') return 'IT Infrastructure';
-
-  return 'General / Other';
+  return getEnrichedSector(event);
 }
+
 
 // ─── Analytics: Country Classification ───────────────────────────────────────
 app.get('/api/analytics/countries', async (req, res) => {
@@ -483,7 +447,8 @@ app.get('/api/analytics/sectors', async (req, res) => {
     res.json({
       sectors,
       totalAnalyzed: events.length,
-      note: 'Sectors are estimated from port numbers, attack signatures, and threat intelligence source analysis.'
+      note: 'Sectors are classified using the Intelligence Enrichment Service based on victim names, malware signatures, and known industry indicators.'
+
     });
   } catch (error) {
     console.error('[API] Error fetching sector analytics:', error.message);
