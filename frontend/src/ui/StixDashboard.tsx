@@ -229,76 +229,131 @@ export function StixDashboard() {
   }, [data]);
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 24, height: '100%', overflow: 'hidden' }}>
-      {/* ─── HEADER ─────────────────────────────────────────────────────── */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexShrink: 0 }}>
-        <div>
+    <div style={{ 
+      display: 'grid', 
+      gridTemplateColumns: '340px 1fr' + (selectedItem ? ' 420px' : ''),
+      height: '100%', 
+      overflow: 'hidden',
+      background: 'rgba(5, 5, 15, 0.4)',
+      gap: 0,
+      transition: 'grid-template-columns 0.3s cubic-bezier(0.4, 0, 0.2, 1)'
+    }}>
+      {/* ─── LEFT SIDEBAR: REPORT BROWSER ────────────────────────── */}
+      <div style={{ 
+        borderRight: '1px solid rgba(255,255,255,0.06)', 
+        display: 'flex', 
+        flexDirection: 'column',
+        background: 'rgba(10, 15, 30, 0.4)',
+        zIndex: 10
+      }}>
+        <div style={{ padding: '24px 24px 12px' }}>
           <h2 style={{
-            margin: 0,
-            fontSize: 24,
-            fontFamily: theme.fonts.display,
-            fontWeight: 900,
-            letterSpacing: 2,
-            color: theme.colors.textPrimary,
-            display: 'flex',
-            alignItems: 'center',
-            gap: 12,
+            margin: 0, fontSize: 18, fontFamily: theme.fonts.display, fontWeight: 900,
+            letterSpacing: 2, color: theme.colors.textPrimary, display: 'flex', alignItems: 'center', gap: 10
           }}>
-            <span style={{
-              width: 10, height: 10, borderRadius: '50%',
-              background: '#8B5CF6',
-              boxShadow: '0 0 16px #8B5CF6',
-              display: 'inline-block',
-            }} />
-            STIX INTELLIGENCE
+            <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#8B5CF6', boxShadow: '0 0 12px #8B5CF6' }} />
+            SENTINEL HUB
           </h2>
-          <p style={{ margin: '4px 0 0', fontSize: 12, color: theme.colors.textDim, letterSpacing: 1 }}>
-            Structured Threat Intelligence — {data.reports.length} Reports · {data.attackPatterns.length} Techniques · {data.indicators.length} IOCs
-          </p>
+          <div style={{ fontSize: 9, color: theme.colors.textDim, textTransform: 'uppercase', letterSpacing: 1.5, marginTop: 4, fontWeight: 700 }}>
+            Threat Intelligence Matrix
+          </div>
         </div>
 
-        {/* Tabs */}
-        <div style={{ display: 'flex', gap: 24, marginTop: 4 }}>
-          {(['overview', 'iocs', 'visualizer'] as const).map(tab => (
-            <button
-              key={tab}
-              onClick={() => setActiveTab(tab)}
-              style={{
-                padding: '8px 16px',
-                background: 'transparent',
-                border: 'none',
-                color: activeTab === tab ? '#8B5CF6' : theme.colors.textDim,
-                fontSize: 13,
-                fontWeight: 700,
-                fontFamily: theme.fonts.display,
-                textTransform: 'uppercase',
-                letterSpacing: 2,
-                cursor: 'pointer',
-                position: 'relative',
-                transition: 'color 0.2s',
-              }}
-            >
-              {tab}
-              {activeTab === tab && (
-                <div style={{
-                  position: 'absolute', bottom: -12, left: 0, right: 0, height: 2,
-                  background: '#8B5CF6', boxShadow: '0 0 10px #8B5CF6',
-                }} />
-              )}
-            </button>
-          ))}
+        <div style={{ flex: 1, overflow: 'auto', padding: '12px 16px' }}>
+          <div style={{ 
+            fontSize: 10, fontWeight: 800, color: theme.colors.textDim, 
+            textTransform: 'uppercase', letterSpacing: 1, marginBottom: 16,
+            display: 'flex', alignItems: 'center', gap: 8
+          }}>
+            <span style={{ opacity: 0.5 }}>📂</span> Intelligence Bundles ({data.reports.length})
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            {data.reports.map(report => (
+              <ReportCard
+                key={report.id}
+                report={report}
+                isSelected={selectedReport?.id === report.id}
+                onClick={() => setSelectedReport(selectedReport?.id === report.id ? null : report)}
+                attackCount={report.object_refs?.filter(r => r.startsWith('attack-pattern')).length || 0}
+                indicatorCount={report.object_refs?.filter(r => r.startsWith('indicator')).length || 0}
+              />
+            ))}
+          </div>
         </div>
       </div>
 
-      {/* Main Content Areas */}
-      <div style={{ flex: 1, overflow: 'hidden', position: 'relative', display: 'flex', gap: selectedItem ? 20 : 0 }}>
-        <div style={{ flex: 1, overflow: 'auto', display: 'flex', flexDirection: 'column', gap: 24 }}>
+      {/* ─── MAIN CONTENT ─────────────────────────────────────────── */}
+      <div style={{ display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+        {/* TELEMETRY STRIP (Compact Header) */}
+        <div style={{ 
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between', 
+          padding: '16px 24px', borderBottom: '1px solid rgba(255,255,255,0.06)',
+          background: 'rgba(15, 23, 42, 0.3)', backdropFilter: 'blur(10px)'
+        }}>
+          <div style={{ display: 'flex', gap: 32 }}>
+            <TelemetryItem 
+              label="Intelligence" 
+              value={data.reports.length} 
+              color="#8B5CF6" 
+              icon="📄" 
+              onClick={() => setSelectedItem({ type: 'definition', id: 'threat-reports' })}
+            />
+            <TelemetryItem 
+              label="Techniques" 
+              value={data.attackPatterns.length} 
+              color={theme.colors.exploit} 
+              icon="⚔️" 
+              onClick={() => setSelectedItem({ type: 'definition', id: 'attack-patterns' })}
+            />
+            <TelemetryItem 
+              label="IOCs" 
+              value={data.indicators.length} 
+              color={theme.colors.malware} 
+              icon="🎯" 
+              onClick={() => setSelectedItem({ type: 'definition', id: 'indicators' })}
+            />
+            <TelemetryItem 
+              label="Kill Chain" 
+              value={`${Object.keys(killChainMap).filter(k => k !== 'unknown').length}/${KILL_CHAIN_PHASES.length}`} 
+              color="#06B6D4" 
+              icon="🔗" 
+              onClick={() => setSelectedItem({ type: 'definition', id: 'kill-chain' })}
+            />
+          </div>
+
+          <div style={{ display: 'flex', gap: 8, background: 'rgba(255,255,255,0.03)', padding: 4, borderRadius: 10, border: '1px solid rgba(255,255,255,0.05)' }}>
+            {(['overview', 'iocs', 'visualizer'] as const).map(tab => (
+              <button
+                key={tab}
+                onClick={() => setActiveTab(tab)}
+                style={{
+                  padding: '6px 14px',
+                  borderRadius: 6,
+                  background: activeTab === tab ? 'rgba(139, 92, 246, 0.15)' : 'transparent',
+                  border: 'none',
+                  color: activeTab === tab ? '#C4B5FD' : theme.colors.textDim,
+                  fontSize: 10,
+                  fontWeight: 900,
+                  fontFamily: theme.fonts.display,
+                  textTransform: 'uppercase',
+                  letterSpacing: 1,
+                  cursor: 'pointer',
+                  transition: 'all 0.2s',
+                }}
+              >
+                {tab}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Tab Canvas */}
+        <div style={{ flex: 1, overflow: 'auto', padding: 24, display: 'flex', flexDirection: 'column', gap: 24 }}>
           {activeTab === 'overview' && (
             <OverviewTab
               data={data}
               killChainMap={killChainMap}
               selectedReport={selectedReport}
-              setSelectedReport={setSelectedReport}
               setSelectedItem={setSelectedItem}
             />
           )}
@@ -317,75 +372,42 @@ export function StixDashboard() {
             <VisualizerTab data={data} setSelectedObject={(o) => setSelectedItem({ type: 'stix', id: o.id, data: o })} />
           )}
         </div>
-
-        {/* Intelligence Detail Panel */}
-        {selectedItem && (
-          <DetailPanel
-            item={selectedItem}
-            onClose={() => setSelectedItem(null)}
-          />
-        )}
       </div>
+
+      {/* ─── CONTEXT PANEL ────────────────────────────────────────── */}
+      {selectedItem && (
+        <DetailPanel
+          item={selectedItem}
+          onClose={() => setSelectedItem(null)}
+        />
+      )}
     </div>
   );
 }
 
-function OverviewTab({ data, killChainMap, selectedReport, setSelectedReport, setSelectedItem }: {
+function OverviewTab({ data, killChainMap, selectedReport, setSelectedItem }: {
   data: ParsedStixData;
   killChainMap: Record<string, StixObject[]>;
   selectedReport: StixObject | null;
-  setSelectedReport: (r: StixObject | null) => void;
   setSelectedItem: (item: { type: string; id: string; data?: any }) => void;
 }) {
-  const iocTypeCounts = data.indicators.reduce((acc, i) => {
-    const type = i.pattern?.includes('ipv4') ? 'IPs' : i.pattern?.includes('file') ? 'Files' : 'Other';
-    acc[type] = (acc[type] || 0) + 1;
-    return acc;
-  }, {} as Record<string, number>);
+  const [activePhase, setActivePhase] = useState<string | null>(null);
+
+  // Filter techniques if a report is selected
+  const filteredKillChainMap = useMemo(() => {
+    if (!selectedReport) return killChainMap;
+    const reportRefs = new Set(selectedReport.object_refs || []);
+    const newMap: Record<string, StixObject[]> = {};
+    for (const [phase, techs] of Object.entries(killChainMap)) {
+      const filtered = techs.filter(t => reportRefs.has(t.id));
+      if (filtered.length > 0) newMap[phase] = filtered;
+    }
+    return newMap;
+  }, [selectedReport, killChainMap]);
 
   return (
-    <>
-      {/* ─── KPI ROW ─────────────────────────────────────────────────── */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16, flexShrink: 0 }}>
-        <div onClick={() => setSelectedItem({ type: 'definition', id: 'threat-reports' })} style={{ cursor: 'pointer' }}>
-          <KPICard
-            label="THREAT REPORTS"
-            value={data.reports.length}
-            icon="📄"
-            color="#8B5CF6"
-            subtitle="CISA & Ivanti Bundles"
-          />
-        </div>
-        <div onClick={() => setSelectedItem({ type: 'definition', id: 'attack-patterns' })} style={{ cursor: 'pointer' }}>
-          <KPICard
-            label="ATTACK TECHNIQUES"
-            value={data.attackPatterns.length}
-            icon="⚔️"
-            color={theme.colors.exploit}
-            subtitle="MITRE Framework"
-          />
-        </div>
-        <div onClick={() => setSelectedItem({ type: 'definition', id: 'indicators' })} style={{ cursor: 'pointer' }}>
-          <KPICard
-            label="INDICATORS (IOC)"
-            value={data.indicators.length}
-            icon="🎯"
-            color={theme.colors.malware}
-            subtitle={Object.entries(iocTypeCounts).map(([t, c]) => `${c} ${t}`).join(' · ')}
-          />
-        </div>
-        <div onClick={() => setSelectedItem({ type: 'definition', id: 'kill-chain' })} style={{ cursor: 'pointer' }}>
-          <KPICard
-            label="KILL CHAIN STAGE"
-            value={`${Object.keys(killChainMap).filter(k => k !== 'unknown').length}/${KILL_CHAIN_PHASES.length}`}
-            icon="🔗"
-            color="#06B6D4"
-            subtitle="Phases Mapped"
-          />
-        </div>
-      </div>
-
-      {/* ─── COMPACT KILL CHAIN (Refactored) ─────────────────────────── */}
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 24, height: '100%' }}>
+      {/* ─── INTERACTIVE KILL CHAIN FILTER ─────────────────────────── */}
       <GlassPanel style={{ flexShrink: 0, paddingBottom: 12 }}>
         <div style={{
           fontSize: 10, fontFamily: theme.fonts.display, fontWeight: 800,
@@ -393,56 +415,52 @@ function OverviewTab({ data, killChainMap, selectedReport, setSelectedReport, se
           marginBottom: 12, display: 'flex', alignItems: 'center', gap: 8,
         }}>
           <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#8B5CF6', boxShadow: '0 0 8px #8B5CF6' }} />
-          ADVERSARY KILL CHAIN (MITRE ATT&CK)
+          MATRIX NAVIGATION: SELECT PHASE TO DRILL DOWN
         </div>
         <div style={{
           display: 'grid',
           gridTemplateColumns: `repeat(${KILL_CHAIN_PHASES.length}, 1fr)`,
-          gap: 2,
+          gap: 4,
         }}>
           {KILL_CHAIN_PHASES.map(phase => {
-            const techniques = killChainMap[phase.id] || [];
+            const techniques = filteredKillChainMap[phase.id] || [];
             const isActive = techniques.length > 0;
+            const isSelected = activePhase === phase.id;
+            
             return (
               <div
                 key={phase.id}
-                onClick={() => setSelectedItem({ type: 'definition', id: phase.id })}
+                onClick={() => setActivePhase(isSelected ? null : phase.id)}
                 style={{
                   position: 'relative',
-                  padding: '10px 4px',
-                  borderRadius: 4,
-                  background: isActive
-                    ? `linear-gradient(180deg, ${phase.color}25, ${phase.color}05)`
-                    : 'rgba(255,255,255,0.01)',
+                  padding: '12px 6px',
+                  borderRadius: 6,
+                  background: isSelected
+                    ? `${phase.color}25`
+                    : isActive
+                      ? `linear-gradient(180deg, ${phase.color}15, transparent)`
+                      : 'rgba(255,255,255,0.01)',
                   borderTop: `2px solid ${isActive ? phase.color : 'rgba(255,255,255,0.03)'}`,
                   textAlign: 'center',
-                  transition: 'all 0.3s',
-                  cursor: isActive ? 'default' : 'default',
-                  overflow: 'hidden',
+                  transition: 'all 0.2s',
+                  cursor: 'pointer',
+                  opacity: (!activePhase || isSelected) ? 1 : 0.4,
+                  transform: isSelected ? 'translateY(-2px)' : 'none',
                 }}
-                title={techniques.map(t => t.name).join('\n')}
               >
-                {isActive && (
-                  <div style={{
-                    position: 'absolute', top: 0, left: 0, right: 0, height: 3,
-                    background: `linear-gradient(90deg, ${phase.color}, ${phase.color}88)`,
-                    boxShadow: `0 0 12px ${phase.color}66`,
-                  }} />
-                )}
                 <div style={{
-                  fontSize: 18, fontWeight: 900, fontFamily: theme.fonts.display,
+                  fontSize: 16, fontWeight: 900, fontFamily: theme.fonts.display,
                   color: isActive ? phase.color : 'rgba(255,255,255,0.1)',
-                  marginBottom: 4,
+                  marginBottom: 2,
                 }}>
-                  {techniques.length || '—'}
+                  {techniques.length || '0'}
                 </div>
                 <div style={{
-                  fontSize: 8, fontWeight: 700, fontFamily: theme.fonts.display,
-                  textTransform: 'uppercase', letterSpacing: 0.5,
-                  color: isActive ? 'rgba(255,255,255,0.7)' : 'rgba(255,255,255,0.15)',
-                  lineHeight: 1.3,
+                  fontSize: 7, fontWeight: 800, fontFamily: theme.fonts.display,
+                  textTransform: 'uppercase', letterSpacing: 0.2, whiteSpace: 'nowrap',
+                  color: isActive ? 'rgba(255,255,255,0.6)' : 'rgba(255,255,255,0.05)',
                 }}>
-                  {phase.label}
+                  {phase.id.substring(0, 6)}
                 </div>
               </div>
             );
@@ -450,101 +468,113 @@ function OverviewTab({ data, killChainMap, selectedReport, setSelectedReport, se
         </div>
       </GlassPanel>
 
-      {/* ─── REPORTS + TECHNIQUES GRID ──────────────────────────────── */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, flex: 1, minHeight: 0 }}>
-        {/* Reports */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 12, overflow: 'auto' }}>
-          <div style={{
-            fontSize: 11, fontWeight: 700, fontFamily: theme.fonts.display,
-            textTransform: 'uppercase', letterSpacing: 2, color: theme.colors.textDim,
-            display: 'flex', alignItems: 'center', gap: 8,
-          }}>
-            <span style={{ width: 6, height: 6, borderRadius: '50%', background: theme.colors.exploit, boxShadow: `0 0 8px ${theme.colors.exploit}` }} />
-            THREAT REPORTS
-          </div>
-          {data.reports.map(report => (
-            <ReportCard
-              key={report.id}
-              report={report}
-              isSelected={selectedReport?.id === report.id}
-              onClick={() => setSelectedReport(selectedReport?.id === report.id ? null : report)}
-              attackCount={report.object_refs?.filter(r => r.startsWith('attack-pattern')).length || 0}
-              indicatorCount={report.object_refs?.filter(r => r.startsWith('indicator')).length || 0}
-            />
-          ))}
+      {/* ─── INTELLIGENCE MATRIX: GROUPED TECHNIQUES ────────────────── */}
+      <div style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', gap: 16 }}>
+        <div style={{
+          fontSize: 11, fontWeight: 700, fontFamily: theme.fonts.display,
+          textTransform: 'uppercase', letterSpacing: 2, color: theme.colors.textDim,
+          display: 'flex', alignItems: 'center', gap: 8,
+        }}>
+          <span style={{ width: 6, height: 6, borderRadius: '50%', background: theme.colors.malware, boxShadow: `0 0 8px ${theme.colors.malware}` }} />
+          INTELLIGENCE MATRIX {selectedReport ? `— FILTERED BY ${selectedReport.id.split('--')[1].substring(0,8)}` : ''}
         </div>
-
-        {/* Attack Techniques Sorted by Phase */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 8, overflow: 'auto' }}>
-          <div style={{
-            fontSize: 11, fontWeight: 700, fontFamily: theme.fonts.display,
-            textTransform: 'uppercase', letterSpacing: 2, color: theme.colors.textDim,
-            display: 'flex', alignItems: 'center', gap: 8,
-          }}>
-            <span style={{ width: 6, height: 6, borderRadius: '50%', background: theme.colors.malware, boxShadow: `0 0 8px ${theme.colors.malware}` }} />
-            ATTACK TECHNIQUES ({data.attackPatterns.length})
-          </div>
-          <GlassPanel style={{ overflow: 'auto', flex: 1, padding: 12 }}>
-            {KILL_CHAIN_PHASES.map(phase => {
-              const techniques = killChainMap[phase.id];
+        
+        <GlassPanel style={{ flex: 1, overflow: 'auto', padding: 20 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(400px, 1fr))', gap: 24 }}>
+            {KILL_CHAIN_PHASES.filter(p => !activePhase || activePhase === p.id).map(phase => {
+              const techniques = filteredKillChainMap[phase.id];
               if (!techniques || techniques.length === 0) return null;
+              
               return (
-                <div key={phase.id} style={{ marginBottom: 16 }}>
+                <div key={phase.id}>
                   <div style={{
-                    fontSize: 9, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1.5,
-                    color: phase.color, marginBottom: 8,
-                    display: 'flex', alignItems: 'center', gap: 6,
+                    fontSize: 10, fontWeight: 800, textTransform: 'uppercase', letterSpacing: 2,
+                    color: phase.color, marginBottom: 16,
+                    display: 'flex', alignItems: 'center', gap: 8,
+                    paddingBottom: 8, borderBottom: `1px solid ${phase.color}20`
                   }}>
-                    <div style={{ width: 4, height: 4, borderRadius: '50%', background: phase.color }} />
-                    {phase.label}
+                    <span style={{ fontSize: 14 }}>{getPhaseIcon(phase.id)}</span>
+                    {phase.label} ({techniques.length})
                   </div>
-                  {techniques.map(tech => {
-                    const mitreRef = tech.external_references?.find(r => r.source_name === 'mitre-attack');
-                    return (
-                      <div
-                        key={tech.id}
-                        onClick={() => setSelectedItem({ type: 'stix', id: tech.id, data: tech })}
-                        style={{
-                          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                          padding: '5px 8px', borderRadius: 6,
-                          borderLeft: `2px solid ${phase.color}60`,
-                          marginBottom: 4,
-                          background: 'rgba(255,255,255,0.015)',
-                          transition: 'background 0.15s',
-                          cursor: 'pointer',
-                        }}
-                        onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.04)'}
-                        onMouseLeave={e => e.currentTarget.style.background = 'rgba(255,255,255,0.015)'}
-                      >
-                        <span style={{ fontSize: 11, color: theme.colors.textSecondary, flex: 1 }}>
-                          {tech.name}
-                        </span>
-                        {mitreRef?.external_id && (
-                          <a
-                            href={mitreRef.url}
-                            target="_blank"
-                            rel="noreferrer"
-                            style={{
-                              fontSize: 9, fontFamily: theme.fonts.mono, color: phase.color,
-                              textDecoration: 'none', padding: '2px 6px', borderRadius: 4,
-                              background: `${phase.color}15`, border: `1px solid ${phase.color}30`,
-                              flexShrink: 0, marginLeft: 8,
-                            }}
-                          >
-                            {mitreRef.external_id}
-                          </a>
-                        )}
-                      </div>
-                    );
-                  })}
+                  
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                    {techniques.map(tech => {
+                      const mitreRef = tech.external_references?.find(r => r.source_name === 'mitre-attack');
+                      return (
+                        <div
+                          key={tech.id}
+                          onClick={() => setSelectedItem({ type: 'stix', id: tech.id, data: tech })}
+                          style={{
+                            padding: '12px 14px', borderRadius: 10,
+                            background: 'rgba(255,255,255,0.02)',
+                            border: '1px solid rgba(255,255,255,0.04)',
+                            transition: 'all 0.2s',
+                            cursor: 'pointer',
+                          }}
+                          onMouseEnter={e => {
+                            e.currentTarget.style.background = 'rgba(255,255,255,0.04)';
+                            e.currentTarget.style.borderColor = `${phase.color}40`;
+                          }}
+                          onMouseLeave={e => {
+                            e.currentTarget.style.background = 'rgba(255,255,255,0.02)';
+                            e.currentTarget.style.borderColor = 'rgba(255,255,255,0.04)';
+                          }}
+                        >
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 6 }}>
+                            <span style={{ fontSize: 12, fontWeight: 700, color: theme.colors.textPrimary, flex: 1 }}>
+                              {tech.name}
+                            </span>
+                            {mitreRef?.external_id && (
+                              <span style={{
+                                fontSize: 9, fontFamily: theme.fonts.mono, color: phase.color,
+                                padding: '2px 6px', borderRadius: 4,
+                                background: `${phase.color}15`, border: `1px solid ${phase.color}30`,
+                              }}>
+                                {mitreRef.external_id}
+                              </span>
+                            )}
+                          </div>
+                          
+                          <div style={{ fontSize: 10, color: theme.colors.textDim, lineHeight: 1.4, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+                            {tech.description || 'No detailed TTP analysis available.'}
+                          </div>
+                          
+                          {/* Mini-stats for the technique */}
+                          <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
+                             <div style={{ fontSize: 8, color: theme.colors.textDim, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                               Detected in {data.reports.filter(r => r.object_refs?.includes(tech.id)).length} reports
+                             </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
                 </div>
               );
             })}
-          </GlassPanel>
-        </div>
+          </div>
+        </GlassPanel>
       </div>
-    </>
+    </div>
   );
+}
+
+function getPhaseIcon(id: string): string {
+  switch (id) {
+    case 'recon': return '🔍';
+    case 'resource': return '🏗️';
+    case 'initial': return '🚪';
+    case 'execution': return '⚡';
+    case 'persistence': return '⚓';
+    case 'privesc': return '🔼';
+    case 'defense': return '🎭';
+    case 'cred': return '🔑';
+    case 'discovery': return '🗺️';
+    case 'lateral': return '➡️';
+    case 'collection': return '📦';
+    case 'c2': return '📡';
+    default: return '🛡️';
+  }
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -1267,56 +1297,6 @@ function DetailPanel({ item, onClose }: {
 // ═══════════════════════════════════════════════════════════════════════════════
 // SHARED COMPONENTS
 // ═══════════════════════════════════════════════════════════════════════════════
-function KPICard({ label, value, icon, color, subtitle }: {
-  label: string; value: number | string; icon: string; color: string; subtitle?: string;
-}) {
-  return (
-    <GlassPanel style={{
-      padding: '18px 20px',
-      background: `linear-gradient(135deg, ${color}08, rgba(15,23,42,0.95))`,
-      borderTop: `2px solid ${color}60`,
-      position: 'relative',
-      overflow: 'hidden',
-    }}>
-      {/* Background glow */}
-      <div style={{
-        position: 'absolute', top: -20, right: -20,
-        width: 80, height: 80, borderRadius: '50%',
-        background: `radial-gradient(circle, ${color}15, transparent 70%)`,
-        pointerEvents: 'none',
-      }} />
-
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-        <div>
-          <div style={{
-            fontSize: 9, fontWeight: 700, fontFamily: theme.fonts.display,
-            textTransform: 'uppercase', letterSpacing: 1.5, color: theme.colors.textDim,
-            marginBottom: 6,
-          }}>
-            {label}
-          </div>
-          <div style={{
-            fontSize: 32, fontWeight: 900, fontFamily: theme.fonts.display,
-            color, lineHeight: 1,
-          }}>
-            {value}
-          </div>
-          {subtitle && (
-            <div style={{
-              fontSize: 9, color: theme.colors.textDim, marginTop: 6,
-              fontFamily: theme.fonts.mono, maxWidth: 160,
-              overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-            }}>
-              {subtitle}
-            </div>
-          )}
-        </div>
-        <span style={{ fontSize: 28, opacity: 0.4 }}>{icon}</span>
-      </div>
-    </GlassPanel>
-  );
-}
-
 function ReportCard({ report, isSelected, onClick, attackCount, indicatorCount }: {
   report: StixObject;
   isSelected: boolean;
@@ -1435,6 +1415,31 @@ function StatChip({ label, value, color, isText }: {
       }}>
         {value}
       </span>
+    </div>
+  );
+}
+
+function TelemetryItem({ label, value, color, icon, onClick }: {
+  label: string; value: number | string; color: string; icon: string; onClick: () => void;
+}) {
+  return (
+    <div 
+      onClick={onClick}
+      style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer', opacity: 0.8, transition: 'opacity 0.2s' }}
+      onMouseEnter={e => e.currentTarget.style.opacity = '1'}
+      onMouseLeave={e => e.currentTarget.style.opacity = '0.8'}
+    >
+      <div style={{ 
+        width: 32, height: 32, borderRadius: 8, background: `${color}15`, 
+        display: 'flex', alignItems: 'center', justifyContent: 'center', 
+        fontSize: 14, border: `1px solid ${color}30` 
+      }}>
+        {icon}
+      </div>
+      <div>
+        <div style={{ fontSize: 8, fontWeight: 800, color: theme.colors.textDim, textTransform: 'uppercase', letterSpacing: 1 }}>{label}</div>
+        <div style={{ fontSize: 16, fontWeight: 900, color: color, fontFamily: theme.fonts.display }}>{value}</div>
+      </div>
     </div>
   );
 }
