@@ -38,9 +38,9 @@ function App() {
       <StatusBar />
       
       <div style={{ display: 'flex', flex: 1, marginTop: 64, overflow: 'hidden' }}>
-        <Sidebar />
+        {currentView !== 'stix' && <Sidebar />}
         
-        <div style={{ flex: 1, position: 'relative', overflowY: 'auto', padding: '24px' }}>
+        <div style={{ flex: 1, position: 'relative', overflowY: 'auto', padding: currentView === 'stix' ? '0' : '24px' }}>
           {(currentView === 'map' || currentView === 'dashboard') && <DashboardPage />}
           {currentView === 'history' && <HistoryPage />}
           {currentView === 'country' && <CountryDashboard />}
