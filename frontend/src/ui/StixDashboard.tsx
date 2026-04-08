@@ -7,6 +7,8 @@ import { GlassPanel } from './GlassPanel';
 import cisaRaw from '../data/cisa.json';
 // @ts-ignore
 import ivantiRaw from '../data/ivanti.json';
+import type { Definition } from '../data/definitions';
+import { DEFINITIONS } from '../data/definitions';
 
 // ─── TYPES ───────────────────────────────────────────────────────────────────
 interface StixObject {
@@ -107,6 +109,17 @@ function dedup(arr: StixObject[]): StixObject[] {
   });
 }
 
+const STIX_COLORS: Record<string, string> = {
+  'report': '#8B5CF6',
+  'attack-pattern': '#EF4444',
+  'indicator': '#F59E0B',
+  'location': '#3B82F6',
+  'identity': '#10B981',
+  'malware': '#D946EF',
+  'campaign': '#F43F5E',
+  'threat-actor': '#F97316',
+};
+
 // ─── MITRE ATT&CK KILL CHAIN PHASES ─────────────────────────────────────────
 const KILL_CHAIN_PHASES = [
   { id: 'recon', label: 'Reconnaissance', keywords: ['reconnaissance', 'scanning', 'active scanning'], color: '#8B5CF6' },
@@ -179,6 +192,7 @@ export function StixDashboard() {
   const [iocFilter, setIocFilter] = useState('');
   const [iocTypeFilter, setIocTypeFilter] = useState('all');
   const [activeTab, setActiveTab] = useState<'overview' | 'iocs' | 'visualizer'>('overview');
+  const [selectedItem, setSelectedItem] = useState<{ type: string; id: string; data?: any } | null>(null);
 
   // Stats
   const classifiedIndicators = useMemo(() => data.indicators.map(i => ({
@@ -243,137 +257,148 @@ export function StixDashboard() {
           </p>
         </div>
 
-        {/* Sub-tabs */}
-        <div style={{
-          display: 'flex',
-          background: 'rgba(255,255,255,0.02)',
-          border: '1px solid rgba(255,255,255,0.05)',
-          borderRadius: 100,
-          padding: 3,
-        }}>
+        {/* Tabs */}
+        <div style={{ display: 'flex', gap: 24, marginTop: 4 }}>
           {(['overview', 'iocs', 'visualizer'] as const).map(tab => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
               style={{
-                padding: '6px 18px',
-                background: activeTab === tab ? 'rgba(139, 92, 246, 0.15)' : 'transparent',
-                border: activeTab === tab ? '1px solid rgba(139, 92, 246, 0.3)' : '1px solid transparent',
-                borderRadius: 100,
-                color: activeTab === tab ? '#C4B5FD' : theme.colors.textDim,
-                fontSize: 11,
+                padding: '8px 16px',
+                background: 'transparent',
+                border: 'none',
+                color: activeTab === tab ? '#8B5CF6' : theme.colors.textDim,
+                fontSize: 13,
                 fontWeight: 700,
                 fontFamily: theme.fonts.display,
-                letterSpacing: 1,
                 textTransform: 'uppercase',
+                letterSpacing: 2,
                 cursor: 'pointer',
-                transition: 'all 0.2s',
+                position: 'relative',
+                transition: 'color 0.2s',
               }}
             >
-              {tab === 'overview' ? '📊 Overview' : tab === 'iocs' ? '🔍 IOCs' : '🕸️ Visualizer'}
+              {tab}
+              {activeTab === tab && (
+                <div style={{
+                  position: 'absolute', bottom: -12, left: 0, right: 0, height: 2,
+                  background: '#8B5CF6', boxShadow: '0 0 10px #8B5CF6',
+                }} />
+              )}
             </button>
           ))}
         </div>
       </div>
 
-      {/* ─── CONTENT ────────────────────────────────────────────────────── */}
-      <div style={{ flex: 1, overflow: 'auto', display: 'flex', flexDirection: 'column', gap: 20 }}>
-        {activeTab === 'overview' && (
-          <OverviewTab
-            data={data}
-            killChainMap={killChainMap}
-            classifiedIndicators={classifiedIndicators}
-            selectedReport={selectedReport}
-            setSelectedReport={setSelectedReport}
+      {/* Main Content Areas */}
+      <div style={{ flex: 1, overflow: 'hidden', position: 'relative', display: 'flex', gap: selectedItem ? 20 : 0 }}>
+        <div style={{ flex: 1, overflow: 'auto', display: 'flex', flexDirection: 'column', gap: 24 }}>
+          {activeTab === 'overview' && (
+            <OverviewTab
+              data={data}
+              killChainMap={killChainMap}
+              selectedReport={selectedReport}
+              setSelectedReport={setSelectedReport}
+              setSelectedItem={setSelectedItem}
+            />
+          )}
+          {activeTab === 'iocs' && (
+            <IOCTab
+              filteredIOCs={filteredIOCs}
+              iocFilter={iocFilter}
+              setIocFilter={setIocFilter}
+              iocTypeFilter={iocTypeFilter}
+              setIocTypeFilter={setIocTypeFilter}
+              iocTypes={iocTypes}
+              totalCount={classifiedIndicators.length}
+            />
+          )}
+          {activeTab === 'visualizer' && (
+            <VisualizerTab data={data} setSelectedObject={(o) => setSelectedItem({ type: 'stix', id: o.id, data: o })} />
+          )}
+        </div>
+
+        {/* Intelligence Detail Panel */}
+        {selectedItem && (
+          <DetailPanel
+            item={selectedItem}
+            onClose={() => setSelectedItem(null)}
           />
-        )}
-        {activeTab === 'iocs' && (
-          <IOCTab
-            filteredIOCs={filteredIOCs}
-            iocFilter={iocFilter}
-            setIocFilter={setIocFilter}
-            iocTypeFilter={iocTypeFilter}
-            setIocTypeFilter={setIocTypeFilter}
-            iocTypes={iocTypes}
-            totalCount={data.indicators.length}
-          />
-        )}
-        {activeTab === 'visualizer' && (
-          <VisualizerTab data={data} />
         )}
       </div>
     </div>
   );
 }
 
-// ═══════════════════════════════════════════════════════════════════════════════
-// OVERVIEW TAB
-// ═══════════════════════════════════════════════════════════════════════════════
-function OverviewTab({ data, killChainMap, classifiedIndicators, selectedReport, setSelectedReport }: {
+function OverviewTab({ data, killChainMap, selectedReport, setSelectedReport, setSelectedItem }: {
   data: ParsedStixData;
   killChainMap: Record<string, StixObject[]>;
-  classifiedIndicators: (StixObject & { classified: { type: string; value: string; icon: string } })[];
   selectedReport: StixObject | null;
   setSelectedReport: (r: StixObject | null) => void;
+  setSelectedItem: (item: { type: string; id: string; data?: any }) => void;
 }) {
-  // IOC type counts
-  const iocTypeCounts = useMemo(() => {
-    const counts: Record<string, number> = {};
-    for (const i of classifiedIndicators) {
-      const t = i.classified.type;
-      counts[t] = (counts[t] || 0) + 1;
-    }
-    return counts;
-  }, [classifiedIndicators]);
+  const iocTypeCounts = data.indicators.reduce((acc, i) => {
+    const type = i.pattern?.includes('ipv4') ? 'IPs' : i.pattern?.includes('file') ? 'Files' : 'Other';
+    acc[type] = (acc[type] || 0) + 1;
+    return acc;
+  }, {} as Record<string, number>);
 
   return (
     <>
-      {/* ─── KPI ROW ──────────────────────────────────────────────────── */}
+      {/* ─── KPI ROW ─────────────────────────────────────────────────── */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16, flexShrink: 0 }}>
-        <KPICard
-          label="THREAT REPORTS"
-          value={data.reports.length}
-          icon="📋"
-          color="#8B5CF6"
-          subtitle="CISA / NCSC-NO"
-        />
-        <KPICard
-          label="ATTACK TECHNIQUES"
-          value={data.attackPatterns.length}
-          icon="⚔️"
-          color={theme.colors.exploit}
-          subtitle="MITRE ATT&CK"
-        />
-        <KPICard
-          label="IOC INDICATORS"
-          value={data.indicators.length}
-          icon="🎯"
-          color={theme.colors.malware}
-          subtitle={Object.entries(iocTypeCounts).map(([t, c]) => `${c} ${t}`).join(' · ')}
-        />
-        <KPICard
-          label="KILL CHAIN COVERAGE"
-          value={`${Object.keys(killChainMap).filter(k => k !== 'unknown').length}/${KILL_CHAIN_PHASES.length}`}
-          icon="🔗"
-          color="#06B6D4"
-          subtitle="Phases Mapped"
-        />
+        <div onClick={() => setSelectedItem({ type: 'definition', id: 'threat-reports' })} style={{ cursor: 'pointer' }}>
+          <KPICard
+            label="THREAT REPORTS"
+            value={data.reports.length}
+            icon="📄"
+            color="#8B5CF6"
+            subtitle="CISA & Ivanti Bundles"
+          />
+        </div>
+        <div onClick={() => setSelectedItem({ type: 'definition', id: 'attack-patterns' })} style={{ cursor: 'pointer' }}>
+          <KPICard
+            label="ATTACK TECHNIQUES"
+            value={data.attackPatterns.length}
+            icon="⚔️"
+            color={theme.colors.exploit}
+            subtitle="MITRE Framework"
+          />
+        </div>
+        <div onClick={() => setSelectedItem({ type: 'definition', id: 'indicators' })} style={{ cursor: 'pointer' }}>
+          <KPICard
+            label="INDICATORS (IOC)"
+            value={data.indicators.length}
+            icon="🎯"
+            color={theme.colors.malware}
+            subtitle={Object.entries(iocTypeCounts).map(([t, c]) => `${c} ${t}`).join(' · ')}
+          />
+        </div>
+        <div onClick={() => setSelectedItem({ type: 'definition', id: 'kill-chain' })} style={{ cursor: 'pointer' }}>
+          <KPICard
+            label="KILL CHAIN STAGE"
+            value={`${Object.keys(killChainMap).filter(k => k !== 'unknown').length}/${KILL_CHAIN_PHASES.length}`}
+            icon="🔗"
+            color="#06B6D4"
+            subtitle="Phases Mapped"
+          />
+        </div>
       </div>
 
-      {/* ─── KILL CHAIN ───────────────────────────────────────────────── */}
-      <GlassPanel style={{ flexShrink: 0 }}>
+      {/* ─── COMPACT KILL CHAIN (Refactored) ─────────────────────────── */}
+      <GlassPanel style={{ flexShrink: 0, paddingBottom: 12 }}>
         <div style={{
-          fontSize: 11, fontFamily: theme.fonts.display, fontWeight: 700,
-          textTransform: 'uppercase', letterSpacing: 2, color: theme.colors.textDim,
-          marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8,
+          fontSize: 10, fontFamily: theme.fonts.display, fontWeight: 800,
+          textTransform: 'uppercase', letterSpacing: 1.5, color: theme.colors.textDim,
+          marginBottom: 12, display: 'flex', alignItems: 'center', gap: 8,
         }}>
           <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#8B5CF6', boxShadow: '0 0 8px #8B5CF6' }} />
-          MITRE ATT&CK KILL CHAIN
+          ADVERSARY KILL CHAIN (MITRE ATT&CK)
         </div>
         <div style={{
           display: 'grid',
           gridTemplateColumns: `repeat(${KILL_CHAIN_PHASES.length}, 1fr)`,
-          gap: 4,
+          gap: 2,
         }}>
           {KILL_CHAIN_PHASES.map(phase => {
             const techniques = killChainMap[phase.id] || [];
@@ -381,16 +406,15 @@ function OverviewTab({ data, killChainMap, classifiedIndicators, selectedReport,
             return (
               <div
                 key={phase.id}
+                onClick={() => setSelectedItem({ type: 'definition', id: phase.id })}
                 style={{
                   position: 'relative',
-                  padding: '12px 6px',
-                  borderRadius: 8,
+                  padding: '10px 4px',
+                  borderRadius: 4,
                   background: isActive
-                    ? `linear-gradient(135deg, ${phase.color}20, ${phase.color}08)`
-                    : 'rgba(255,255,255,0.02)',
-                  border: isActive
-                    ? `1px solid ${phase.color}50`
-                    : '1px solid rgba(255,255,255,0.03)',
+                    ? `linear-gradient(180deg, ${phase.color}25, ${phase.color}05)`
+                    : 'rgba(255,255,255,0.01)',
+                  borderTop: `2px solid ${isActive ? phase.color : 'rgba(255,255,255,0.03)'}`,
                   textAlign: 'center',
                   transition: 'all 0.3s',
                   cursor: isActive ? 'default' : 'default',
@@ -479,6 +503,7 @@ function OverviewTab({ data, killChainMap, classifiedIndicators, selectedReport,
                     return (
                       <div
                         key={tech.id}
+                        onClick={() => setSelectedItem({ type: 'stix', id: tech.id, data: tech })}
                         style={{
                           display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                           padding: '5px 8px', borderRadius: 6,
@@ -486,7 +511,7 @@ function OverviewTab({ data, killChainMap, classifiedIndicators, selectedReport,
                           marginBottom: 4,
                           background: 'rgba(255,255,255,0.015)',
                           transition: 'background 0.15s',
-                          cursor: 'default',
+                          cursor: 'pointer',
                         }}
                         onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.04)'}
                         onMouseLeave={e => e.currentTarget.style.background = 'rgba(255,255,255,0.015)'}
@@ -790,7 +815,7 @@ function buildGraph(data: ParsedStixData): { nodes: GraphNode[]; edges: GraphEdg
   return { nodes, edges };
 }
 
-function VisualizerTab({ data }: { data: ParsedStixData }) {
+function VisualizerTab({ data, setSelectedObject }: { data: ParsedStixData; setSelectedObject?: (o: StixObject) => void }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const graphRef = useRef<{ nodes: GraphNode[]; edges: GraphEdge[] }>({ nodes: [], edges: [] });
@@ -902,7 +927,7 @@ function VisualizerTab({ data }: { data: ParsedStixData }) {
       ctx.scale(cam.zoom, cam.zoom);
 
       // Filter
-      const visibleNodes = selectedType === 'all' ? nodes : nodes.filter(n => n.type === selectedType);
+      const visibleNodes = selectedType === 'all' ? nodes : nodes.filter(n => n.type === selectedType || n.type === 'report');
       const visibleIds = new Set(visibleNodes.map(n => n.id));
       const visibleEdges = edges.filter(e => visibleIds.has(e.source) && visibleIds.has(e.target));
 
@@ -985,6 +1010,8 @@ function VisualizerTab({ data }: { data: ParsedStixData }) {
     if (hit) {
       hit.pinned = true;
       setDragNode(hit);
+      const stixObj = data.allObjects.find(o => o.id === hit.id);
+      if (stixObj && setSelectedObject) setSelectedObject(stixObj);
     } else {
       isPanningRef.current = true;
     }
@@ -1138,6 +1165,100 @@ function VisualizerTab({ data }: { data: ParsedStixData }) {
           Scroll: zoom<br />
           Click+Drag (empty): pan
         </div>
+      </div>
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// INTELLIGENCE DETAIL PANEL (Slide-In)
+// ═══════════════════════════════════════════════════════════════════════════════
+function DetailPanel({ item, onClose }: { 
+  item: { type: string; id: string; data?: any }; 
+  onClose: () => void;
+}) {
+  let content: Definition | null = null;
+  let stixData: StixObject | null = null;
+
+  if (item.type === 'definition') {
+    content = DEFINITIONS[item.id] || { title: item.id, description: 'No definition found.', category: 'concept' };
+    if (item.id === 'kill-chain') {
+      content = {
+        title: 'MITRE ATT&CK Kill Chain',
+        category: 'concept',
+        description: 'A series of stages that describe the evolution of a cyber attack.',
+        moreInfo: 'Defenders use this model to identify where an adversary is in their operation and how to best interrupt it.'
+      };
+    }
+  } else if (item.type === 'stix') {
+    stixData = item.data;
+  }
+
+  const accentColor = stixData ? (STIX_COLORS[stixData.type] || '#8B5CF6') : (content?.category === 'phase' ? theme.colors.exploit : '#8B5CF6');
+
+  return (
+    <div style={{
+      width: 400, background: 'rgba(10, 15, 30, 0.98)', borderLeft: '1px solid rgba(255,255,255,0.1)',
+      display: 'flex', flexDirection: 'column', boxSizing: 'border-box',
+      animation: 'slideIn 0.3s ease-out', zIndex: 1000,
+      boxShadow: '-20px 0 50px rgba(0,0,0,0.5)'
+    }}>
+      <style>{`
+        @keyframes slideIn { from { transform: translateX(100%); } to { transform: translateX(0); } }
+      `}</style>
+      
+      {/* Panel Header */}
+      <div style={{ padding: '24px 30px', borderBottom: '1px solid rgba(255,255,255,0.05)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div style={{ fontSize: 10, fontWeight: 900, textTransform: 'uppercase', letterSpacing: 2.5, color: accentColor }}>
+          Intelligence Briefing
+        </div>
+        <button onClick={onClose} style={{ background: 'none', border: 'none', color: '#fff', cursor: 'pointer', fontSize: 24, opacity: 0.5 }}>×</button>
+      </div>
+
+      <div style={{ padding: 30, flex: 1, overflow: 'auto' }}>
+        {content ? (
+          <div>
+            <h3 style={{ fontSize: 24, fontWeight: 900, fontFamily: theme.fonts.display, margin: '0 0 16px', color: '#fff' }}>{content.title}</h3>
+            <div style={{ fontSize: 13, color: '#fff', opacity: 0.8, lineHeight: 1.6, marginBottom: 24, padding: '16px', borderRadius: 8, background: 'rgba(255,255,255,0.03)', borderLeft: `4px solid ${accentColor}` }}>
+              {content.description}
+            </div>
+            {content.moreInfo && (
+              <div>
+                <h4 style={{ fontSize: 10, color: theme.colors.textDim, textTransform: 'uppercase', letterSpacing: 2, marginBottom: 12 }}>Detailed Analysis</h4>
+                <p style={{ fontSize: 13, color: theme.colors.textSecondary, lineHeight: 1.6 }}>{content.moreInfo}</p>
+              </div>
+            )}
+          </div>
+        ) : stixData ? (
+          <div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
+              <span style={{ fontSize: 10, padding: '2px 8px', borderRadius: 4, background: `${accentColor}20`, color: accentColor, fontWeight: 900, textTransform: 'uppercase', letterSpacing: 1 }}>
+                {stixData.type}
+              </span>
+            </div>
+            <h3 style={{ fontSize: 22, fontWeight: 900, fontFamily: theme.fonts.display, margin: '0 0 20px', color: '#fff' }}>{stixData.name || stixData.id}</h3>
+            
+            <div style={{ padding: 16, borderRadius: 8, background: 'rgba(255,255,255,0.02)', marginBottom: 24 }}>
+               <p style={{ fontSize: 13, color: theme.colors.textSecondary, lineHeight: 1.6, margin: 0 }}>
+                 {stixData.description || 'No detailed description available for this threat object.'}
+               </p>
+            </div>
+
+            {stixData.external_references && stixData.external_references.length > 0 && (
+              <div>
+                <h4 style={{ fontSize: 10, color: theme.colors.textDim, textTransform: 'uppercase', letterSpacing: 2, marginBottom: 12 }}>References</h4>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                  {stixData.external_references.map((ref, i) => (
+                    <a key={i} href={ref.url} target="_blank" rel="noreferrer" style={{ display: 'flex', justifyContent: 'space-between', padding: '12px 14px', background: 'rgba(255,255,255,0.03)', borderRadius: 8, textDecoration: 'none', color: '#fff', fontSize: 11 }}>
+                      <span>{ref.source_name}</span>
+                      <span style={{ color: accentColor }}>{ref.external_id || 'View'} ↗</span>
+                    </a>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        ) : null}
       </div>
     </div>
   );
