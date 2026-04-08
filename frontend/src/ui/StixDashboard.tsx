@@ -1,5 +1,4 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import ForceGraph2D from 'react-force-graph-2d';
 import { theme } from '../theme/theme';
 import { GlassPanel } from './GlassPanel';
 
@@ -848,138 +847,260 @@ function IOCTab({ filteredIOCs, iocFilter, setIocFilter, iocTypeFilter, setIocTy
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// VISUALIZER TAB (Friend's Advanced Version)
+// VISUALIZER TAB (Custom Optimized Canvas Implementation)
 // ═══════════════════════════════════════════════════════════════════════════════
 function VisualizerTab({ data, setSelectedObject }: { data: ParsedStixData; setSelectedObject: (o: StixObject) => void }) {
   const containerRef = useRef<HTMLDivElement>(null);
-  const [dim, setDim] = useState({ w: 800, h: 600 });
-  const [hoverNode, setHoverNode] = useState<any>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const graphRef = useRef<{ 
+    nodes: (any)[]; 
+    edges: { source: string; target: string }[] 
+  }>({ nodes: [], edges: [] });
 
+  const [hoveredNode, setHoveredNode] = useState<any | null>(null);
+  const [dragNode, setDragNode] = useState<any | null>(null);
+  const transformRef = useRef({ x: 0, y: 0, scale: 0.8 });
+  const isPanningRef = useRef(false);
+  const lastMousePosRef = useRef({ x: 0, y: 0 });
+
+  // Physics constants
+  const REPULSION = 20000;
+  const ATTRACTION = 0.04;
+  const DAMPING = 0.85;
+  const CENTER_GRAVITY = 0.01;
+
+  // Initialize graph
   useEffect(() => {
-    if (!containerRef.current) return;
-    const resize = () => {
-      setDim({
-        w: containerRef.current!.clientWidth,
-        h: containerRef.current!.clientHeight
-      });
-    };
-    resize();
-    window.addEventListener('resize', resize);
-    return () => window.removeEventListener('resize', resize);
-  }, []);
-
-  const graphData = useMemo(() => {
     const nodes = data.allObjects
       .filter(o => o.type !== 'relationship' && o.type !== 'marking-definition')
-      .map(o => ({
+      .map((o) => ({
         id: o.id,
-        name: o.name || o.id.split('--')[0],
         type: o.type,
+        label: o.name || o.id.split('--')[0],
+        x: (Math.random() - 0.5) * 800,
+        y: (Math.random() - 0.5) * 600,
+        vx: 0,
+        vy: 0,
         color: STIX_COLORS[o.type] || '#888',
-        stix: o
+        stix: o,
       }));
 
-    const links = data.relationships
+    const edges = data.relationships
       .filter(r => r.source_ref && r.target_ref)
-      .map(r => ({
-        source: r.source_ref,
-        target: r.target_ref,
-        label: r.relationship_type,
-        stix: r
-      }));
+      .map(r => ({ source: r.source_ref as string, target: r.target_ref as string }));
 
-    return { nodes, links };
+    graphRef.current = { nodes, edges };
+    
+    // Initial centering
+    if (containerRef.current) {
+      transformRef.current.x = containerRef.current.clientWidth / 2;
+      transformRef.current.y = containerRef.current.clientHeight / 2;
+    }
   }, [data]);
 
-  const paintNode = useCallback((node: any, ctx: CanvasRenderingContext2D, globalScale: number) => {
-    const { x, y, color, type, name } = node;
-    const r = 10;
-    const isHovered = hoverNode === node;
+  const simulate = useCallback(() => {
+    const { nodes, edges } = graphRef.current;
+    const edgeMap = new Map<string, string[]>();
+    edges.forEach(e => {
+      if (!edgeMap.has(e.source)) edgeMap.set(e.source, []);
+      edgeMap.get(e.source)!.push(e.target);
+    });
 
-    // Pulse effect for critical nodes (threat actors, campaigns)
-    if (type === 'threat-actor' || type === 'campaign' || type === 'report' || isHovered) {
-      const now = Date.now();
-      const pulseT = (now % 2000) / 2000;
-      const pulseR = r + (pulseT * 15);
+    for (let i = 0; i < nodes.length; i++) {
+      const n = nodes[i];
+      if (n === dragNode) continue;
+
+      let fx = 0;
+      let fy = 0;
+
+      // Node repulsion
+      for (let j = 0; j < nodes.length; j++) {
+        if (i === j) continue;
+        const m = nodes[j];
+        const dx = n.x - m.x;
+        const dy = n.y - m.y;
+        const dist = Math.sqrt(dx * dx + dy * dy) + 0.1;
+        if (dist < 400) {
+          const force = REPULSION / (dist * dist);
+          fx += (dx / dist) * force;
+          fy += (dy / dist) * force;
+        }
+      }
+
+      // Edge attraction
+      const neighbors = edgeMap.get(n.id) || [];
+      for (const nid of neighbors) {
+        const m = nodes.find(nn => nn.id === nid);
+        if (!m) continue;
+        const dx = m.x - n.x;
+        const dy = m.y - n.y;
+        fx += dx * ATTRACTION;
+        fy += dy * ATTRACTION;
+      }
+
+      // Center gravity
+      fx -= n.x * CENTER_GRAVITY;
+      fy -= n.y * CENTER_GRAVITY;
+
+      n.vx = (n.vx + fx) * DAMPING;
+      n.vy = (n.vy + fy) * DAMPING;
+      n.x += n.vx;
+      n.y += n.vy;
+    }
+  }, [dragNode]);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    let running = true;
+    const render = () => {
+      if (!running) return;
+      const { nodes, edges } = graphRef.current;
+      const { x: tx, y: ty, scale } = transformRef.current;
+
+      // Auto-resize
+      if (containerRef.current) {
+        if (canvas.width !== containerRef.current.clientWidth || canvas.height !== containerRef.current.clientHeight) {
+          canvas.width = containerRef.current.clientWidth;
+          canvas.height = containerRef.current.clientHeight;
+        }
+      }
+
+      simulate();
+
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.save();
+      ctx.translate(tx, ty);
+      ctx.scale(scale, scale);
+
+      // Draw Edges
+      ctx.lineWidth = 1 / scale;
+      ctx.strokeStyle = 'rgba(0, 209, 255, 0.1)';
       ctx.beginPath();
-      ctx.arc(x, y, pulseR, 0, 2 * Math.PI);
-      ctx.strokeStyle = color;
-      ctx.lineWidth = 2 * (1 - pulseT) / globalScale;
-      ctx.globalAlpha = (1 - pulseT) * 0.6;
+      edges.forEach(e => {
+        const s = nodes.find(n => n.id === e.source);
+        const t = nodes.find(n => n.id === e.target);
+        if (s && t) {
+          ctx.moveTo(s.x, s.y);
+          ctx.lineTo(t.x, t.y);
+        }
+      });
       ctx.stroke();
-      ctx.globalAlpha = 1;
-    }
 
-    // Main Circle
-    ctx.beginPath();
-    ctx.arc(x, y, r, 0, 2 * Math.PI);
-    ctx.fillStyle = color;
-    if (isHovered) {
-      ctx.shadowColor = color;
-      ctx.shadowBlur = 15;
-    }
-    ctx.fill();
-    ctx.shadowBlur = 0;
+      // Draw Nodes
+      nodes.forEach(n => {
+        const r = 8;
+        ctx.beginPath();
+        ctx.arc(n.x, n.y, r, 0, 2 * Math.PI);
+        ctx.fillStyle = n.color;
+        
+        const isHover = n === hoveredNode;
+        if (isHover) {
+          ctx.shadowBlur = 15;
+          ctx.shadowColor = n.color;
+        }
+        ctx.fill();
+        ctx.shadowBlur = 0;
 
-    // Icon (Simplified Friend's Logic)
-    ctx.strokeStyle = '#050B14';
-    ctx.lineWidth = 1.5;
-    const iconR = r * 0.5;
-    ctx.beginPath();
-    if (type === 'report' || type === 'threat-actor') {
-      ctx.arc(x, y, iconR, 0, 2 * Math.PI);
-      ctx.moveTo(x - iconR, y); ctx.lineTo(x + iconR, y);
-      ctx.moveTo(x, y - iconR); ctx.lineTo(x, y + iconR);
-    } else if (type === 'indicator') {
-      ctx.rect(x - iconR, y - iconR, iconR * 2, iconR * 2);
+        if (scale > 0.6 || isHover) {
+          ctx.fillStyle = '#fff';
+          ctx.font = `${10 / scale}px ${theme.fonts.mono}`;
+          ctx.textAlign = 'center';
+          ctx.fillText(n.label, n.x, n.y + r + (12 / scale));
+        }
+      });
+
+      ctx.restore();
+      requestAnimationFrame(render);
+    };
+
+    render();
+    return () => { running = false; };
+  }, [simulate, hoveredNode]);
+
+  // Interaction handlers
+  const handleMouseDown = (e: React.MouseEvent) => {
+    const rect = canvasRef.current?.getBoundingClientRect();
+    if (!rect) return;
+    const mx = (e.clientX - rect.left - transformRef.current.x) / transformRef.current.scale;
+    const my = (e.clientY - rect.top - transformRef.current.y) / transformRef.current.scale;
+
+    const clickedNode = graphRef.current.nodes.find(n => {
+      const dist = Math.sqrt((n.x - mx) ** 2 + (n.y - my) ** 2);
+      return dist < 12;
+    });
+
+    if (clickedNode) {
+      setDragNode(clickedNode);
+      setSelectedObject(clickedNode.stix); // LINK TO DEEP DIVE
     } else {
-      const a = 2 * Math.PI / 6;
-      for (let i = 0; i <= 6; i++) ctx.lineTo(x + iconR * Math.cos(a * i), y + iconR * Math.sin(a * i));
+      isPanningRef.current = true;
+      lastMousePosRef.current = { x: e.clientX, y: e.clientY };
     }
-    ctx.stroke();
+  };
 
-    // Label
-    if (globalScale > 0.8 || isHovered) {
-      ctx.font = `bold ${10 / globalScale}px Inter, sans-serif`;
-      ctx.fillStyle = '#fff';
-      ctx.textAlign = 'center';
-      ctx.fillText(name, x, y + r + 10 / globalScale);
+  const handleMouseMove = (e: React.MouseEvent) => {
+    if (dragNode) {
+      const rect = canvasRef.current?.getBoundingClientRect();
+      if (!rect) return;
+      dragNode.x = (e.clientX - rect.left - transformRef.current.x) / transformRef.current.scale;
+      dragNode.y = (e.clientY - rect.top - transformRef.current.y) / transformRef.current.scale;
+    } else if (isPanningRef.current) {
+      const dx = e.clientX - lastMousePosRef.current.x;
+      const dy = e.clientY - lastMousePosRef.current.y;
+      transformRef.current.x += dx;
+      transformRef.current.y += dy;
+      lastMousePosRef.current = { x: e.clientX, y: e.clientY };
+    } else {
+      const rect = canvasRef.current?.getBoundingClientRect();
+      if (!rect) return;
+      const mx = (e.clientX - rect.left - transformRef.current.x) / transformRef.current.scale;
+      const my = (e.clientY - rect.top - transformRef.current.y) / transformRef.current.scale;
+      const found = graphRef.current.nodes.find(n => Math.sqrt((n.x - mx) ** 2 + (n.y - my) ** 2) < 12);
+      setHoveredNode(found || null);
     }
-  }, [hoverNode]);
+  };
+
+  const handleMouseUp = () => {
+    setDragNode(null);
+    isPanningRef.current = false;
+  };
+
+  const handleWheel = (e: React.WheelEvent) => {
+    const delta = -e.deltaY;
+    const factor = 1.1;
+    if (delta > 0) transformRef.current.scale *= factor;
+    else transformRef.current.scale /= factor;
+    transformRef.current.scale = Math.min(Math.max(transformRef.current.scale, 0.1), 5);
+  };
 
   return (
-    <div className="entrance-anim" style={{ flex: 1, animationDelay: '0.3s', display: 'flex' }}>
-      <div
-        ref={containerRef}
-        style={{
-          flex: 1, position: 'relative', overflow: 'hidden', borderRadius: 12,
-          border: '1px solid rgba(0, 209, 255, 0.2)', background: 'rgba(0,0,0,0.4)',
-        }}
-      >
-        <ForceGraph2D
-          width={dim.w}
-          height={dim.h}
-          graphData={graphData}
-          nodeCanvasObject={paintNode}
-          nodeCanvasObjectMode={() => 'replace'}
-          onNodeClick={(node: any) => setSelectedObject(node.stix)}
-          onNodeHover={setHoverNode}
-          linkColor={() => 'rgba(0, 209, 255, 0.15)'}
-          linkWidth={1}
-          linkDirectionalParticles={2}
-          linkDirectionalParticleSpeed={0.005}
-          linkDirectionalParticleWidth={1.5}
-          linkDirectionalParticleColor={() => '#00D1FF'}
-          cooldownTicks={100}
-        />
-        <div style={{
-          position: 'absolute', bottom: 20, right: 20,
-          fontSize: 10, color: '#00D1FF', fontFamily: theme.fonts.mono,
-          padding: '8px 16px', background: 'rgba(0,0,0,0.6)', borderRadius: 8,
-          border: '1px solid rgba(0, 209, 255, 0.2)', pointerEvents: 'none'
-        }}>
-          SCROLL TO ZOOM · DRAG NODES TO ORGANIZE
-        </div>
+    <div className="entrance-anim" style={{ 
+      flex: 1, animationDelay: '0.3s', display: 'flex', 
+      background: 'rgba(0,0,0,0.4)', borderRadius: 12,
+      border: '1px solid rgba(0, 209, 255, 0.2)',
+      position: 'relative', overflow: 'hidden'
+    }} ref={containerRef}>
+      <canvas
+        ref={canvasRef}
+        onMouseDown={handleMouseDown}
+        onMouseMove={handleMouseMove}
+        onMouseUp={handleMouseUp}
+        onMouseLeave={handleMouseUp}
+        onWheel={handleWheel}
+        style={{ cursor: dragNode ? 'grabbing' : hoveredNode ? 'grab' : 'crosshair' }}
+      />
+      <div style={{
+        position: 'absolute', bottom: 20, right: 20,
+        fontSize: 10, color: '#00D1FF', fontFamily: theme.fonts.mono,
+        padding: '8px 16px', background: 'rgba(0,0,0,0.6)', borderRadius: 8,
+        border: '1px solid rgba(0, 209, 255, 0.2)', pointerEvents: 'none',
+        zIndex: 10
+      }}>
+        SCROLL TO ZOOM · DRAG NODES TO REORGANIZE · CLICK FOR INTEL
       </div>
     </div>
   );
