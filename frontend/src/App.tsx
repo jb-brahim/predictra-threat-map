@@ -7,6 +7,7 @@ import { HistoryPage } from './ui/HistoryPage';
 import { DashboardPage } from './ui/DashboardPage';
 import { CountryDashboard } from './ui/CountryDashboard';
 import { AnalyticsPage } from './ui/AnalyticsPage';
+import { StixVisualizerPage } from './ui/StixVisualizerPage';
 import { useStreamStore } from './stream/useStreamStore';
 import './index.css';
 
@@ -37,13 +38,14 @@ function App() {
       <StatusBar />
       
       <div style={{ display: 'flex', flex: 1, marginTop: 64, overflow: 'hidden' }}>
-        <Sidebar />
+        {currentView !== 'stix' && <Sidebar />}
         
-        <div style={{ flex: 1, position: 'relative', overflowY: 'auto', padding: '24px' }}>
+        <div style={{ flex: 1, position: 'relative', overflowY: 'auto', padding: currentView === 'stix' ? '0' : '24px' }}>
           {(currentView === 'map' || currentView === 'dashboard') && <DashboardPage />}
           {currentView === 'history' && <HistoryPage />}
           {currentView === 'country' && <CountryDashboard />}
           {currentView === 'analytics' && <AnalyticsPage />}
+          {currentView === 'stix' && <StixVisualizerPage />}
         </div>
       </div>
 
