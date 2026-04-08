@@ -60,6 +60,7 @@ export function StatusBar() {
     { id: 'history', label: 'HISTORY' },
     { id: 'dashboard', label: 'DASHBOARD' },
     { id: 'analytics', label: 'ANALYTICS' },
+    { id: 'stix', label: 'STIX INTEL' },
   ] as const;
 
   return (

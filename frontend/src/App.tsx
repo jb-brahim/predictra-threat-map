@@ -7,6 +7,7 @@ import { HistoryPage } from './ui/HistoryPage';
 import { DashboardPage } from './ui/DashboardPage';
 import { CountryDashboard } from './ui/CountryDashboard';
 import { AnalyticsPage } from './ui/AnalyticsPage';
+import { StixDashboard } from './ui/StixDashboard';
 import { useStreamStore } from './stream/useStreamStore';
 import './index.css';
 
@@ -44,6 +45,7 @@ function App() {
           {currentView === 'history' && <HistoryPage />}
           {currentView === 'country' && <CountryDashboard />}
           {currentView === 'analytics' && <AnalyticsPage />}
+          {currentView === 'stix' && <StixDashboard />}
         </div>
       </div>
 

@@ -27,7 +27,7 @@ interface StreamState {
   reconnectAttempts: number;
 
   // Navigation
-  currentView: 'map' | 'history' | 'dashboard' | 'country' | 'analytics';
+  currentView: 'map' | 'history' | 'dashboard' | 'country' | 'analytics' | 'stix';
   selectedCountry: { name: string; code: string } | null;
   historySearch: { q: string; ip: string };
 
@@ -78,7 +78,7 @@ interface StreamState {
   incrementReconnect: () => void;
   tick: (now: number) => void;
   setConfig: (key: string, value: unknown) => void;
-  setView: (view: 'map' | 'history' | 'dashboard' | 'country' | 'analytics') => void;
+  setView: (view: 'map' | 'history' | 'dashboard' | 'country' | 'analytics' | 'stix') => void;
   setSelectedCountry: (co: { name: string; code: string } | null) => void;
   setHistorySearch: (search: { q: string, ip: string }) => void;
   setProjectionMode: (mode: '3d' | '2d') => void;
@@ -359,7 +359,7 @@ export const useStreamStore = create<StreamState>((set, get) => ({
     }));
   },
 
-  setView: (view: 'map' | 'history' | 'dashboard' | 'country' | 'analytics') => {
+  setView: (view: 'map' | 'history' | 'dashboard' | 'country' | 'analytics' | 'stix') => {
     set({ currentView: view });
   },
 
