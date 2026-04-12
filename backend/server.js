@@ -10,6 +10,9 @@ const { startUrlhaus } = require('./services/scrapers/urlhaus');
 const { startAlienVault } = require('./services/scrapers/alienvault');
 const { startRansomWatch } = require('./services/scrapers/ransomwatch');
 const { startC2Tracker } = require('./services/scrapers/c2tracker');
+const { startBitdefender } = require('./services/scrapers/bitdefender');
+const { startFortinet } = require('./services/scrapers/fortinet');
+const { startKaspersky } = require('./services/scrapers/kaspersky');
 const { getEnrichedSector } = require('./services/enrichment');
 
 
@@ -525,6 +528,9 @@ startUrlhaus((ev, data) => broadcast(ev, data, 'urlhaus'));
 startAlienVault((ev, data) => broadcast(ev, data, 'alienvault'));
 startRansomWatch((ev, data) => broadcast(ev, data, 'ransomwatch'));
 startC2Tracker((ev, data) => broadcast(ev, data, 'c2tracker'));
+startBitdefender((ev, data) => broadcast(ev, data, 'bitdefender'));
+startFortinet((ev, data) => broadcast(ev, data, 'fortinet'));
+startKaspersky((ev, data) => broadcast(ev, data, 'kaspersky'));
 
 app.listen(PORT, () => {
   console.log(`[Server] SSE Backend listening on http://localhost:${PORT}`);

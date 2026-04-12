@@ -134,8 +134,9 @@ function getEnrichedSector(event) {
   // 4. Source-API based fallback
   const src = event.source_api || '';
   if (src === 'ransomwatch') return 'Finance / Business'; // Ransomware usually hits business
-  if (src === 'c2tracker') return 'IT Infrastructure';
+  if (src === 'c2tracker' || src === 'kaspersky') return 'IT Infrastructure';
   if (src === 'urlhaus') return 'Web Services';
+  if (src === 'bitdefender' || src === 'fortinet' || src === 'checkpoint' || src === 'alienvault') return 'General / Other';
 
   return 'General / Other';
 }
