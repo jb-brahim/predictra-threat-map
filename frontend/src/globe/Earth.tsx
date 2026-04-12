@@ -88,16 +88,16 @@ function CinematicGlobe3D({ onPointerMove, onClick, onPointerOut }: any) {
 
     loader.load('https://raw.githubusercontent.com/mrdoob/three.js/master/examples/textures/planets/earth_atmos_2048.jpg', (t) => {
       t.colorSpace = THREE.SRGBColorSpace; maps.map = t; loaded++; checkReady();
-    });
+    }, undefined, () => { loaded++; checkReady(); }); // Catch errors softly
     loader.load('https://raw.githubusercontent.com/mrdoob/three.js/master/examples/textures/planets/earth_lights_2048.png', (t) => {
       t.colorSpace = THREE.SRGBColorSpace; maps.emissiveMap = t; loaded++; checkReady();
-    });
+    }, undefined, () => { loaded++; checkReady(); });
     loader.load('https://raw.githubusercontent.com/mrdoob/three.js/master/examples/textures/planets/earth_normal_2048.jpg', (t) => {
       maps.normalMap = t; loaded++; checkReady();
-    });
+    }, undefined, () => { loaded++; checkReady(); });
     loader.load('https://raw.githubusercontent.com/mrdoob/three.js/master/examples/textures/planets/earth_specular_2048.jpg', (t) => {
       maps.specularMap = t; loaded++; checkReady();
-    });
+    }, undefined, () => { loaded++; checkReady(); });
   }, []);
 
   return (
@@ -112,7 +112,7 @@ function CinematicGlobe3D({ onPointerMove, onClick, onPointerOut }: any) {
           map={textures.map}
           emissiveMap={textures.emissiveMap}
           emissive={new THREE.Color(0xFFEAA0)}
-          emissiveIntensity={8.0}
+          emissiveIntensity={1.5}
           normalMap={textures.normalMap}
           normalScale={new THREE.Vector2(1.5, 1.5)}
           specularMap={textures.specularMap}
