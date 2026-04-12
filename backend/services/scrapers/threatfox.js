@@ -1,16 +1,11 @@
 const axios = require('axios');
 const geoip = require('geoip-lite');
+const { getIpOrganization } = require('../enrichment');
 
 /**
  * ThreatFox (abuse.ch) Scraper
  *
  * Fetches recent Indicators of Compromise (IoCs) — malware C2 IPs/domains.
- * 
- * API docs: https://threatfox-api.abuse.ch/api/v1/
- * The correct query is "get_iocs" (not "get_recent" which caused failures).
- * 
- * Optionally set THREATFOX_API_KEY in your .env for authenticated access.
- * Works without a key, but rate limits apply.
  */
 
 const TARGET_COUNTRIES = [
@@ -61,15 +56,16 @@ async function startThreatFox(broadcast) {
       ).slice(0, 40);
 
       let emitted = 0;
-      ipIoCs.forEach(item => {
+      for (const item of ipIoCs) {
         // Strip port number
         let host = item.ioc_value;
         if (host.includes(':')) host = host.split(':')[0];
 
         const geo = geoip.lookup(host);
-        if (!geo || !geo.ll) return;
+        if (!geo || !geo.ll) continue;
 
         const [lat, lon] = geo.ll;
+        const org = await getIpOrganization(host);
 
         let a_t = 'malware';
         const desc = (item.threat_type_desc || '').toLowerCase();
@@ -80,7 +76,7 @@ async function startThreatFox(broadcast) {
 
         const mappedEvent = {
           a_c: 1,
-          a_n: `[ThreatFox] ${item.threat_type_desc || 'IoC'}: ${item.malware_printable || 'Unknown Malware'}`,
+          a_n: `[ThreatFox] ${org || 'Malware C2'}: ${item.malware_printable || 'Unknown Malware'}`,
           a_t,
           s_ip: host,
           s_co: geo.country || 'UN',
@@ -95,17 +91,18 @@ async function startThreatFox(broadcast) {
             malware_alias: item.malware_alias,
             tags: item.tags || [],
             ioc_type: item.ioc_type,
-            reference: item.reference
+            reference: item.reference,
+            organization: org
           }
         };
 
         broadcast('attack', mappedEvent, 'threatfox');
         emitted++;
-      });
+      }
 
-      console.log(`[ThreatFox] Emitted ${emitted} geo-valid IoC events.`);
+      console.log(`[ThreatFox] Emitted ${emitted} IP-based IoCs.`);
     } catch (err) {
-      console.error('[ThreatFox] Error polling:', err.message);
+      console.error('[ThreatFox] Error polling API:', err.message);
     }
   };
 

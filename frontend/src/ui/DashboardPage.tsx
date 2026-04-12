@@ -96,7 +96,11 @@ export function DashboardPage() {
     
     events.forEach(e => {
         if (e.a_t === 'exploit' || e.a_t === 'malware' || e.a_t === 'phishing') typeDist[e.a_t]++;
-        if (e.a_n) vectorDist[e.a_n] = (vectorDist[e.a_n] || 0) + 1;
+        
+        // For IP-only sources, prioritize showing organization in Vector list
+        const vectorName = e.meta?.organization || e.a_n;
+        if (vectorName) vectorDist[vectorName] = (vectorDist[vectorName] || 0) + 1;
+        
         if (e.s_co) originDist[e.s_co] = (originDist[e.s_co] || 0) + 1;
         if (e.d_co) targetDist[e.d_co] = (targetDist[e.d_co] || 0) + 1;
         if (e.s_co && e.d_co) corridorDist[`${e.s_co}-${e.d_co}`] = (corridorDist[`${e.s_co}-${e.d_co}`] || 0) + 1;

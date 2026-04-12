@@ -49,22 +49,35 @@ const SECTOR_ICONS: Record<string, string> = {
   'General / Other': '📊',
 };
 
-const SECTOR_COLORS: Record<string, string> = {
-  'IT Infrastructure': '#3B82F6', 
-  'Web Services': '#10B981', 
-  'Finance / Business': '#F59E0B', 
-  'Healthcare / Medical': '#EF4444',
-  'Government / Defense': '#6366F1',
-  'Education / Academic': '#A855F7',
-  'Energy / Utilities': '#EAB308',
-  'Industrial Manufacturing': '#F97316',
-  'Retail / Commerce': '#EC4899',
-  'Telecommunications': '#14B8A6',
-  'Database Services': '#475569',
-  'Email / Communication': '#06B6D4',
-  'Enterprise Network': '#8B5CF6',
-  'General / Other': '#64748B',
-};
+  const SECTOR_COLORS: Record<string, string> = {
+    'IT Infrastructure': '#3B82F6', 
+    'Web Services': '#10B981', 
+    'Finance / Business': '#F59E0B', 
+    'Healthcare / Medical': '#EF4444',
+    'Government / Defense': '#6366F1',
+    'Education / Academic': '#A855F7',
+    'Energy / Utilities': '#EAB308',
+    'Industrial Manufacturing': '#F97316',
+    'Retail / Commerce': '#EC4899',
+    'Telecommunications': '#14B8A6',
+    'Database Services': '#475569',
+    'Email / Communication': '#06B6D4',
+    'Enterprise Network': '#8B5CF6',
+    'General / Other': '#64748B',
+  };
+  
+  function getSectorIcon(name: string) {
+    if (SECTOR_ICONS[name]) return SECTOR_ICONS[name];
+    return '🏢'; // Default for organization
+  }
+  
+  function getSectorColor(name: string) {
+    if (SECTOR_COLORS[name]) return SECTOR_COLORS[name];
+    // Hash-based color for unknown organizations
+    let hash = 0;
+    for (let i = 0; i < name.length; i++) hash = name.charCodeAt(i) + ((hash << 5) - hash);
+    return `hsl(${hash % 360}, 60%, 60%)`;
+  }
 
 
 /* ─── Main Component ──────────────────────────────────────────────────────── */
@@ -173,7 +186,7 @@ export function AnalyticsPage() {
             Threat Analytics
           </h1>
           <p style={{ color: theme.colors.textDim, fontSize: 13, marginTop: 3, marginBottom: 0 }}>
-            Real MongoDB Data · Country Classification · Trends · Sectors
+            Real MongoDB Data · Country Classification · Trends · IP-Only Organizations
           </p>
         </div>
         <div style={{ display: 'flex', gap: 4, background: 'rgba(255,255,255,0.05)', borderRadius: 8, padding: 4 }}>
@@ -193,8 +206,8 @@ export function AnalyticsPage() {
         {([
           { id: 'countries' as Tab, label: '🌍 Country Classification', color: '#3B82F6' },
           { id: 'trends' as Tab, label: '📈 Trend Analysis', color: '#10B981' },
-          { id: 'sectors' as Tab, label: '🏢 Sector Breakdown', color: '#F59E0B' },
-          { id: 'combined' as Tab, label: '🔗 Country × Sector', color: '#8B5CF6' },
+          { id: 'sectors' as Tab, label: '🏢 Organization Breakdown', color: '#F59E0B' },
+          { id: 'combined' as Tab, label: '🔗 Country × Org', color: '#8B5CF6' },
         ]).map(t => (
           <button key={t.id} onClick={() => setTab(t.id)} style={{
             flex: 1, padding: '10px 16px', borderRadius: 8, border: 'none', cursor: 'pointer',
@@ -480,7 +493,7 @@ function SectorsTab({ sectors, total }: { sectors: SectorRow[]; total: number })
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
       <div style={{ padding: '8px 14px', background: 'rgba(59,130,246,0.08)', border: '1px solid rgba(59,130,246,0.2)', borderRadius: 8, fontSize: 11, color: '#3B82F6', fontFamily: theme.fonts.display }}>
-        🛡️ Sectors are classified using the Intelligence Enrichment Service based on victim names, corporate databases, and malware targeting signatures.
+        🛡️ Organizations are identified via RDAP/WHOIS lookups for verified IP-based sources (SANS ISC & ThreatFox).
       </div>
 
 
@@ -505,7 +518,7 @@ function SectorsTab({ sectors, total }: { sectors: SectorRow[]; total: number })
               const iy1 = cy + donutInner * Math.sin(toRad(endAngle));
               const ix2 = cx + donutInner * Math.cos(toRad(startAngle));
               const iy2 = cy + donutInner * Math.sin(toRad(startAngle));
-              const color = SECTOR_COLORS[s.name] || '#64748B';
+              const color = getSectorColor(s.name);
               if (angle < 1) return null;
               return <path key={s.name} d={`M${x1},${y1} A${donutR},${donutR} 0 ${largeArc},1 ${x2},${y2} L${ix1},${iy1} A${donutInner},${donutInner} 0 ${largeArc},0 ${ix2},${iy2} Z`} fill={color} opacity={0.85} />;
             })}
@@ -515,7 +528,7 @@ function SectorsTab({ sectors, total }: { sectors: SectorRow[]; total: number })
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 16, justifyContent: 'center' }}>
             {sectors.slice(0, 6).map(s => (
               <div key={s.name} style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 9, color: theme.colors.textDim }}>
-                <div style={{ width: 8, height: 8, borderRadius: 2, background: SECTOR_COLORS[s.name] || '#64748B' }} />
+                <div style={{ width: 8, height: 8, borderRadius: 2, background: getSectorColor(s.name) }} />
                 {s.name}
               </div>
             ))}
@@ -524,11 +537,11 @@ function SectorsTab({ sectors, total }: { sectors: SectorRow[]; total: number })
 
         {/* Table */}
         <GlassPanel>
-          <div style={{ fontSize: 12, fontFamily: theme.fonts.display, textTransform: 'uppercase', letterSpacing: 2, color: theme.colors.textSecondary, marginBottom: 12 }}>Sector Distribution</div>
+          <div style={{ fontSize: 12, fontFamily: theme.fonts.display, textTransform: 'uppercase', letterSpacing: 2, color: theme.colors.textSecondary, marginBottom: 12 }}>Organization Distribution</div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
             {sectors.map((s, i) => {
-              const color = SECTOR_COLORS[s.name] || '#64748B';
-              const icon = SECTOR_ICONS[s.name] || '📊';
+              const color = getSectorColor(s.name);
+              const icon = getSectorIcon(s.name);
               const topType = Object.entries(s.topTypes).sort((a,b) => b[1]-a[1])[0];
               return (
                 <div key={s.name} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', borderRadius: 8, background: 'rgba(255,255,255,0.02)', borderLeft: `3px solid ${color}` }}>
@@ -585,10 +598,10 @@ function CombinedTab({ countries, sectors, country, sector, onCountryChange, onS
             style={{ width: '100%', boxSizing: 'border-box', padding: '8px 12px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 8, color: '#fff', fontSize: 12, fontFamily: theme.fonts.mono, outline: 'none' }} />
         </GlassPanel>
         <GlassPanel style={{ padding: '12px 16px', flex: '1 1 300px' }}>
-          <div style={{ fontSize: 10, fontFamily: theme.fonts.display, textTransform: 'uppercase', letterSpacing: 1.5, color: theme.colors.textDim, marginBottom: 6 }}>Filter by Sector</div>
+          <div style={{ fontSize: 10, fontFamily: theme.fonts.display, textTransform: 'uppercase', letterSpacing: 1.5, color: theme.colors.textDim, marginBottom: 6 }}>Filter by Organization</div>
           <select value={sector} onChange={e => onSectorChange(e.target.value)}
             style={{ width: '100%', boxSizing: 'border-box', padding: '8px 12px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 8, color: '#fff', fontSize: 12, outline: 'none', cursor: 'pointer' }}>
-            <option value="">All Sectors</option>
+            <option value="">All Organizations</option>
             {sectors.map(s => <option key={s.name} value={s.name}>{s.name} ({fmt(s.total)})</option>)}
           </select>
         </GlassPanel>
@@ -597,7 +610,7 @@ function CombinedTab({ countries, sectors, country, sector, onCountryChange, onS
       {/* Heatmap Grid */}
       <GlassPanel>
         <div style={{ fontSize: 12, fontFamily: theme.fonts.display, textTransform: 'uppercase', letterSpacing: 2, color: theme.colors.textSecondary, marginBottom: 16 }}>
-          Country × Sector Heatmap {country && `· ${flag(country)} ${country}`} {sector && `· ${sector}`}
+          Country × Org Heatmap {country && `· ${flag(country)} ${country}`} {sector && `· ${sector}`}
         </div>
         {countries.length === 0 ? (
           <div style={{ padding: 40, textAlign: 'center', color: theme.colors.textDim, fontSize: 13 }}>No data. Try adjusting filters or ensure the backend has stored events.</div>
@@ -608,8 +621,8 @@ function CombinedTab({ countries, sectors, country, sector, onCountryChange, onS
                 <tr>
                   <th style={{ padding: '8px', textAlign: 'left', fontSize: 10, color: theme.colors.textDim, fontFamily: theme.fonts.display, letterSpacing: 1, minWidth: 60 }}>Country</th>
                   {allSectorNames.map(s => (
-                    <th key={s} style={{ padding: '6px 4px', fontSize: 9, color: SECTOR_COLORS[s] || theme.colors.textDim, fontFamily: theme.fonts.display, letterSpacing: 0.5, textAlign: 'center', minWidth: 50, maxWidth: 80, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                      {SECTOR_ICONS[s] || '📊'}<br/>{s.split('/')[0].trim()}
+                    <th key={s} style={{ padding: '6px 4px', fontSize: 9, color: getSectorColor(s), fontFamily: theme.fonts.display, letterSpacing: 0.5, textAlign: 'center', minWidth: 50, maxWidth: 80, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                      {getSectorIcon(s)}<br/>{s.split('/')[0].trim()}
                     </th>
                   ))}
                   <th style={{ padding: '8px', fontSize: 10, color: theme.colors.textDim, fontFamily: theme.fonts.display, textAlign: 'right' }}>Total</th>
@@ -625,7 +638,7 @@ function CombinedTab({ countries, sectors, country, sector, onCountryChange, onS
                     {allSectorNames.map(s => {
                       const val = c.sectors[s] || 0;
                       const intensity = val / maxCell;
-                      const color = SECTOR_COLORS[s] || '#64748B';
+                      const color = getSectorColor(s);
                       return (
                         <td key={s} style={{ padding: '4px', textAlign: 'center' }}>
                           {val > 0 ? (
@@ -654,12 +667,12 @@ function CombinedTab({ countries, sectors, country, sector, onCountryChange, onS
       {/* Sector Summary */}
       <GlassPanel>
         <div style={{ fontSize: 12, fontFamily: theme.fonts.display, textTransform: 'uppercase', letterSpacing: 2, color: theme.colors.textSecondary, marginBottom: 12 }}>
-          Sector Totals {country && `for ${flag(country)} ${country}`}
+          Organization Totals {country && `for ${flag(country)} ${country}`}
         </div>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 10 }}>
           {sectors.map(s => {
-            const color = SECTOR_COLORS[s.name] || '#64748B';
-            const icon = SECTOR_ICONS[s.name] || '📊';
+            const color = getSectorColor(s.name);
+            const icon = getSectorIcon(s.name);
             return (
               <div key={s.name} onClick={() => onSectorChange(sector === s.name ? '' : s.name)} style={{
                 padding: '12px 16px', borderRadius: 10, cursor: 'pointer', transition: 'all 0.2s',

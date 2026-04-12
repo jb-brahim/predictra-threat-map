@@ -176,16 +176,24 @@ app.get('/api/history', async (req, res) => {
   }
 });
 
+// Helper to get analytics match stage (filtering for IP-only sources)
+const getAnalyticsMatchStage = (query = {}) => {
+  const { type, country, from } = query;
+  const matchStage = { 
+    source_api: { $in: ['sans', 'threatfox'] } 
+  };
+
+  if (type) matchStage.a_t = type;
+  if (country) matchStage.$or = [{ s_co: country.toUpperCase() }, { d_co: country.toUpperCase() }];
+  if (from) matchStage.timestamp = { $gte: new Date(from) };
+
+  return matchStage;
+};
+
 // Aggregated Stats Endpoint
 app.get('/api/stats', async (req, res) => {
   try {
-    const { type, source, country, from } = req.query;
-    const matchStage = {};
-
-    if (type) matchStage.a_t = type;
-    if (source) matchStage.source_api = source;
-    if (country) matchStage.$or = [{ s_co: country.toUpperCase() }, { d_co: country.toUpperCase() }];
-    if (from) matchStage.timestamp = { $gte: new Date(from) };
+    const matchStage = getAnalyticsMatchStage(req.query);
 
     const [typeAgg, originAgg, targetAgg, vectorAgg, sourceAgg, total] = await Promise.all([
       ThreatEvent.aggregate([
@@ -205,9 +213,10 @@ app.get('/api/stats', async (req, res) => {
         { $sort: { count: -1 } },
         { $limit: 20 }
       ]),
+      // For IP-only sources, "Vector" will be the organization/owner if available
       ThreatEvent.aggregate([
         { $match: matchStage },
-        { $group: { _id: '$a_n', count: { $sum: 1 } } },
+        { $group: { _id: { $ifNull: ['$meta.organization', '$a_n'] }, count: { $sum: 1 } } },
         { $sort: { count: -1 } },
         { $limit: 20 }
       ]),
@@ -237,8 +246,10 @@ app.get('/api/stats', async (req, res) => {
 app.get('/api/stats/timeline', async (req, res) => {
   try {
     const since = new Date(Date.now() - 24 * 3600 * 1000);
+    const matchStage = getAnalyticsMatchStage({ from: since });
+
     const agg = await ThreatEvent.aggregate([
-      { $match: { timestamp: { $gte: since } } },
+      { $match: matchStage },
       {
         $group: {
           _id: {
@@ -258,18 +269,16 @@ app.get('/api/stats/timeline', async (req, res) => {
 
 // ─── Sector mapping utility ──────────────────────────────────────────────────
 // Now using the intelligent Enrichment Service for "Real Data" classification.
+// For the IP-only branch, we prioritize Organization over Sector.
 function estimateSector(event) {
-  return getEnrichedSector(event);
+  return event.meta?.organization || getEnrichedSector(event);
 }
 
 
 // ─── Analytics: Country Classification ───────────────────────────────────────
 app.get('/api/analytics/countries', async (req, res) => {
   try {
-    const { from, type } = req.query;
-    const matchStage = {};
-    if (type) matchStage.a_t = type;
-    if (from) matchStage.timestamp = { $gte: new Date(from) };
+    const matchStage = getAnalyticsMatchStage(req.query);
 
     const [origins, targets, typeByCountry] = await Promise.all([
       ThreatEvent.aggregate([
@@ -332,7 +341,7 @@ app.get('/api/analytics/countries', async (req, res) => {
 // ─── Analytics: Trends ───────────────────────────────────────────────────────
 app.get('/api/analytics/trends', async (req, res) => {
   try {
-    const { period = '24h', country, type } = req.query;
+    const { period = '24h' } = req.query;
 
     let since, dateFormat, bucketLabel;
     switch (period) {
@@ -352,9 +361,7 @@ app.get('/api/analytics/trends', async (req, res) => {
         bucketLabel = 'hour';
     }
 
-    const matchStage = { timestamp: { $gte: since } };
-    if (country) matchStage.$or = [{ s_co: country.toUpperCase() }, { d_co: country.toUpperCase() }];
-    if (type) matchStage.a_t = type;
+    const matchStage = getAnalyticsMatchStage({ ...req.query, from: since });
 
     // Total timeline
     const totalTimeline = await ThreatEvent.aggregate([
@@ -381,9 +388,8 @@ app.get('/api/analytics/trends', async (req, res) => {
 
     // Calculate period comparison
     const prevStart = new Date(since.getTime() - (Date.now() - since.getTime()));
-    const prevMatch = { timestamp: { $gte: prevStart, $lt: since } };
-    if (country) prevMatch.$or = matchStage.$or;
-    if (type) prevMatch.a_t = type;
+    const prevMatch = getAnalyticsMatchStage({ ...req.query, from: prevStart });
+    prevMatch.timestamp.$lt = since;
 
     const [currentTotal, previousTotal] = await Promise.all([
       ThreatEvent.countDocuments(matchStage),
@@ -409,15 +415,12 @@ app.get('/api/analytics/trends', async (req, res) => {
   }
 });
 
-// ─── Analytics: Sectors (estimated via heuristic) ────────────────────────────
+// ─── Analytics: Sectors (now Organizations for IP-only) ────────────────────────────
 app.get('/api/analytics/sectors', async (req, res) => {
   try {
-    const { country, from } = req.query;
-    const matchStage = {};
-    if (country) matchStage.$or = [{ s_co: country.toUpperCase() }, { d_co: country.toUpperCase() }];
-    if (from) matchStage.timestamp = { $gte: new Date(from) };
+    const matchStage = getAnalyticsMatchStage(req.query);
 
-    // Fetch raw events (limited) to classify by sector
+    // Fetch raw events (limited) to classify by organization
     const events = await ThreatEvent.find(matchStage)
       .sort({ timestamp: -1 })
       .limit(5000)
@@ -447,7 +450,7 @@ app.get('/api/analytics/sectors', async (req, res) => {
     res.json({
       sectors,
       totalAnalyzed: events.length,
-      note: 'Sectors are classified using the Intelligence Enrichment Service based on victim names, malware signatures, and known industry indicators.'
+      note: 'Analytics focused on verified IP sources (SANS/ThreatFox). Categories represent IP-owner organizations where available.'
 
     });
   } catch (error) {
@@ -456,13 +459,11 @@ app.get('/api/analytics/sectors', async (req, res) => {
   }
 });
 
-// ─── Analytics: Combined (Country × Sector) ─────────────────────────────────
+// ─── Analytics: Combined (Country × Organization) ─────────────────────────────────
 app.get('/api/analytics/combined', async (req, res) => {
   try {
-    const { country, sector, from } = req.query;
-    const matchStage = {};
-    if (country) matchStage.$or = [{ s_co: country.toUpperCase() }, { d_co: country.toUpperCase() }];
-    if (from) matchStage.timestamp = { $gte: new Date(from) };
+    const { sector } = req.query;
+    const matchStage = getAnalyticsMatchStage(req.query);
 
     const events = await ThreatEvent.find(matchStage)
       .sort({ timestamp: -1 })
@@ -481,7 +482,6 @@ app.get('/api/analytics/combined', async (req, res) => {
 
       const countries = [ev.s_co, ev.d_co].filter(Boolean);
       countries.forEach(co => {
-        if (country && co.toUpperCase() !== country.toUpperCase()) return;
         if (!matrix[co]) matrix[co] = {};
         matrix[co][s] = (matrix[co][s] || 0) + 1;
         sectorTotals[s] = (sectorTotals[s] || 0) + 1;
@@ -509,7 +509,7 @@ app.get('/api/analytics/combined', async (req, res) => {
       countries: topCountries,
       sectors: topSectors,
       totalAnalyzed: events.length,
-      filters: { country: country || null, sector: sector || null }
+      note: 'Country/Organization breakdown for IP-only sources.'
     });
   } catch (error) {
     console.error('[API] Error fetching combined analytics:', error.message);

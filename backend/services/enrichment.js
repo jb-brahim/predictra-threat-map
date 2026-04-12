@@ -5,6 +5,50 @@
  * to real-world industrial sectors.
  */
 
+const axios = require('axios');
+
+// Cache to avoid repeated RDAP lookups
+const rdapCache = new Map();
+
+/**
+ * RDAP-based IP Owner/Organization Lookup
+ * Fetches the organization/owner of an IP address using RDAP (modern WHOIS).
+ */
+async function getIpOrganization(ip) {
+  if (!ip || ip === 'unknown') return 'Unknown Organization';
+  if (rdapCache.has(ip)) return rdapCache.get(ip);
+
+  try {
+    // Using rdap.org as a redirector to the correct regional registry (ARIN, RIPE, etc.)
+    const response = await axios.get(`https://rdap.org/ip/${ip}`, { 
+      timeout: 3000,
+      headers: { 'Accept': 'application/rdap+json' }
+    });
+
+    let orgName = 'Unknown Organization';
+
+    if (response.data) {
+      // Try to find organization name in 'entities' or 'remarks'
+      const entities = response.data.entities || [];
+      const vcardOrg = entities
+        .flatMap(e => e.vcardArray?.[1] || [])
+        .find(entry => entry[0] === 'fn' || entry[0] === 'org');
+
+      if (vcardOrg) {
+        orgName = vcardOrg[3];
+      } else if (response.data.name) {
+        orgName = response.data.name;
+      }
+    }
+
+    rdapCache.set(ip, orgName);
+    return orgName;
+  } catch (err) {
+    // If RDAP fails, we don't want to block the scraper
+    return 'Unknown Organization';
+  }
+}
+
 // 1. Known Sector Keywords (High-Confidence)
 const KEYWORD_MAP = {
   // Healthcare
@@ -96,4 +140,4 @@ function getEnrichedSector(event) {
   return 'General / Other';
 }
 
-module.exports = { getEnrichedSector };
+module.exports = { getEnrichedSector, getIpOrganization };

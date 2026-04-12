@@ -222,7 +222,8 @@ export const useStreamStore = create<StreamState>((set, get) => ({
     for (const e of events) {
       if (e.a_t in pendingType) pendingType[e.a_t as keyof TypeDistribution]++;
       
-      const vName = String(e.a_n || 'Unknown').trim();
+      // For IP-only sources, prioritize showing organization in Vector list
+      const vName = String(e.meta?.organization || e.a_n || 'Unknown').trim();
       pendingVector[vName] = (pendingVector[vName] || 0) + 1;
       
       const sCo = String(e.s_co || '??').toUpperCase();

@@ -1,5 +1,6 @@
 const axios = require('axios');
 const geoip = require('geoip-lite');
+const { getIpOrganization } = require('../enrichment');
 
 /**
  * SANS ISC (DShield) Scraper
@@ -12,22 +13,20 @@ async function startSans(broadcast) {
     const poll = async () => {
         try {
             // Fetching 'top 100' source IPs from the last 24 hours
-            // This is one of the most 'real-time' feeling feeds from SANS
             const response = await axios.get('https://isc.sans.edu/api/sources/attacks/100/1?json');
 
             if (response.data && Array.isArray(response.data)) {
                 console.log(`[SANS ISC] Fetched ${response.data.length} attack sources.`);
 
-                response.data.forEach(item => {
+                // Process IPs sequentially or in small batches to avoid RDAP rate limits
+                for (const item of response.data) {
                     const ip = item.ip;
                     const geo = geoip.lookup(ip);
 
                     if (geo && geo.ll) {
                         const [lat, lon] = geo.ll;
+                        const org = await getIpOrganization(ip);
 
-                        // SANS doesn't give us a specific destination IP per attack in this API,
-                        // so we "invent" a destination within a random major target country
-                        // to create a nice-looking arc on the map.
                         const targetCountries = [
                             { cc: 'US', lat: 37.0902, lon: -95.7129 },
                             { cc: 'GB', lat: 55.3781, lon: -3.4360 },
@@ -39,7 +38,7 @@ async function startSans(broadcast) {
 
                         const mappedEvent = {
                             a_c: parseInt(item.attacks) || 1,
-                            a_n: `[SANS] Port Scan / Firewall Probe (Port ${item.port || 'unk'})`,
+                            a_n: `[SANS] ${org || 'Port Scan'} (Port ${item.port || 'unk'})`,
                             a_t: 'exploit',
                             s_ip: ip,
                             s_co: geo.country || 'UN',
@@ -51,13 +50,14 @@ async function startSans(broadcast) {
                             meta: {
                                 port: item.port,
                                 attacks_count: item.attacks,
-                                last_seen: item.lastseen
+                                last_seen: item.lastseen,
+                                organization: org
                             }
                         };
 
                         broadcast('attack', mappedEvent, 'sans');
                     }
-                });
+                }
             }
         } catch (error) {
             console.error("[SANS ISC] Error polling SANS API:", error.message);
