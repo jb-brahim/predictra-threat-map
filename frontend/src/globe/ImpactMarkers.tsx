@@ -7,9 +7,9 @@ import { easeOutExpo } from '../utils/easing';
 // ── Shared geometry pool (created once, reused for all markers) ──
 
 // ── Cinematic Radar Markers
-const _sharedCoreGeo = new THREE.CircleGeometry(0.015, 32);
-const _sharedRing1Geo = new THREE.RingGeometry(0.016, 0.020, 64);
-const _sharedRing2Geo = new THREE.RingGeometry(0.020, 0.024, 64);
+const _sharedCoreGeo = new THREE.CircleGeometry(0.006, 16);
+const _sharedRing1Geo = new THREE.RingGeometry(0.008, 0.011, 32);
+const _sharedRing2Geo = new THREE.RingGeometry(0.014, 0.017, 32);
 
 const _materialProps = {
   transparent: true,
@@ -120,18 +120,18 @@ export function ImpactMarkers() {
       obj.ring1.visible = true;
 
       if (obj.isSource) {
-        // Source: single massive expanding radar pulse
-        const pulseScale = 1 + p * 12.0; 
-        const pulseOpacity = (1 - p) * 0.6;
+        // Source: subtle, quick radar pulse
+        const pulseScale = 1 + easeOutExpo(p) * 2.0; 
+        const pulseOpacity = (1 - p) * 0.8;
 
         obj.ring1.scale.setScalar(pulseScale);
         (obj.ring1.material as THREE.MeshBasicMaterial).opacity = pulseOpacity;
 
         const fadeOut = Math.max(0, 1 - easeOutExpo(p));
-        (obj.core.material as THREE.MeshBasicMaterial).opacity = fadeOut * 0.9;
+        (obj.core.material as THREE.MeshBasicMaterial).opacity = fadeOut;
       } else {
-        // Destination: intense shockwave ripple
-        const ripple1 = p * 15.0;
+        // Destination: tight shockwave ripple
+        const ripple1 = easeOutExpo(p) * 1.5;
         const fadeOut = Math.max(0, 1 - p);
 
         obj.ring1.scale.setScalar(1 + ripple1);
@@ -139,12 +139,12 @@ export function ImpactMarkers() {
 
         if (obj.ring2) {
           obj.ring2.visible = true;
-          const ripple2 = Math.max(0, p - 0.2) * 12.0;
+          const ripple2 = Math.max(0, p - 0.2) * 1.5;
           obj.ring2.scale.setScalar(1 + ripple2);
           (obj.ring2.material as THREE.MeshBasicMaterial).opacity = fadeOut * 0.5;
         }
 
-        (obj.core.material as THREE.MeshBasicMaterial).opacity = fadeOut * 1.0;
+        (obj.core.material as THREE.MeshBasicMaterial).opacity = fadeOut;
       }
     }
   });
