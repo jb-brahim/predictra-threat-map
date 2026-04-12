@@ -67,6 +67,7 @@ type SortMode = 'count' | 'alpha';
 /* ─── main component ──────────────────────────────────────────────────────── */
 
 export function DashboardPage() {
+  const currentView     = useStreamStore(s => s.currentView);
   const totalAttacks_raw    = useStreamStore(s => s.totalAttacks);
   const counterData     = useStreamStore(s => s.counterData);
   const typeDistribution_raw  = useStreamStore(s => s.typeDistribution);
@@ -78,6 +79,7 @@ export function DashboardPage() {
   const recentFeed_raw      = useStreamStore(s => s.recentEvents);
   const trendData       = useStreamStore(s => s.trendData);
   const eventBuffer     = useStreamStore(s => s.eventBuffer);
+  const activeArcCount  = useStreamStore(s => s.activeArcCount);
 
   const [timeMode, setTimeMode] = useState<'live' | 5 | 15 | 60>('live');
 
@@ -348,6 +350,96 @@ export function DashboardPage() {
   }, [drillCountry, originDistribution, targetDistribution, recentFeed, corridorDistribution]);
 
   /* ─── render ─────────────────────────────────────────────────────────────── */
+
+  if (currentView === 'map') {
+    return (
+      <div style={{ position: 'relative', height: 'calc(100vh - 64px)', margin: '-24px', overflow: 'hidden' }}>
+        <div style={{ position: 'absolute', inset: 0, background: '#050B14' }}>
+          <GlobeScene />
+        </div>
+        
+        {/* HUD OVERLAYS */}
+        <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', padding: '24px' }}>
+          
+          {/* Top Left: Threat Metrics */}
+          <div style={{ position: 'absolute', top: 24, left: 24, pointerEvents: 'auto', display: 'flex', flexDirection: 'column', gap: 12, width: 280, animation: 'slideIn 0.5s ease-out' }}>
+            <GlassPanel style={{ padding: '16px 20px', borderLeft: `3px solid ${threatLevel.color}`, background: 'rgba(5, 11, 20, 0.6)', backdropFilter: 'blur(8px)' }}>
+              <div style={{ fontSize: 10, fontFamily: theme.fonts.display, textTransform: 'uppercase', letterSpacing: 2, color: theme.colors.textDim, marginBottom: 4 }}>System Status</div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
+                <div style={{ width: 8, height: 8, borderRadius: '50%', background: threatLevel.color, boxShadow: `0 0 10px ${threatLevel.color}`, animation: 'pulse 2s infinite' }} />
+                <span style={{ fontSize: 16, fontFamily: theme.fonts.display, fontWeight: 800, color: threatLevel.color, letterSpacing: 1 }}>{threatLevel.label}</span>
+              </div>
+              <div style={{ fontSize: 10, fontFamily: theme.fonts.display, textTransform: 'uppercase', letterSpacing: 2, color: theme.colors.textDim, marginBottom: 2 }}>Total Attacks</div>
+              <div style={{ fontSize: 32, fontFamily: theme.fonts.display, fontWeight: 800, color: theme.colors.textPrimary }}>{fmt(total)}</div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 12, borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: 12 }}>
+                <div style={{ display: 'flex', flexDirection: 'column' }}>
+                  <span style={{ fontSize: 9, fontFamily: theme.fonts.display, color: theme.colors.textDim, textTransform: 'uppercase', letterSpacing: 1 }}>Threats/Min</span>
+                  <span style={{ fontSize: 18, color: theme.colors.warning, fontWeight: 700, fontFamily: theme.fonts.display }}>{threatsPerMin}</span>
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
+                  <span style={{ fontSize: 9, fontFamily: theme.fonts.display, color: theme.colors.textDim, textTransform: 'uppercase', letterSpacing: 1 }}>Active Arcs</span>
+                  <span style={{ fontSize: 18, color: theme.colors.exploit, fontWeight: 700, fontFamily: theme.fonts.display }}>{activeArcCount}</span>
+                </div>
+              </div>
+            </GlassPanel>
+          </div>
+
+          {/* Top Right: Trend Sparkline */}
+          <div style={{ position: 'absolute', top: 24, right: 24, pointerEvents: 'auto', width: 300, animation: 'slideIn 0.5s ease-out', animationDirection: 'reverse' }}>
+            <GlassPanel style={{ padding: '16px 20px', background: 'rgba(5, 11, 20, 0.6)', backdropFilter: 'blur(8px)' }}>
+              <div style={{ fontSize: 10, fontFamily: theme.fonts.display, textTransform: 'uppercase', letterSpacing: 2, color: theme.colors.textDim, marginBottom: 12 }}>10-Minute Trend</div>
+              <TrendSparkline data={trendData} />
+            </GlassPanel>
+          </div>
+
+          {/* Bottom Left: Top Targets */}
+          <div style={{ position: 'absolute', bottom: 24, left: 24, pointerEvents: 'auto', width: 280, animation: 'fadeUp 0.5s ease-out' }}>
+             <GlassPanel style={{ padding: '16px 20px', background: 'rgba(5, 11, 20, 0.6)', backdropFilter: 'blur(8px)' }}>
+               <div style={{ fontSize: 10, fontFamily: theme.fonts.display, textTransform: 'uppercase', letterSpacing: 2, color: theme.colors.textDim, marginBottom: 12 }}>Primary Targets</div>
+               <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                 {filteredTargets.slice(0, 5).map(([co, count], idx) => {
+                   const max = filteredTargets[0]?.[1] || 1;
+                   const pct = (count / max) * 100;
+                   return (
+                     <div key={co} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                       <div style={{ width: 22, textAlign: 'center', fontSize: 16 }}>{getFlag(co)}</div>
+                       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 4 }}>
+                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
+                           <span style={{ fontSize: 11, fontWeight: idx === 0 ? 700 : 400, color: idx === 0 ? '#fff' : theme.colors.textSecondary }}>{co}</span>
+                           <span style={{ fontSize: 10, fontFamily: theme.fonts.mono, color: theme.colors.phishing }}>{fmt(count)}</span>
+                         </div>
+                         <div style={{ height: 2, background: 'rgba(255,255,255,0.05)', borderRadius: 1 }}>
+                           <div style={{ width: `${pct}%`, height: '100%', background: theme.colors.phishing, borderRadius: 1 }} />
+                         </div>
+                       </div>
+                     </div>
+                   );
+                 })}
+               </div>
+             </GlassPanel>
+          </div>
+
+          {/* Bottom Right: Live Feed */}
+          <div style={{ position: 'absolute', bottom: 24, right: 24, pointerEvents: 'auto', width: 380, display: 'flex', flexDirection: 'column', gap: 8, animation: 'fadeUp 0.5s ease-out' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '0 4px', marginBottom: 2 }}>
+              <div style={{ width: 6, height: 6, borderRadius: '50%', background: theme.colors.exploit, animation: 'pulse 1s infinite' }} />
+              <span style={{ fontSize: 10, fontFamily: theme.fonts.display, textTransform: 'uppercase', letterSpacing: 2, color: theme.colors.textDim }}>Live Intercepts</span>
+            </div>
+            {filteredFeed.slice(0, 3).map((event, i) => (
+              <FeedEventCard
+                key={event.id || i}
+                event={event}
+                expanded={false}
+                onToggle={() => {}}
+                onCountryClick={() => {}}
+              />
+            ))}
+          </div>
+
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div style={{

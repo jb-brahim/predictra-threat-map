@@ -1,6 +1,7 @@
 require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
+const mongoose = require('mongoose');
 const connectDB = require('./config/db');
 const ThreatEvent = require('./models/ThreatEvent');
 const { startCheckpoint } = require('./services/scrapers/checkpoint');
@@ -37,6 +38,7 @@ const BATCH_DB_INSERT = 25;       // bulk-insert MongoDB after accumulating N do
 let pendingEvents = [];           // staging queue between flushes
 let pendingDbDocs = [];           // staging queue for bulk Mongo inserts
 let isDatabaseEnabled = true;     // Database persistance flag (Must be true to store attacks)
+let dbSizeLimitReached = false;   // Database size limit flag
 let clients = [];                 // SSE connected clients
 
 // ─── Batch flush (runs every BATCH_INTERVAL_MS) ───────────────────────────────
@@ -57,7 +59,7 @@ const flushBatch = () => {
   });
 
   // Bulk-insert into MongoDB to avoid N individual save() calls
-  if (isDatabaseEnabled && pendingDbDocs.length >= BATCH_DB_INSERT) {
+  if (isDatabaseEnabled && !dbSizeLimitReached && pendingDbDocs.length >= BATCH_DB_INSERT) {
     const docs = pendingDbDocs.splice(0, pendingDbDocs.length);
     ThreatEvent.insertMany(docs, { ordered: false })
       .catch(err => console.error('[MongoDB] Bulk insert error:', err.message));
@@ -72,6 +74,31 @@ setInterval(() => {
     try { client.res.write('event: ping\ndata: {}\n\n'); } catch (_) { }
   });
 }, 30_000);
+
+// ─── Database Quota Monitor ──────────────────────────────────────────────────
+const MAX_DB_SIZE_BYTES = 500 * 1024 * 1024; // 500 MB
+setInterval(async () => {
+  if (!mongoose.connection || mongoose.connection.readyState !== 1) return;
+  try {
+    const stats = await mongoose.connection.db.stats();
+    const size = stats.totalSize || (stats.storageSize + stats.indexSize) || stats.dataSize;
+    if (size >= MAX_DB_SIZE_BYTES) {
+      if (!dbSizeLimitReached) {
+        console.warn(`[MongoDB] WARNING: Database size (${(size / 1024 / 1024).toFixed(2)} MB) exceeds 500 MB limit! Disabling database storage to save space.`);
+        dbSizeLimitReached = true;
+        isDatabaseEnabled = false; // Auto shutoff
+      }
+    } else {
+      if (dbSizeLimitReached) {
+        console.log(`[MongoDB] Database size (${(size / 1024 / 1024).toFixed(2)} MB) is below limit. Storage can be resumed automatically or manually.`);
+        dbSizeLimitReached = false;
+        // Optionally auto-resume: isDatabaseEnabled = true;
+      }
+    }
+  } catch (err) {
+    console.error('[MongoDB] Error checking db size:', err.message);
+  }
+}, 60000); // Check every minute
 
 // ─── Main broadcast entry-point (called by each scraper) ─────────────────────
 const broadcast = (event, data, sourceApi = 'unknown') => {
@@ -126,11 +153,17 @@ app.get('/api/feed', (req, res) => {
 
 // DB persistence management
 app.post('/api/db/toggle', (req, res) => {
+  if (dbSizeLimitReached && !isDatabaseEnabled) {
+    return res.status(403).json({ error: 'Database size limit reached (500 MB). Cannot enable storage.', enabled: false });
+  }
   isDatabaseEnabled = !isDatabaseEnabled;
   res.json({ enabled: isDatabaseEnabled });
 });
 
 app.get('/api/db/on', (req, res) => {
+  if (dbSizeLimitReached) {
+    return res.status(403).json({ error: 'Database size limit reached (500 MB). Cannot enable storage.', enabled: false });
+  }
   isDatabaseEnabled = true;
   res.json({ status: 'Database logging ENABLED', enabled: isDatabaseEnabled });
 });

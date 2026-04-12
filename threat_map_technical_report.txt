@@ -1,0 +1,53 @@
+PREDICTRA THREAT MAP - TECHNICAL ARCHITECTURE REPORT
+===================================================
+
+1. EXTERNAL INTELLIGENCE AGGREGATION (APIs)
+-------------------------------------------
+The system implements a multi-source intelligence gathering engine that pulls live threat data from across the web.
+
+SYSTEM DETAILS:
+- Logic: The system uses automated scrapers that poll external APIs at regular intervals (mostly 5 minutes).
+- Enrichment: Raw data (IPs, names) is passed through a classification engine to identify industrial sectors (Healthcare, Finance, etc.) based on keywords and ports.
+- Streaming: Data is pushed to the frontend via WebSockets for real-time visualization on the 3D globe.
+
+KEY FILES & DIRECTORIES:
+- backend/services/scrapers/ : [FOLDER] Contains all external API integrations.
+    - alienvault.js : Pulls OTX pulses (Deep threat intel).
+    - threatfox.js  : Fetches malware IOCs and campaign data.
+    - urlhaus.js    : Tracks malicious URLs and malware distribution.
+    - ransomwatch.js: Monitors ransomware leak sites and victims.
+    - c2tracker.js  : Tracks command-and-control server activity.
+    - sans.js       : Fetches ISC (Internet Storm Center) threat feeds.
+- backend/services/enrichment.js : [FILE] Logic for sector classification (e.g., mapping port 3306 to "Database Services").
+- backend/server.js : [FILE] The engine room where all scrapers are initialized and data is broadcast to the globe.
+
+
+2. STIX THREAT ANALYSIS & DASHBOARD
+-----------------------------------
+The STIX dashboard provides a specialized environment for analyzing Structured Threat Information Expression (STIX 2.1) data bundles.
+
+SYSTEM DETAILS:
+- Parsing: The "parseBundle" function ingests large JSON bundles and breaks them down into atomic objects (Reports, Indicators, Malware, Techniques) using a switch-case logic on object types.
+- TTP Analysis: The "mapAttackToPhase" function automatically maps MITRE ATT&CK techniques to the 12 Cyber Kill Chain phases using keyword-based heuristics.
+- IOC Classification: The "classifyIndicator" function uses regex to extract human-readable values from STIX patterns (e.g., extracting an IP from a cyber-observable string).
+- Visualization: Uses a force-directed graph (VisualizerTab) to show relationships between different threat entities.
+
+KEY FILES & DIRECTORIES:
+- frontend/src/ui/StixDashboard.tsx : [FILE] The main brain of the STIX dashboard. Contains the core logic:
+    - parseBundle(): Categorizes raw STIX objects.
+    - mapAttackToPhase(): Aligns techniques to the MITRE matrix.
+    - classifyIndicator(): Decodes indicators (IPs, MD5, etc.).
+- frontend/src/ui/StixVisualizerPage.tsx : [FILE] Implements the focus-directed graph visualization for STIX relationships.
+- frontend/src/data/ : [FOLDER] Contains the embedded STIX datasets used by the app.
+    - cisa.json  : Cyber security advisory data.
+    - ivanti.json: Threat actor activity targeting specific vulnerabilities.
+    - definitions.ts: Human-readable definitions for STIX types.
+- stix/ : [FOLDER] Root directory containing raw .stix_.json files for manual upload or reference.
+
+
+3. SUMMARY OF CORE COMPONENTS
+-----------------------------
+- backend/models/ : Database schemas for persisting historical threat data.
+- frontend/src/globe/ : High-performance Three.js code for the 3D threat visualization.
+- frontend/src/stream/ : Frontend socket handlers for receiving live attack data.
+- frontend/src/ui/AnalyticsPage.tsx : Aggregated charts and statistics for global threat trends.
