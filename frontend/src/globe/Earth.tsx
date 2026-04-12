@@ -2,7 +2,6 @@ import { useRef, useMemo, useState, useEffect } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import { useStreamStore } from '../stream/useStreamStore';
-import { CountryOutlines } from './CountryOutlines';
 import { getCountryInfo } from '../utils/countryNames';
 
 // --- Helpers ---
@@ -44,404 +43,172 @@ function isPointInPolygon(point: number[], vs: number[][]) {
   return inside;
 }
 
-// --- Sub-components ---
+// --- Cinematic Components ---
 
-
-function CountryDotGrid() {
-  const projectionMode = useStreamStore(s => s.projectionMode);
-  const [pointsGeo, setPointsGeo] = useState<THREE.BufferGeometry | null>(null);
-
-  const dotMaterial = useMemo(() => {
+function TopographicContours() {
+  const material = useMemo(() => {
     return new THREE.ShaderMaterial({
-      uniforms: {
-        time: { value: 0 },
-        color: { value: new THREE.Color(0x00D1FF) },
-        accentColor: { value: new THREE.Color(0x00FF82) },
-      },
+      uniforms: { time: { value: 0 } },
       vertexShader: `
         varying vec3 vPosition;
         void main() {
           vPosition = position;
-          vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
-          gl_PointSize = (10.0 / -mvPosition.z) * 1.5;
-          gl_Position = projectionMatrix * mvPosition;
+          gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
         }
       `,
       fragmentShader: `
         uniform float time;
-        uniform vec3 color;
-        uniform vec3 accentColor;
         varying vec3 vPosition;
+        
+        // Simplex 3D Noise 
+        vec3 mod289(vec3 x) { return x - floor(x * (1.0 / 289.0)) * 289.0; }
+        vec4 mod289(vec4 x) { return x - floor(x * (1.0 / 289.0)) * 289.0; }
+        vec4 permute(vec4 x) { return mod289(((x*34.0)+1.0)*x); }
+        vec4 taylorInvSqrt(vec4 r) { return 1.79284291400159 - 0.85373472095314 * r; }
+        float snoise(vec3 v) {
+          const vec2  C = vec2(1.0/6.0, 1.0/3.0) ;
+          const vec4  D = vec4(0.0, 0.5, 1.0, 2.0);
+          vec3 i  = floor(v + dot(v, C.yyy) );
+          vec3 x0 = v - i + dot(i, C.xxx) ;
+          vec3 g = step(x0.yzx, x0.xyz);
+          vec3 l = 1.0 - g;
+          vec3 i1 = min( g.xyz, l.zxy );
+          vec3 i2 = max( g.xyz, l.zxy );
+          vec3 x1 = x0 - i1 + C.xxx;
+          vec3 x2 = x0 - i2 + C.yyy;
+          vec3 x3 = x0 - D.yyy;
+          i = mod289(i);
+          vec4 p = permute( permute( permute(
+                     i.z + vec4(0.0, i1.z, i2.z, 1.0 ))
+                   + i.y + vec4(0.0, i1.y, i2.y, 1.0 ))
+                   + i.x + vec4(0.0, i1.x, i2.x, 1.0 ));
+          float n_ = 0.142857142857;
+          vec3  ns = n_ * D.wyz - D.xzx;
+          vec4 j = p - 49.0 * floor(p * ns.z * ns.z);
+          vec4 x_ = floor(j * ns.z);
+          vec4 y_ = floor(j - 7.0 * x_ );
+          vec4 x = x_ *ns.x + ns.yyyy;
+          vec4 y = y_ *ns.x + ns.yyyy;
+          vec4 h = 1.0 - abs(x) - abs(y);
+          vec4 b0 = vec4( x.xy, y.xy );
+          vec4 b1 = vec4( x.zw, y.zw );
+          vec4 s0 = floor(b0)*2.0 + 1.0;
+          vec4 s1 = floor(b1)*2.0 + 1.0;
+          vec4 sh = -step(h, vec4(0.0));
+          vec4 a0 = b0.xzyw + s0.xzyw*sh.xxyy ;
+          vec4 a1 = b1.xzyw + s1.xzyw*sh.zzww ;
+          vec3 p0 = vec3(a0.xy,h.x);
+          vec3 p1 = vec3(a0.zw,h.y);
+          vec3 p2 = vec3(a1.xy,h.z);
+          vec3 p3 = vec3(a1.zw,h.w);
+          vec4 norm = taylorInvSqrt(vec4(dot(p0,p0), dot(p1,p1), dot(p2, p2), dot(p3,p3)));
+          p0 *= norm.x;
+          p1 *= norm.y;
+          p2 *= norm.z;
+          p3 *= norm.w;
+          vec4 m = max(0.6 - vec4(dot(x0,x0), dot(x1,x1), dot(x2,x2), dot(x3,x3)), 0.0);
+          m = m * m;
+          return 42.0 * dot( m*m, vec4( dot(p0,x0), dot(p1,x1),
+                                        dot(p2,x2), dot(p3,x3) ) );
+        }
+
         void main() {
-          float dist = length(gl_PointCoord - vec2(0.5));
-          if (dist > 0.5) discard;
-          float sweep = fract(vPosition.x * 0.2 - time * 0.15);
-          float sweepIntensity = smoothstep(0.95, 1.0, sweep);
-          vec3 finalColor = mix(color, accentColor, sweepIntensity * 0.8);
-          gl_FragColor = vec4(finalColor, 0.2 + sweepIntensity * 0.4);
+          float n = snoise(vPosition * 3.0 + time * 0.02);
+          float lines = sin(n * 20.0);
+          float width = fwidth(lines);
+          float edge = smoothstep(0.9 - width, 0.9, lines);
+          vec3 color = vec3(0.0, 0.4, 0.8);
+          gl_FragColor = vec4(color, edge * 0.3);
+          if(gl_FragColor.a < 0.05) discard;
         }
       `,
       transparent: true,
       blending: THREE.AdditiveBlending,
-      depthWrite: false,
-      opacity: 0.25, // Lowered base opacity
+      depthWrite: false
     });
   }, []);
 
   useFrame(({ clock }) => {
-    dotMaterial.uniforms.time.value = clock.getElapsedTime();
+    material.uniforms.time.value = clock.getElapsedTime();
   });
 
-  useEffect(() => {
-    let active = true;
-    const load = async () => {
-      try {
-        const res = await fetch('https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json');
-        const topology = await res.json();
-        const decodedArcs = decodeTopology(topology);
-        const geometries = topology.objects.countries?.geometries || [];
-        const landPolygons: number[][][] = [];
-        for (const geo of geometries) {
-          if (geo.type === 'Polygon') landPolygons.push(resolveArcs(geo.arcs, decodedArcs));
-          else if (geo.type === 'MultiPolygon') {
-            for (const poly of geo.arcs) landPolygons.push(resolveArcs(poly, decodedArcs));
-          }
-        }
-        const points: THREE.Vector3[] = [];
-        const resX = 180;
-        const resY = 90;
-        for (let ix = 0; ix < resX; ix++) {
-          const lon = (ix / resX) * 360 - 180;
-          for (let iy = 0; iy < resY; iy++) {
-            const lat = (iy / resY) * 180 - 90;
-            let isLand = false;
-            for (const poly of landPolygons) {
-              if (isPointInPolygon([lon, lat], poly)) {
-                isLand = true;
-                break;
-              }
-            }
-            if (isLand) {
-              if (projectionMode === '3d') {
-                const phi = (90 - lat) * (Math.PI / 180);
-                const theta = (lon + 180) * (Math.PI / 180);
-                // Position dots slightly above the volumetric land (1.05 + 0.002)
-                points.push(new THREE.Vector3(-(1.052 * Math.sin(phi) * Math.cos(theta)), 1.052 * Math.cos(phi), 1.052 * Math.sin(phi) * Math.sin(theta)));
-              } else {
-                points.push(new THREE.Vector3((lon / 180) * 2.5, (lat / 90) * 1.25, 0.006));
-              }
-            }
-          }
-        }
-        if (active) setPointsGeo(new THREE.BufferGeometry().setFromPoints(points));
-      } catch (err) { console.warn('Dots failed:', err); }
-    };
-    load();
-    return () => { active = false; };
-  }, [projectionMode]);
-
-  return pointsGeo ? <points geometry={pointsGeo} material={dotMaterial} /> : null;
+  return (
+    <mesh>
+      <sphereGeometry args={[1.02, 64, 64]} />
+      <primitive object={material} attach="material" />
+    </mesh>
+  );
 }
 
-function VolumetricLand() {
-  const [mesh, setMesh] = useState<THREE.Group | null>(null);
-  const projectionMode = useStreamStore(s => s.projectionMode);
-  const setSelectedCountry = useStreamStore(s => s.setSelectedCountry);
-  const setView = useStreamStore(s => s.setView);
-  const [hoveredCountryName, setHoveredCountryName] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (projectionMode !== '3d') {
-      setMesh(null);
-      return;
+function OrbitalRings() {
+  const rings = useMemo(() => {
+    const arr = [];
+    for (let i = 0; i < 3; i++) {
+        const radius = 1.3 + Math.random() * 0.5;
+        const curve = new THREE.EllipseCurve(0, 0, radius, radius, 0, 2 * Math.PI, false, 0);
+        const points = curve.getPoints(64);
+        const geometry = new THREE.BufferGeometry().setFromPoints(points);
+        arr.push({ geometry, rotX: Math.random() * Math.PI, rotY: Math.random() * Math.PI });
     }
-
-    let active = true;
-    const load = async () => {
-      try {
-        const res = await fetch('https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json');
-        const topology = await res.json();
-        if (!active) return;
-        
-        const decodedArcs = decodeTopology(topology);
-        const geometries = topology.objects.countries?.geometries || [];
-        const group = new THREE.Group();
-        const rTop = 1.05;
-        const rBottom = 1.01;
-
-        for (const geo of geometries) {
-          const landPolygons: number[][][] = [];
-          if (geo.type === 'Polygon') landPolygons.push(resolveArcs(geo.arcs, decodedArcs));
-          else if (geo.type === 'MultiPolygon') {
-            for (const poly of geo.arcs) landPolygons.push(resolveArcs(poly, decodedArcs));
-          }
-
-          const info = getCountryInfo(String(geo.id));
-          const countryName = geo.properties?.name || info.name;
-          const code = info.alpha2;
-          const userData = { countryName, code };
-
-          for (const poly of landPolygons) {
-            const sideIndices: number[] = [];
-
-            const points3DTop: THREE.Vector3[] = poly.map(p => {
-              const phi = (90 - p[1]) * (Math.PI / 180);
-              const theta = (p[0] + 180) * (Math.PI / 180);
-              return new THREE.Vector3(-(rTop * Math.sin(phi) * Math.cos(theta)), rTop * Math.cos(phi), rTop * Math.sin(phi) * Math.sin(theta));
-            });
-
-            const points3DBottom: THREE.Vector3[] = poly.map(p => {
-              const phi = (90 - p[1]) * (Math.PI / 180);
-              const theta = (p[0] + 180) * (Math.PI / 180);
-              return new THREE.Vector3(-(rBottom * Math.sin(phi) * Math.cos(theta)), rBottom * Math.cos(phi), rBottom * Math.sin(phi) * Math.sin(theta));
-            });
-
-            // Create geometry
-            const geometry = new THREE.BufferGeometry();
-            
-            // Vertices for Top and Bottom faces
-            const allPoints = [...points3DTop, ...points3DBottom];
-            const vertexArray = new Float32Array(allPoints.length * 3);
-            allPoints.forEach((p, i) => {
-              vertexArray[i * 3] = p.x;
-              vertexArray[i * 3 + 1] = p.y;
-              vertexArray[i * 3 + 2] = p.z;
-            });
-            geometry.setAttribute('position', new THREE.BufferAttribute(vertexArray, 3));
-
-            // Side walls (connecting Top to Bottom)
-            const sideCount = poly.length;
-            for (let i = 0; i < sideCount - 1; i++) {
-              const t1 = i;
-              const t2 = i + 1;
-              const b1 = i + sideCount;
-              const b2 = i + 1 + sideCount;
-
-              // Two triangles for the quad wall
-              sideIndices.push(t1, b1, t2);
-              sideIndices.push(t2, b1, b2);
-            }
-
-            geometry.setIndex(sideIndices);
-            geometry.computeVertexNormals();
-
-            // Side material (Matte Outline)
-            const sideMesh = new THREE.Mesh(geometry, new THREE.MeshPhongMaterial({ 
-              color: 0x1E293B, 
-              emissive: 0x1E293B, 
-              emissiveIntensity: 0.1, 
-              side: THREE.DoubleSide 
-            }));
-            sideMesh.userData = userData;
-            group.add(sideMesh);
-
-            // Top Face
-            const shape = new THREE.Shape();
-            poly.forEach((p, i) => {
-              const x = (p[0] / 180) * 2.5; // Dummy projection just to triangulate
-              const y = (p[1] / 90) * 1.25;
-              if (i === 0) shape.moveTo(x, y); else shape.lineTo(x, y);
-            });
-            const topGeom = new THREE.ShapeGeometry(shape);
-            // Convert the 2D ShapeGeometry vertices to 3D Sphere positions
-            const topPos = topGeom.attributes.position;
-            for (let i = 0; i < topPos.count; i++) {
-              const x2d = topPos.getX(i);
-              const y2d = topPos.getY(i);
-              const lon = (x2d / 2.5) * 180;
-              const lat = (y2d / 1.25) * 90;
-              const phi = (90 - lat) * (Math.PI / 180);
-              const theta = (lon + 180) * (Math.PI / 180);
-              topPos.setXYZ(i, -(rTop * Math.sin(phi) * Math.cos(theta)), rTop * Math.cos(phi), rTop * Math.sin(phi) * Math.sin(theta));
-            }
-            topGeom.computeVertexNormals();
-            
-            const topMesh = new THREE.Mesh(topGeom, new THREE.MeshPhongMaterial({ 
-              color: 0x0F172A, 
-              specular: 0x1E293B, 
-              shininess: 10,
-              emissive: 0x000000,
-              emissiveIntensity: 0
-            }));
-            topMesh.userData = userData;
-            group.add(topMesh);
-          }
-        }
-        setMesh(group);
-      } catch (err) { console.warn('Volumetric failed:', err); }
-    };
-    load();
-    return () => { active = false; };
-  }, [projectionMode]);
-
-  // Sync hovers
-  useEffect(() => {
-    if (!mesh) return;
-    mesh.children.forEach((child: any) => {
-      if (child.userData?.countryName === hoveredCountryName) {
-        // Boost emissive for selection
-        if (child.material) {
-          if (child.material.color.getHex() === 0x0F172A) {
-            // Top face logic
-            child.material.emissive.setHex(0x3B82F6);
-            child.material.emissiveIntensity = 0.2;
-          } else {
-            // Side walls logic
-            child.material.emissiveIntensity = 0.3;
-          }
-        }
-      } else {
-        // Reset
-        if (child.material) {
-          if (child.material.color.getHex() === 0x0F172A) {
-            child.material.emissive.setHex(0x000000);
-            child.material.emissiveIntensity = 0;
-          } else {
-            child.material.emissiveIntensity = 0.1;
-          }
-        }
-      }
-    });
-  }, [hoveredCountryName, mesh]);
-
-  const handlePointerOver = (e: any) => {
-    e.stopPropagation();
-    document.body.style.cursor = 'pointer';
-    if (e.object.userData?.countryName) {
-      setHoveredCountryName(e.object.userData.countryName);
-    }
-  };
-
-  const handlePointerOut = (e: any) => {
-    e.stopPropagation();
-    document.body.style.cursor = 'default';
-    setHoveredCountryName(null);
-  };
-
-  const handleClick = (e: any) => {
-    e.stopPropagation();
-    const { countryName, code } = e.object.userData;
-    if (countryName && code) {
-      setSelectedCountry({ name: countryName, code });
-      setView('country');
-      setHoveredCountryName(null);
-      document.body.style.cursor = 'default';
-    }
-  };
-
-  return mesh ? (
-    <primitive 
-      object={mesh}
-      onPointerOver={handlePointerOver}
-      onPointerOut={handlePointerOut}
-      onClick={handleClick}
-    />
-  ) : null;
-}
-
-function CountryFills2D() {
-  const [meshes, setMeshes] = useState<THREE.Group | null>(null);
-  const setSelectedCountry = useStreamStore(s => s.setSelectedCountry);
-  const setView = useStreamStore(s => s.setView);
-  
-  // Track hovered country to update material properties
-  const [hoveredCountryName, setHoveredCountryName] = useState<string | null>(null);
-
-  useEffect(() => {
-    let active = true;
-    fetch('https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json')
-      .then(res => res.json())
-      .then(topology => {
-        if (!active) return;
-        const decodedArcs = decodeTopology(topology);
-        const geometries = topology.objects.countries?.geometries || [];
-        const group = new THREE.Group();
-        
-        for (const geo of geometries) {
-          const polygons = [];
-          if (geo.type === 'Polygon') polygons.push(resolveArcs(geo.arcs, decodedArcs));
-          else if (geo.type === 'MultiPolygon') {
-            for (const poly of geo.arcs) polygons.push(resolveArcs(poly, decodedArcs));
-          }
-          
-          const info = getCountryInfo(String(geo.id));
-          const countryName = geo.properties?.name || info.name;
-          const code = info.alpha2;
-
-          for (const poly of polygons) {
-            const shape = new THREE.Shape();
-            for (let i = 0; i < poly.length; i++) {
-              const x = (poly[i][0] / 180) * 2.5;
-              const y = (poly[i][1] / 90) * 1.25;
-              if (i === 0) shape.moveTo(x, y); else shape.lineTo(x, y);
-            }
-            const geometry = new THREE.ShapeGeometry(shape);
-            const material = new THREE.MeshBasicMaterial({ 
-              color: 0x3B82F6, 
-              transparent: true, 
-              opacity: 0.1, 
-              side: THREE.FrontSide, 
-              depthWrite: false 
-            });
-            const mesh = new THREE.Mesh(geometry, material);
-            mesh.position.z = 0.002;
-            
-            // Attach data for raycasting
-            mesh.userData = { countryName, code, originalColor: 0x3B82F6, originalOpacity: 0.1 };
-            group.add(mesh);
-          }
-        }
-        setMeshes(group);
-      });
-      return () => { active = false; }
+    return arr;
   }, []);
 
-  // Sync hover state to materials (we do this outside the render cycle over the children)
-  useEffect(() => {
-    if (!meshes) return;
-    meshes.children.forEach((child: any) => {
-      const isHovered = child.userData.countryName === hoveredCountryName;
-      if (child.material) {
-        child.material.color.setHex(isHovered ? 0x94A3B8 : child.userData.originalColor);
-        child.material.opacity = isHovered ? 0.3 : child.userData.originalOpacity;
-      }
-    });
-  }, [hoveredCountryName, meshes]);
+  const groupRef = useRef<THREE.Group>(null);
+  useFrame(({ clock }) => {
+    if (groupRef.current) groupRef.current.rotation.y = clock.getElapsedTime() * 0.05;
+  });
 
-  const handlePointerOver = (e: any) => {
-    e.stopPropagation();
-    document.body.style.cursor = 'pointer';
-    if (e.object.userData?.countryName) {
-      setHoveredCountryName(e.object.userData.countryName);
-    }
-  };
-
-  const handlePointerOut = (e: any) => {
-    e.stopPropagation();
-    document.body.style.cursor = 'default';
-    setHoveredCountryName(null);
-  };
-
-  const handleClick = (e: any) => {
-    e.stopPropagation();
-    const { countryName, code } = e.object.userData;
-    if (countryName && code) {
-      setSelectedCountry({ name: countryName, code });
-      setView('country');
-      setHoveredCountryName(null); // Clear highlight when transitioning
-      document.body.style.cursor = 'default';
-    }
-  };
-
-  return meshes ? (
-    <primitive 
-      object={meshes} 
-      onPointerOver={handlePointerOver}
-      onPointerOut={handlePointerOut}
-      onClick={handleClick}
-    />
-  ) : null;
+  return (
+    <group ref={groupRef}>
+      {rings.map((r, i) => (
+        <lineLoop key={i} geometry={r.geometry} rotation={[r.rotX, r.rotY, 0]}>
+          <lineBasicMaterial color="#00D1FF" transparent opacity={0.3} blending={THREE.AdditiveBlending} />
+        </lineLoop>
+      ))}
+    </group>
+  );
 }
+
+function CinematicGlobe3D({ onPointerMove, onClick, onPointerOut }: any) {
+  const [texture, setTexture] = useState<THREE.Texture | null>(null);
+  const [bump, setBump] = useState<THREE.Texture | null>(null);
+
+  useEffect(() => {
+    const loader = new THREE.TextureLoader();
+    loader.load('https://unpkg.com/three-globe/example/img/earth-night.jpg', (tex) => {
+      tex.colorSpace = THREE.SRGBColorSpace;
+      setTexture(tex);
+    });
+    loader.load('https://unpkg.com/three-globe/example/img/earth-topology.png', (tex) => {
+      setBump(tex);
+    });
+  }, []);
+
+  return (
+    <mesh 
+      onPointerMove={onPointerMove} 
+      onClick={onClick} 
+      onPointerOut={onPointerOut}
+    >
+      <sphereGeometry args={[1, 64, 64]} />
+      {texture ? (
+        <meshStandardMaterial
+          map={texture}
+          emissiveMap={texture}
+          emissive={new THREE.Color(0xFFFFFF)}
+          emissiveIntensity={1.2}
+          bumpMap={bump || undefined}
+          bumpScale={0.02}
+          color="#111111"
+          roughness={0.7}
+        />
+      ) : (
+        <meshPhongMaterial color="#0F172A" />
+      )}
+    </mesh>
+  );
+}
+
 export function Earth({ children }: { children?: React.ReactNode }) {
   const meshRef = useRef<THREE.Group>(null);
   const config = useStreamStore(s => s.config);
@@ -534,34 +301,79 @@ export function Earth({ children }: { children?: React.ReactNode }) {
     }
   });
 
+  // Topology cache for click mapping
+  const [topologyCache, setTopologyCache] = useState<any[] | null>(null);
+  const setSelectedCountry = useStreamStore(s => s.setSelectedCountry);
+  const setView = useStreamStore(s => s.setView);
+
+  useEffect(() => {
+    fetch('https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json')
+      .then(r => r.json())
+      .then(topo => {
+        const decoded = decodeTopology(topo);
+        const polys = topo.objects.countries.geometries.map((geo: any) => {
+          const coords: any[] = [];
+          if (geo.type === 'Polygon') coords.push(resolveArcs(geo.arcs, decoded));
+          else if (geo.type === 'MultiPolygon') {
+            for (const arc of geo.arcs) coords.push(resolveArcs(arc, decoded));
+          }
+          return { id: geo.id, name: geo.properties?.name, coords };
+        });
+        setTopologyCache(polys);
+      });
+  }, []);
+
+  const handleGlobeClick = (e: any) => {
+    e.stopPropagation();
+    if (!topologyCache || !e.uv) return;
+    const lon = (e.uv.x * 360) - 180;
+    const lat = (e.uv.y * 180) - 90;
+    let found = null;
+    for (const c of topologyCache) {
+      for (const poly of c.coords) {
+        if (isPointInPolygon([lon, lat], poly)) {
+          found = c;
+          break;
+        }
+      }
+      if (found) break;
+    }
+    if (found) {
+      const info = getCountryInfo(String(found.id));
+      setSelectedCountry({ name: found.name || info.name, code: info.alpha2 });
+      setView('country');
+    }
+  };
+
+  const handlePointerOver = () => {
+     document.body.style.cursor = 'crosshair';
+  };
+  const handlePointerOut = () => {
+     document.body.style.cursor = 'default';
+  };
+
   return (
     <group>
       <group ref={meshRef}>
         {projectionMode === '3d' ? (
-          <mesh>
-            <sphereGeometry args={[1, 64, 64]} />
-            <meshPhongMaterial
-              color="#0F172A"
-              emissive="#020617"
-              emissiveIntensity={0.2}
-              shininess={10}
+          <>
+            <CinematicGlobe3D 
+              onPointerMove={handlePointerOver}
+              onClick={handleGlobeClick}
+              onPointerOut={handlePointerOut}
             />
-          </mesh>
+            <TopographicContours />
+            <OrbitalRings />
+          </>
         ) : (
           <group>
             {/* Main Map Plane */}
-            <mesh>
+            <mesh onClick={handleGlobeClick} onPointerMove={handlePointerOver} onPointerOut={handlePointerOut}>
               <planeGeometry args={[5.2, 2.6]} />
               <primitive object={map2DMaterial} attach="material" />
             </mesh>
           </group>
         )}
-
-        <CountryOutlines />
-        <CountryDotGrid />
-        <VolumetricLand />
-        {projectionMode === '2d' && <CountryFills2D />}
-
 
         {children}
       </group>

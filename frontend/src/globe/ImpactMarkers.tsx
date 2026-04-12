@@ -2,13 +2,14 @@ import { useRef, useEffect } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import { useStreamStore } from '../stream/useStreamStore';
-import { pulseEasing, easeOutExpo } from '../utils/easing';
+import { easeOutExpo } from '../utils/easing';
 
 // ── Shared geometry pool (created once, reused for all markers) ──
 
-const _sharedCoreGeo = new THREE.CircleGeometry(0.012, 12);
-const _sharedRing1Geo = new THREE.RingGeometry(0.015, 0.022, 24);
-const _sharedRing2Geo = new THREE.RingGeometry(0.025, 0.030, 24);
+// ── Cinematic Radar Markers
+const _sharedCoreGeo = new THREE.CircleGeometry(0.015, 32);
+const _sharedRing1Geo = new THREE.RingGeometry(0.016, 0.020, 64);
+const _sharedRing2Geo = new THREE.RingGeometry(0.020, 0.024, 64);
 
 const _materialProps = {
   transparent: true,
@@ -117,31 +118,31 @@ export function ImpactMarkers() {
       obj.ring1.visible = true;
 
       if (obj.isSource) {
-        // Source: expanding pulse with fade
-        const pulseScale = 1 + easeOutExpo(p) * 0.1;
-        const pulseOpacity = pulseEasing(p);
+        // Source: single massive expanding radar pulse
+        const pulseScale = 1 + p * 12.0; 
+        const pulseOpacity = (1 - p) * 0.6;
 
         obj.ring1.scale.setScalar(pulseScale);
-        (obj.ring1.material as THREE.MeshBasicMaterial).opacity = pulseOpacity * 0.6;
+        (obj.ring1.material as THREE.MeshBasicMaterial).opacity = pulseOpacity;
 
-        const coreOpacity = Math.max(0, 1 - easeOutExpo(p));
-        (obj.core.material as THREE.MeshBasicMaterial).opacity = coreOpacity * 0.9;
-      } else {
-        // Destination: shockwave ripple
-        const ripple1 = easeOutExpo(Math.min(p * 2, 1));
         const fadeOut = Math.max(0, 1 - easeOutExpo(p));
+        (obj.core.material as THREE.MeshBasicMaterial).opacity = fadeOut * 0.9;
+      } else {
+        // Destination: intense shockwave ripple
+        const ripple1 = p * 15.0;
+        const fadeOut = Math.max(0, 1 - p);
 
-        obj.ring1.scale.setScalar(1 + ripple1 * 0.15);
-        (obj.ring1.material as THREE.MeshBasicMaterial).opacity = fadeOut * 0.5;
+        obj.ring1.scale.setScalar(1 + ripple1);
+        (obj.ring1.material as THREE.MeshBasicMaterial).opacity = fadeOut * 0.8;
 
         if (obj.ring2) {
           obj.ring2.visible = true;
-          const ripple2 = easeOutExpo(Math.min(Math.max(p - 0.3, 0) * 2, 1));
-          obj.ring2.scale.setScalar(1 + ripple2 * 0.1);
-          (obj.ring2.material as THREE.MeshBasicMaterial).opacity = fadeOut * 0.3;
+          const ripple2 = Math.max(0, p - 0.2) * 12.0;
+          obj.ring2.scale.setScalar(1 + ripple2);
+          (obj.ring2.material as THREE.MeshBasicMaterial).opacity = fadeOut * 0.5;
         }
 
-        (obj.core.material as THREE.MeshBasicMaterial).opacity = fadeOut * 0.9;
+        (obj.core.material as THREE.MeshBasicMaterial).opacity = fadeOut * 1.0;
       }
     }
   });
