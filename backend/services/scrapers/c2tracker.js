@@ -54,7 +54,7 @@ async function startC2Tracker(broadcast) {
             a_n: `[C2 Server] ${feed.name} Activity Detected`,
             a_t: 'malware', // C2 infra usually implies malware control
             s_ip: ip,
-            s_co: geo.country || 'UN',
+            s_co: geo.country || '??',
             s_la: geo.ll[0] + (Math.random() - 0.5) * 1,
             s_lo: geo.ll[1] + (Math.random() - 0.5) * 1,
             d_ip: `Victim Endpoint`,

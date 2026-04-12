@@ -41,7 +41,7 @@ async function startSans(broadcast) {
                             a_n: `[SANS] ${org || 'Port Scan'} (Port ${item.port || 'unk'})`,
                             a_t: 'exploit',
                             s_ip: ip,
-                            s_co: geo.country || 'UN',
+                            s_co: geo.country || '??',
                             s_la: lat,
                             s_lo: lon,
                             d_co: target.cc,

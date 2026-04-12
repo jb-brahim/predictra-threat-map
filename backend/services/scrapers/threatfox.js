@@ -79,7 +79,7 @@ async function startThreatFox(broadcast) {
           a_n: `[ThreatFox] ${org || 'Malware C2'}: ${item.malware_printable || 'Unknown Malware'}`,
           a_t,
           s_ip: host,
-          s_co: geo.country || 'UN',
+          s_co: geo.country || '??',
           s_la: lat + (Math.random() - 0.5) * 1,
           s_lo: lon + (Math.random() - 0.5) * 1,
           d_co: target.cc,

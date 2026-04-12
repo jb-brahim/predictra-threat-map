@@ -75,7 +75,7 @@ async function startKaspersky(broadcast) {
           a_n: `[Kaspersky] Botnet C2: ${entry.malware || 'Unknown Malware'} (${entry.ip_address})`,
           a_t: mapMalwareType(entry.malware),
           s_ip: entry.ip_address,
-          s_co: geo.country || 'UN',
+          s_co: geo.country || '??',
           s_la: lat + (Math.random() - 0.5) * 1.5,
           s_lo: lon + (Math.random() - 0.5) * 1.5,
           d_co: target.cc,

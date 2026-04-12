@@ -49,7 +49,7 @@ async function startAlienVault(broadcast) {
           a_n: `[AlienVault] ${item.name || 'Threat Intelligence Pulse'}`,
           a_t: 'exploit', // Categorizing as exploit/APT activity
           s_ip: item.author_name || 'OTX Community',
-          s_co: 'UN', // Set to unknown origin since it's a global report
+          s_co: '??', // Set to unknown origin since it's a global report
           s_la: (Math.random() - 0.5) * 60,
           s_lo: (Math.random() - 0.5) * 180,
           d_co: target.cc,

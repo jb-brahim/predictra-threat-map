@@ -23,7 +23,7 @@ const COUNTRY_CODES = {
 };
 
 function countryCode(name) {
-  if (!name) return 'UN';
+  if (!name) return '??';
   if (name.length <= 3) return name.toUpperCase().slice(0, 2);
   return COUNTRY_CODES[name] || name.slice(0, 2).toUpperCase();
 }
@@ -90,11 +90,11 @@ function startBitdefender(broadcast) {
         a_n: event.v || event.n || 'Bitdefender Threat',
         a_t: a_t,
         s_ip: (from && (from.ip || from.host)) || 'unknown',
-        s_co: countryCode((from && (from.c || from.c_iso)) || 'UN'),
+        s_co: countryCode((from && (from.c || from.c_iso)) || '??'),
         s_la: Number(s_la),
         s_lo: Number(s_lo),
         d_ip: (to && (to.ip || to.host)) || 'unknown',
-        d_co: countryCode((to && (to.c || to.c_iso)) || 'UN'),
+        d_co: countryCode((to && (to.c || to.c_iso)) || '??'),
         d_la: Number(d_la),
         d_lo: Number(d_lo),
         meta: {

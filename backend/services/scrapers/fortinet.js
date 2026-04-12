@@ -42,11 +42,11 @@ async function pollFortinet(broadcast) {
             a_n: ev.vuln_name || (ev.outbreak_alert && ev.outbreak_alert[0]) || 'Fortinet Alert',
             a_t: 'exploit',
             s_ip: ev.src_ip || 'unknown',
-            s_co: ev.src_country || 'UN',
+            s_co: ev.src_country || '??',
             s_la: ev.src_lat,
             s_lo: ev.src_long,
             d_ip: ev.dest_ip || 'unknown',
-            d_co: ev.dest_country || 'UN',
+            d_co: ev.dest_country || '??',
             d_la: ev.dest_lat,
             d_lo: ev.dest_long,
             meta: {
