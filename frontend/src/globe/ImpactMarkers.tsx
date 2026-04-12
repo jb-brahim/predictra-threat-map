@@ -75,19 +75,21 @@ export function ImpactMarkers() {
         pos = new THREE.Vector3(x, y, 0.02);
       }
 
-      const coreMat = new THREE.MeshBasicMaterial({ ..._materialProps, color: colorHex, opacity: 0.9 });
+      const glowColor = new THREE.Color(colorHex).multiplyScalar(4.0);
+
+      const coreMat = new THREE.MeshBasicMaterial({ ..._materialProps, color: glowColor, opacity: 1.0 });
       const core = new THREE.Mesh(_sharedCoreGeo, coreMat);
       core.position.copy(pos);
       core.quaternion.copy(quaternion);
 
-      const ring1Mat = new THREE.MeshBasicMaterial({ ..._materialProps, color: colorHex, opacity: 0.6 });
+      const ring1Mat = new THREE.MeshBasicMaterial({ ..._materialProps, color: glowColor, opacity: 0.8 });
       const ring1 = new THREE.Mesh(_sharedRing1Geo, ring1Mat);
       ring1.position.copy(pos);
       ring1.quaternion.copy(quaternion);
 
       let ring2: THREE.Mesh | null = null;
       if (!marker.isSource) {
-        const ring2Mat = new THREE.MeshBasicMaterial({ ..._materialProps, color: colorHex, opacity: 0.3 });
+        const ring2Mat = new THREE.MeshBasicMaterial({ ..._materialProps, color: glowColor, opacity: 0.5 });
         ring2 = new THREE.Mesh(_sharedRing2Geo, ring2Mat);
         ring2.position.copy(pos);
         ring2.quaternion.copy(quaternion);
