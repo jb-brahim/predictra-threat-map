@@ -353,7 +353,7 @@ export function DashboardPage() {
 
   if (currentView === 'map') {
     return (
-      <div style={{ position: 'relative', height: 'calc(100vh - 64px)', margin: '-24px', overflow: 'hidden' }}>
+      <div style={{ position: 'relative', height: '100%', minHeight: 'calc(100vh - 64px)', overflow: 'hidden' }}>
         <div style={{ position: 'absolute', inset: 0, background: '#050B14' }}>
           <GlobeScene />
         </div>
@@ -551,13 +551,6 @@ export function DashboardPage() {
       {/* ── Main Grid ──────────────────────────────────────────────────────── */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: 20 }}>
       
-        {/* Globe Map Area – spans 4 cols (full width) */}
-        <div style={{ gridColumn: 'span 4' }}>
-          <div style={{ height: '600px', borderRadius: '12px', overflow: 'hidden', border: `1px solid ${theme.colors.panelBorder}`, background: 'transparent' }}>
-            <GlobeScene />
-          </div>
-        </div>
-
         {/* Live Feed – spans 3 cols */}
         <div style={{ gridColumn: 'span 3' }}>
           <GlassPanel style={{ height: '340px', display: 'flex', flexDirection: 'column' }}>
