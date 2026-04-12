@@ -76,15 +76,27 @@ function OrbitalRings() {
 }
 
 function CinematicGlobe3D({ onPointerMove, onClick, onPointerOut }: any) {
-  const [texture, setTexture] = useState<THREE.Texture | null>(null);
+  const [textures, setTextures] = useState<any>({});
 
   useEffect(() => {
     const loader = new THREE.TextureLoader();
     loader.setCrossOrigin('anonymous');
-    // Using reliable direct URL for earth lights map
-    loader.load('https://raw.githubusercontent.com/mrdoob/three.js/master/examples/textures/planets/earth_lights_2048.png', (tex) => {
-      tex.colorSpace = THREE.SRGBColorSpace;
-      setTexture(tex);
+    
+    let loaded = 0;
+    const maps: any = {};
+    const checkReady = () => { if (loaded === 4) setTextures(maps); };
+
+    loader.load('https://raw.githubusercontent.com/mrdoob/three.js/master/examples/textures/planets/earth_atmos_2048.jpg', (t) => {
+      t.colorSpace = THREE.SRGBColorSpace; maps.map = t; loaded++; checkReady();
+    });
+    loader.load('https://raw.githubusercontent.com/mrdoob/three.js/master/examples/textures/planets/earth_lights_2048.png', (t) => {
+      t.colorSpace = THREE.SRGBColorSpace; maps.emissiveMap = t; loaded++; checkReady();
+    });
+    loader.load('https://raw.githubusercontent.com/mrdoob/three.js/master/examples/textures/planets/earth_normal_2048.jpg', (t) => {
+      maps.normalMap = t; loaded++; checkReady();
+    });
+    loader.load('https://raw.githubusercontent.com/mrdoob/three.js/master/examples/textures/planets/earth_specular_2048.jpg', (t) => {
+      maps.specularMap = t; loaded++; checkReady();
     });
   }, []);
 
@@ -95,14 +107,17 @@ function CinematicGlobe3D({ onPointerMove, onClick, onPointerOut }: any) {
       onPointerOut={onPointerOut}
     >
       <sphereGeometry args={[1, 64, 64]} />
-      {texture ? (
-        <meshStandardMaterial
-          map={texture}
-          emissiveMap={texture}
+      {textures.map ? (
+        <meshPhongMaterial
+          map={textures.map}
+          emissiveMap={textures.emissiveMap}
           emissive={new THREE.Color(0xFFEAA0)}
           emissiveIntensity={8.0}
-          color="#000000"
-          roughness={0.9}
+          normalMap={textures.normalMap}
+          normalScale={new THREE.Vector2(1.5, 1.5)}
+          specularMap={textures.specularMap}
+          specular={new THREE.Color(0x222222)}
+          shininess={25}
         />
       ) : (
         <meshPhongMaterial color="#050B14" />

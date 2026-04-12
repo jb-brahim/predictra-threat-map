@@ -61,10 +61,10 @@ export function GlobeScene() {
         dpr={qualityPreset === 'low' ? 1 : Math.min(window.devicePixelRatio, 2)}
       >
         {/* Lighting (Deep Space in 3D, Even in 2D) */}
-        <ambientLight intensity={projectionMode === '3d' ? 0.05 : 0.15} color="#ffffff" />
+        <ambientLight intensity={projectionMode === '3d' ? 0.35 : 0.15} color="#445577" />
         <directionalLight 
-          position={projectionMode === '3d' ? [10, 5, 5] : [5, 3, 5]} 
-          intensity={projectionMode === '3d' ? 1.5 : 0.4} 
+          position={projectionMode === '3d' ? [10, 3, -5] : [5, 3, 5]} 
+          intensity={projectionMode === '3d' ? 2.5 : 0.4} 
           color="#ffffee" 
         />
         {projectionMode !== '3d' && (
