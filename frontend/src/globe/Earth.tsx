@@ -2,6 +2,7 @@ import { useRef, useMemo, useState, useEffect } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import { useStreamStore } from '../stream/useStreamStore';
+import { CountryOutlines } from './CountryOutlines';
 import { getCountryInfo } from '../utils/countryNames';
 
 // --- Helpers ---
@@ -43,89 +44,452 @@ function isPointInPolygon(point: number[], vs: number[][]) {
   return inside;
 }
 
-// --- Cinematic Components ---
+// --- Sub-components ---
 
-
-function OrbitalRings() {
-  const rings = useMemo(() => {
-    const arr = [];
-    for (let i = 0; i < 2; i++) {
-        const radius = 1.1 + Math.random() * 0.15;
-        const curve = new THREE.EllipseCurve(0, 0, radius, radius, 0, 2 * Math.PI, false, 0);
-        const points = curve.getPoints(64);
-        const geometry = new THREE.BufferGeometry().setFromPoints(points);
-        arr.push({ geometry, rotX: Math.random() * Math.PI, rotY: Math.random() * Math.PI });
+function GridLines() {
+  const projectionMode = useStreamStore(s => s.projectionMode);
+  const linesGeo = useMemo(() => {
+    const points: THREE.Vector3[] = [];
+    if (projectionMode === '3d') {
+      const radius = 1.002;
+      for (let lat = -60; lat <= 60; lat += 30) {
+        const phi = (90 - lat) * (Math.PI / 180);
+        for (let lon = 0; lon <= 360; lon += 2) {
+          const theta = lon * (Math.PI / 180);
+          points.push(new THREE.Vector3(-(radius * Math.sin(phi) * Math.cos(theta)), radius * Math.cos(phi), radius * Math.sin(phi) * Math.sin(theta)));
+        }
+      }
+      for (let lon = 0; lon < 360; lon += 30) {
+        const theta = lon * (Math.PI / 180);
+        for (let lat = -90; lat <= 90; lat += 2) {
+          const phi = (90 - lat) * (Math.PI / 180);
+          points.push(new THREE.Vector3(-(radius * Math.sin(phi) * Math.cos(theta)), radius * Math.cos(phi), radius * Math.sin(phi) * Math.sin(theta)));
+        }
+      }
+    } else {
+      for (let lat = -60; lat <= 60; lat += 30) {
+        const y = (lat / 90) * 1.25;
+        points.push(new THREE.Vector3(-2.5, y, 0.01), new THREE.Vector3(2.5, y, 0.01));
+      }
+      for (let lon = -150; lon <= 150; lon += 30) {
+        const x = (lon / 180) * 2.5;
+        points.push(new THREE.Vector3(x, -1.25, 0.01), new THREE.Vector3(x, 1.25, 0.01));
+      }
     }
-    return arr;
+    return new THREE.BufferGeometry().setFromPoints(points);
+  }, [projectionMode]);
+
+  if (projectionMode === '3d') {
+    return (
+      <points>
+        <primitive object={linesGeo} attach="geometry" />
+        <pointsMaterial color="#00B4FF" size={0.003} transparent opacity={0.15} depthWrite={false} sizeAttenuation />
+      </points>
+    );
+  }
+  return (
+    <lineSegments geometry={linesGeo}>
+      <lineBasicMaterial color="#00B4FF" transparent opacity={0.08} depthWrite={false} blending={THREE.AdditiveBlending} />
+    </lineSegments>
+  );
+}
+
+
+function CountryDotGrid() {
+  const projectionMode = useStreamStore(s => s.projectionMode);
+  const [pointsGeo, setPointsGeo] = useState<THREE.BufferGeometry | null>(null);
+
+  const dotMaterial = useMemo(() => {
+    return new THREE.ShaderMaterial({
+      uniforms: {
+        time: { value: 0 },
+        color: { value: new THREE.Color(0x00D1FF) },
+        accentColor: { value: new THREE.Color(0x00FF82) },
+      },
+      vertexShader: `
+        varying vec3 vPosition;
+        void main() {
+          vPosition = position;
+          vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
+          gl_PointSize = (10.0 / -mvPosition.z) * 1.5;
+          gl_Position = projectionMatrix * mvPosition;
+        }
+      `,
+      fragmentShader: `
+        uniform float time;
+        uniform vec3 color;
+        uniform vec3 accentColor;
+        varying vec3 vPosition;
+        void main() {
+          float dist = length(gl_PointCoord - vec2(0.5));
+          if (dist > 0.5) discard;
+          float sweep = fract(vPosition.x * 0.2 - time * 0.15);
+          float sweepIntensity = smoothstep(0.95, 1.0, sweep);
+          vec3 finalColor = mix(color, accentColor, sweepIntensity * 0.8);
+          gl_FragColor = vec4(finalColor, 0.2 + sweepIntensity * 0.4);
+        }
+      `,
+      transparent: true,
+      blending: THREE.AdditiveBlending,
+      depthWrite: false,
+      opacity: 0.25, // Lowered base opacity
+    });
   }, []);
 
-  const groupRef = useRef<THREE.Group>(null);
   useFrame(({ clock }) => {
-    if (groupRef.current) groupRef.current.rotation.y = clock.getElapsedTime() * 0.02;
+    dotMaterial.uniforms.time.value = clock.getElapsedTime();
   });
 
-  return (
-    <group ref={groupRef}>
-      {rings.map((r, i) => (
-        <lineLoop key={i} geometry={r.geometry} rotation={[r.rotX, r.rotY, 0]}>
-          <lineBasicMaterial color="#00D1FF" transparent opacity={0.4} blending={THREE.AdditiveBlending} />
-        </lineLoop>
-      ))}
-    </group>
-  );
+  useEffect(() => {
+    let active = true;
+    const load = async () => {
+      try {
+        const res = await fetch('https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json');
+        const topology = await res.json();
+        const decodedArcs = decodeTopology(topology);
+        const geometries = topology.objects.countries?.geometries || [];
+        const landPolygons: number[][][] = [];
+        for (const geo of geometries) {
+          if (geo.type === 'Polygon') landPolygons.push(resolveArcs(geo.arcs, decodedArcs));
+          else if (geo.type === 'MultiPolygon') {
+            for (const poly of geo.arcs) landPolygons.push(resolveArcs(poly, decodedArcs));
+          }
+        }
+        const points: THREE.Vector3[] = [];
+        const resX = 180;
+        const resY = 90;
+        for (let ix = 0; ix < resX; ix++) {
+          const lon = (ix / resX) * 360 - 180;
+          for (let iy = 0; iy < resY; iy++) {
+            const lat = (iy / resY) * 180 - 90;
+            let isLand = false;
+            for (const poly of landPolygons) {
+              if (isPointInPolygon([lon, lat], poly)) {
+                isLand = true;
+                break;
+              }
+            }
+            if (isLand) {
+              if (projectionMode === '3d') {
+                const phi = (90 - lat) * (Math.PI / 180);
+                const theta = (lon + 180) * (Math.PI / 180);
+                // Position dots slightly above the volumetric land (1.05 + 0.002)
+                points.push(new THREE.Vector3(-(1.052 * Math.sin(phi) * Math.cos(theta)), 1.052 * Math.cos(phi), 1.052 * Math.sin(phi) * Math.sin(theta)));
+              } else {
+                points.push(new THREE.Vector3((lon / 180) * 2.5, (lat / 90) * 1.25, 0.006));
+              }
+            }
+          }
+        }
+        if (active) setPointsGeo(new THREE.BufferGeometry().setFromPoints(points));
+      } catch (err) { console.warn('Dots failed:', err); }
+    };
+    load();
+    return () => { active = false; };
+  }, [projectionMode]);
+
+  return pointsGeo ? <points geometry={pointsGeo} material={dotMaterial} /> : null;
 }
 
-function CinematicGlobe3D({ onPointerMove, onClick, onPointerOut }: any) {
-  const [textures, setTextures] = useState<any>({});
+function VolumetricLand() {
+  const [mesh, setMesh] = useState<THREE.Group | null>(null);
+  const projectionMode = useStreamStore(s => s.projectionMode);
+  const setSelectedCountry = useStreamStore(s => s.setSelectedCountry);
+  const setView = useStreamStore(s => s.setView);
+  const [hoveredCountryName, setHoveredCountryName] = useState<string | null>(null);
 
   useEffect(() => {
-    const loader = new THREE.TextureLoader();
-    loader.setCrossOrigin('anonymous');
-    
-    let loaded = 0;
-    const maps: any = {};
-    const checkReady = () => { if (loaded === 4) setTextures(maps); };
+    if (projectionMode !== '3d') {
+      setMesh(null);
+      return;
+    }
 
-    loader.load('https://raw.githubusercontent.com/mrdoob/three.js/master/examples/textures/planets/earth_atmos_2048.jpg', (t) => {
-      t.colorSpace = THREE.SRGBColorSpace; maps.map = t; loaded++; checkReady();
-    }, undefined, () => { loaded++; checkReady(); }); // Catch errors softly
-    loader.load('https://raw.githubusercontent.com/mrdoob/three.js/master/examples/textures/planets/earth_lights_2048.png', (t) => {
-      t.colorSpace = THREE.SRGBColorSpace; maps.emissiveMap = t; loaded++; checkReady();
-    }, undefined, () => { loaded++; checkReady(); });
-    loader.load('https://raw.githubusercontent.com/mrdoob/three.js/master/examples/textures/planets/earth_normal_2048.jpg', (t) => {
-      maps.normalMap = t; loaded++; checkReady();
-    }, undefined, () => { loaded++; checkReady(); });
-    loader.load('https://raw.githubusercontent.com/mrdoob/three.js/master/examples/textures/planets/earth_specular_2048.jpg', (t) => {
-      maps.specularMap = t; loaded++; checkReady();
-    }, undefined, () => { loaded++; checkReady(); });
-  }, []);
+    let active = true;
+    const load = async () => {
+      try {
+        const res = await fetch('https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json');
+        const topology = await res.json();
+        if (!active) return;
+        
+        const decodedArcs = decodeTopology(topology);
+        const geometries = topology.objects.countries?.geometries || [];
+        const group = new THREE.Group();
+        const rTop = 1.05;
+        const rBottom = 1.01;
 
-  return (
-    <mesh 
-      onPointerMove={onPointerMove} 
-      onClick={onClick} 
-      onPointerOut={onPointerOut}
-    >
-      <sphereGeometry args={[1, 64, 64]} />
-      {textures.map ? (
-        <meshPhongMaterial
-          map={textures.map}
-          emissiveMap={textures.emissiveMap}
-          emissive={new THREE.Color(0xFFEAA0)}
-          emissiveIntensity={1.5}
-          normalMap={textures.normalMap}
-          normalScale={new THREE.Vector2(1.5, 1.5)}
-          specularMap={textures.specularMap}
-          specular={new THREE.Color(0x222222)}
-          shininess={25}
-        />
-      ) : (
-        <meshPhongMaterial color="#050B14" />
-      )}
-    </mesh>
-  );
+        for (const geo of geometries) {
+          const landPolygons: number[][][] = [];
+          if (geo.type === 'Polygon') landPolygons.push(resolveArcs(geo.arcs, decodedArcs));
+          else if (geo.type === 'MultiPolygon') {
+            for (const poly of geo.arcs) landPolygons.push(resolveArcs(poly, decodedArcs));
+          }
+
+          const info = getCountryInfo(String(geo.id));
+          const countryName = geo.properties?.name || info.name;
+          const code = info.alpha2;
+          const userData = { countryName, code };
+
+          for (const poly of landPolygons) {
+            const sideIndices: number[] = [];
+
+            const points3DTop: THREE.Vector3[] = poly.map(p => {
+              const phi = (90 - p[1]) * (Math.PI / 180);
+              const theta = (p[0] + 180) * (Math.PI / 180);
+              return new THREE.Vector3(-(rTop * Math.sin(phi) * Math.cos(theta)), rTop * Math.cos(phi), rTop * Math.sin(phi) * Math.sin(theta));
+            });
+
+            const points3DBottom: THREE.Vector3[] = poly.map(p => {
+              const phi = (90 - p[1]) * (Math.PI / 180);
+              const theta = (p[0] + 180) * (Math.PI / 180);
+              return new THREE.Vector3(-(rBottom * Math.sin(phi) * Math.cos(theta)), rBottom * Math.cos(phi), rBottom * Math.sin(phi) * Math.sin(theta));
+            });
+
+            // Create geometry
+            const geometry = new THREE.BufferGeometry();
+            
+            // Vertices for Top and Bottom faces
+            const allPoints = [...points3DTop, ...points3DBottom];
+            const vertexArray = new Float32Array(allPoints.length * 3);
+            allPoints.forEach((p, i) => {
+              vertexArray[i * 3] = p.x;
+              vertexArray[i * 3 + 1] = p.y;
+              vertexArray[i * 3 + 2] = p.z;
+            });
+            geometry.setAttribute('position', new THREE.BufferAttribute(vertexArray, 3));
+
+            // Side walls (connecting Top to Bottom)
+            const sideCount = poly.length;
+            for (let i = 0; i < sideCount - 1; i++) {
+              const t1 = i;
+              const t2 = i + 1;
+              const b1 = i + sideCount;
+              const b2 = i + 1 + sideCount;
+
+              // Two triangles for the quad wall
+              sideIndices.push(t1, b1, t2);
+              sideIndices.push(t2, b1, b2);
+            }
+
+            geometry.setIndex(sideIndices);
+            geometry.computeVertexNormals();
+
+            // Side material (Matte Outline)
+            const sideMesh = new THREE.Mesh(geometry, new THREE.MeshPhongMaterial({ 
+              color: 0x1E293B, 
+              emissive: 0x1E293B, 
+              emissiveIntensity: 0.1, 
+              side: THREE.DoubleSide 
+            }));
+            sideMesh.userData = userData;
+            group.add(sideMesh);
+
+            // Top Face
+            const shape = new THREE.Shape();
+            poly.forEach((p, i) => {
+              const x = (p[0] / 180) * 2.5; // Dummy projection just to triangulate
+              const y = (p[1] / 90) * 1.25;
+              if (i === 0) shape.moveTo(x, y); else shape.lineTo(x, y);
+            });
+            const topGeom = new THREE.ShapeGeometry(shape);
+            // Convert the 2D ShapeGeometry vertices to 3D Sphere positions
+            const topPos = topGeom.attributes.position;
+            for (let i = 0; i < topPos.count; i++) {
+              const x2d = topPos.getX(i);
+              const y2d = topPos.getY(i);
+              const lon = (x2d / 2.5) * 180;
+              const lat = (y2d / 1.25) * 90;
+              const phi = (90 - lat) * (Math.PI / 180);
+              const theta = (lon + 180) * (Math.PI / 180);
+              topPos.setXYZ(i, -(rTop * Math.sin(phi) * Math.cos(theta)), rTop * Math.cos(phi), rTop * Math.sin(phi) * Math.sin(theta));
+            }
+            topGeom.computeVertexNormals();
+            
+            const topMesh = new THREE.Mesh(topGeom, new THREE.MeshPhongMaterial({ 
+              color: 0x0F172A, 
+              specular: 0x1E293B, 
+              shininess: 10,
+              emissive: 0x000000,
+              emissiveIntensity: 0
+            }));
+            topMesh.userData = userData;
+            group.add(topMesh);
+          }
+        }
+        setMesh(group);
+      } catch (err) { console.warn('Volumetric failed:', err); }
+    };
+    load();
+    return () => { active = false; };
+  }, [projectionMode]);
+
+  // Sync hovers
+  useEffect(() => {
+    if (!mesh) return;
+    mesh.children.forEach((child: any) => {
+      if (child.userData?.countryName === hoveredCountryName) {
+        // Boost emissive for selection
+        if (child.material) {
+          if (child.material.color.getHex() === 0x0F172A) {
+            // Top face logic
+            child.material.emissive.setHex(0x3B82F6);
+            child.material.emissiveIntensity = 0.2;
+          } else {
+            // Side walls logic
+            child.material.emissiveIntensity = 0.3;
+          }
+        }
+      } else {
+        // Reset
+        if (child.material) {
+          if (child.material.color.getHex() === 0x0F172A) {
+            child.material.emissive.setHex(0x000000);
+            child.material.emissiveIntensity = 0;
+          } else {
+            child.material.emissiveIntensity = 0.1;
+          }
+        }
+      }
+    });
+  }, [hoveredCountryName, mesh]);
+
+  const handlePointerOver = (e: any) => {
+    e.stopPropagation();
+    document.body.style.cursor = 'pointer';
+    if (e.object.userData?.countryName) {
+      setHoveredCountryName(e.object.userData.countryName);
+    }
+  };
+
+  const handlePointerOut = (e: any) => {
+    e.stopPropagation();
+    document.body.style.cursor = 'default';
+    setHoveredCountryName(null);
+  };
+
+  const handleClick = (e: any) => {
+    e.stopPropagation();
+    const { countryName, code } = e.object.userData;
+    if (countryName && code) {
+      setSelectedCountry({ name: countryName, code });
+      setView('country');
+      setHoveredCountryName(null);
+      document.body.style.cursor = 'default';
+    }
+  };
+
+  return mesh ? (
+    <primitive 
+      object={mesh}
+      onPointerOver={handlePointerOver}
+      onPointerOut={handlePointerOut}
+      onClick={handleClick}
+    />
+  ) : null;
 }
 
+function CountryFills2D() {
+  const [meshes, setMeshes] = useState<THREE.Group | null>(null);
+  const setSelectedCountry = useStreamStore(s => s.setSelectedCountry);
+  const setView = useStreamStore(s => s.setView);
+  
+  // Track hovered country to update material properties
+  const [hoveredCountryName, setHoveredCountryName] = useState<string | null>(null);
+
+  useEffect(() => {
+    let active = true;
+    fetch('https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json')
+      .then(res => res.json())
+      .then(topology => {
+        if (!active) return;
+        const decodedArcs = decodeTopology(topology);
+        const geometries = topology.objects.countries?.geometries || [];
+        const group = new THREE.Group();
+        
+        for (const geo of geometries) {
+          const polygons = [];
+          if (geo.type === 'Polygon') polygons.push(resolveArcs(geo.arcs, decodedArcs));
+          else if (geo.type === 'MultiPolygon') {
+            for (const poly of geo.arcs) polygons.push(resolveArcs(poly, decodedArcs));
+          }
+          
+          const info = getCountryInfo(String(geo.id));
+          const countryName = geo.properties?.name || info.name;
+          const code = info.alpha2;
+
+          for (const poly of polygons) {
+            const shape = new THREE.Shape();
+            for (let i = 0; i < poly.length; i++) {
+              const x = (poly[i][0] / 180) * 2.5;
+              const y = (poly[i][1] / 90) * 1.25;
+              if (i === 0) shape.moveTo(x, y); else shape.lineTo(x, y);
+            }
+            const geometry = new THREE.ShapeGeometry(shape);
+            const material = new THREE.MeshBasicMaterial({ 
+              color: 0x3B82F6, 
+              transparent: true, 
+              opacity: 0.1, 
+              side: THREE.FrontSide, 
+              depthWrite: false 
+            });
+            const mesh = new THREE.Mesh(geometry, material);
+            mesh.position.z = 0.002;
+            
+            // Attach data for raycasting
+            mesh.userData = { countryName, code, originalColor: 0x3B82F6, originalOpacity: 0.1 };
+            group.add(mesh);
+          }
+        }
+        setMeshes(group);
+      });
+      return () => { active = false; }
+  }, []);
+
+  // Sync hover state to materials (we do this outside the render cycle over the children)
+  useEffect(() => {
+    if (!meshes) return;
+    meshes.children.forEach((child: any) => {
+      const isHovered = child.userData.countryName === hoveredCountryName;
+      if (child.material) {
+        child.material.color.setHex(isHovered ? 0x94A3B8 : child.userData.originalColor);
+        child.material.opacity = isHovered ? 0.3 : child.userData.originalOpacity;
+      }
+    });
+  }, [hoveredCountryName, meshes]);
+
+  const handlePointerOver = (e: any) => {
+    e.stopPropagation();
+    document.body.style.cursor = 'pointer';
+    if (e.object.userData?.countryName) {
+      setHoveredCountryName(e.object.userData.countryName);
+    }
+  };
+
+  const handlePointerOut = (e: any) => {
+    e.stopPropagation();
+    document.body.style.cursor = 'default';
+    setHoveredCountryName(null);
+  };
+
+  const handleClick = (e: any) => {
+    e.stopPropagation();
+    const { countryName, code } = e.object.userData;
+    if (countryName && code) {
+      setSelectedCountry({ name: countryName, code });
+      setView('country');
+      setHoveredCountryName(null); // Clear highlight when transitioning
+      document.body.style.cursor = 'default';
+    }
+  };
+
+  return meshes ? (
+    <primitive 
+      object={meshes} 
+      onPointerOver={handlePointerOver}
+      onPointerOut={handlePointerOut}
+      onClick={handleClick}
+    />
+  ) : null;
+}
 export function Earth({ children }: { children?: React.ReactNode }) {
   const meshRef = useRef<THREE.Group>(null);
   const config = useStreamStore(s => s.config);
@@ -218,79 +582,48 @@ export function Earth({ children }: { children?: React.ReactNode }) {
     }
   });
 
-  // Topology cache for click mapping
-  const [topologyCache, setTopologyCache] = useState<any[] | null>(null);
-  const setSelectedCountry = useStreamStore(s => s.setSelectedCountry);
-  const setView = useStreamStore(s => s.setView);
-
-  useEffect(() => {
-    fetch('https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json')
-      .then(r => r.json())
-      .then(topo => {
-        const decoded = decodeTopology(topo);
-        const polys = topo.objects.countries.geometries.map((geo: any) => {
-          const coords: any[] = [];
-          if (geo.type === 'Polygon') coords.push(resolveArcs(geo.arcs, decoded));
-          else if (geo.type === 'MultiPolygon') {
-            for (const arc of geo.arcs) coords.push(resolveArcs(arc, decoded));
-          }
-          return { id: geo.id, name: geo.properties?.name, coords };
-        });
-        setTopologyCache(polys);
-      });
-  }, []);
-
-  const handleGlobeClick = (e: any) => {
-    e.stopPropagation();
-    if (!topologyCache || !e.uv) return;
-    const lon = (e.uv.x * 360) - 180;
-    const lat = (e.uv.y * 180) - 90;
-    let found = null;
-    for (const c of topologyCache) {
-      for (const poly of c.coords) {
-        if (isPointInPolygon([lon, lat], poly)) {
-          found = c;
-          break;
-        }
-      }
-      if (found) break;
-    }
-    if (found) {
-      const info = getCountryInfo(String(found.id));
-      setSelectedCountry({ name: found.name || info.name, code: info.alpha2 });
-      setView('country');
-    }
-  };
-
-  const handlePointerOver = () => {
-     document.body.style.cursor = 'crosshair';
-  };
-  const handlePointerOut = () => {
-     document.body.style.cursor = 'default';
-  };
-
   return (
     <group>
       <group ref={meshRef}>
         {projectionMode === '3d' ? (
-          <>
-            <CinematicGlobe3D 
-              onPointerMove={handlePointerOver}
-              onClick={handleGlobeClick}
-              onPointerOut={handlePointerOut}
+          <mesh>
+            <sphereGeometry args={[1, 64, 64]} />
+            <meshPhongMaterial
+              color="#0F172A"
+              emissive="#020617"
+              emissiveIntensity={0.2}
+              shininess={10}
             />
-            <OrbitalRings />
-          </>
+          </mesh>
         ) : (
           <group>
             {/* Main Map Plane */}
-            <mesh onClick={handleGlobeClick} onPointerMove={handlePointerOver} onPointerOut={handlePointerOut}>
+            <mesh>
               <planeGeometry args={[5.2, 2.6]} />
               <primitive object={map2DMaterial} attach="material" />
             </mesh>
           </group>
         )}
 
+        <CountryOutlines />
+        <CountryDotGrid />
+        <VolumetricLand />
+        {projectionMode === '2d' && <CountryFills2D />}
+
+        {projectionMode === '3d' && (
+          <mesh>
+            <icosahedronGeometry args={[1.001, 3]} />
+            <meshBasicMaterial
+              color="#00B4FF"
+              wireframe
+              transparent
+              opacity={0.06}
+              depthWrite={false}
+            />
+          </mesh>
+        )}
+
+        <GridLines />
         {children}
       </group>
 
