@@ -46,54 +46,6 @@ function isPointInPolygon(point: number[], vs: number[][]) {
 
 // --- Sub-components ---
 
-function GridLines() {
-  const projectionMode = useStreamStore(s => s.projectionMode);
-  const linesGeo = useMemo(() => {
-    const points: THREE.Vector3[] = [];
-    if (projectionMode === '3d') {
-      const radius = 1.002;
-      for (let lat = -60; lat <= 60; lat += 30) {
-        const phi = (90 - lat) * (Math.PI / 180);
-        for (let lon = 0; lon <= 360; lon += 2) {
-          const theta = lon * (Math.PI / 180);
-          points.push(new THREE.Vector3(-(radius * Math.sin(phi) * Math.cos(theta)), radius * Math.cos(phi), radius * Math.sin(phi) * Math.sin(theta)));
-        }
-      }
-      for (let lon = 0; lon < 360; lon += 30) {
-        const theta = lon * (Math.PI / 180);
-        for (let lat = -90; lat <= 90; lat += 2) {
-          const phi = (90 - lat) * (Math.PI / 180);
-          points.push(new THREE.Vector3(-(radius * Math.sin(phi) * Math.cos(theta)), radius * Math.cos(phi), radius * Math.sin(phi) * Math.sin(theta)));
-        }
-      }
-    } else {
-      for (let lat = -60; lat <= 60; lat += 30) {
-        const y = (lat / 90) * 1.25;
-        points.push(new THREE.Vector3(-2.5, y, 0.01), new THREE.Vector3(2.5, y, 0.01));
-      }
-      for (let lon = -150; lon <= 150; lon += 30) {
-        const x = (lon / 180) * 2.5;
-        points.push(new THREE.Vector3(x, -1.25, 0.01), new THREE.Vector3(x, 1.25, 0.01));
-      }
-    }
-    return new THREE.BufferGeometry().setFromPoints(points);
-  }, [projectionMode]);
-
-  if (projectionMode === '3d') {
-    return (
-      <points>
-        <primitive object={linesGeo} attach="geometry" />
-        <pointsMaterial color="#00B4FF" size={0.003} transparent opacity={0.15} depthWrite={false} sizeAttenuation />
-      </points>
-    );
-  }
-  return (
-    <lineSegments geometry={linesGeo}>
-      <lineBasicMaterial color="#00B4FF" transparent opacity={0.08} depthWrite={false} blending={THREE.AdditiveBlending} />
-    </lineSegments>
-  );
-}
-
 
 function CountryDotGrid() {
   const projectionMode = useStreamStore(s => s.projectionMode);
@@ -610,20 +562,7 @@ export function Earth({ children }: { children?: React.ReactNode }) {
         <VolumetricLand />
         {projectionMode === '2d' && <CountryFills2D />}
 
-        {projectionMode === '3d' && (
-          <mesh>
-            <icosahedronGeometry args={[1.001, 3]} />
-            <meshBasicMaterial
-              color="#00B4FF"
-              wireframe
-              transparent
-              opacity={0.06}
-              depthWrite={false}
-            />
-          </mesh>
-        )}
 
-        <GridLines />
         {children}
       </group>
 
