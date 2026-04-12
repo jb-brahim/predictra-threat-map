@@ -116,8 +116,8 @@ function TopographicContours() {
           float n = snoise(vPosition * 3.5 + time * 0.05);
           float lines = abs(fract(n * 8.0) - 0.5);
           float edge = 1.0 - smoothstep(0.0, 0.05, lines);
-          vec3 color = vec3(0.0, 0.4, 0.8);
-          gl_FragColor = vec4(color, edge * 0.15);
+          vec3 color = vec3(0.0, 0.8, 1.0);
+          gl_FragColor = vec4(color, edge * 0.25);
           if (gl_FragColor.a < 0.02) discard;
         }
       `,
@@ -161,7 +161,7 @@ function OrbitalRings() {
     <group ref={groupRef}>
       {rings.map((r, i) => (
         <lineLoop key={i} geometry={r.geometry} rotation={[r.rotX, r.rotY, 0]}>
-          <lineBasicMaterial color="#00D1FF" transparent opacity={0.15} blending={THREE.AdditiveBlending} />
+          <lineBasicMaterial color="#00D1FF" transparent opacity={0.4} blending={THREE.AdditiveBlending} />
         </lineLoop>
       ))}
     </group>
@@ -192,8 +192,8 @@ function CinematicGlobe3D({ onPointerMove, onClick, onPointerOut }: any) {
         <meshStandardMaterial
           map={texture}
           emissiveMap={texture}
-          emissive={new THREE.Color(0xFFFFFF)}
-          emissiveIntensity={1.5}
+          emissive={new THREE.Color(0xFFEAA0)}
+          emissiveIntensity={8.0}
           color="#000000"
           roughness={0.9}
         />
