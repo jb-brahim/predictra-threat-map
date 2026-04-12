@@ -1,11 +1,10 @@
 import { Canvas, useFrame } from '@react-three/fiber';
 
-import { OrbitControls } from '@react-three/drei';
+import { OrbitControls, Stars } from '@react-three/drei';
 import { EffectComposer, Bloom } from '@react-three/postprocessing';
 import { Earth } from './Earth';
 import { AttackArcs } from './AttackArcs';
 import { ImpactMarkers } from './ImpactMarkers';
-import { Starfield } from './Starfield';
 import { BackgroundEffects } from './BackgroundEffects';
 import { useStreamStore } from '../stream/useStreamStore';
 import { perfTelemetry } from '../utils/perf';
@@ -74,7 +73,7 @@ export function GlobeScene() {
         {/* Background */}
         <color attach="background" args={[projectionMode === '3d' ? '#000000' : '#050B14']} />
         <fog attach="fog" args={[projectionMode === '3d' ? '#000000' : '#050B14', 5, 30]} />
-        <Starfield count={qualityPreset === 'low' ? 1000 : 3000} />
+        <Stars radius={100} depth={50} count={qualityPreset === 'low' ? 2000 : 5000} factor={4} saturation={0} fade speed={1} />
         {projectionMode !== '3d' && <BackgroundEffects />}
 
         {/* Global Tech Grid (Static Background) */}
