@@ -113,13 +113,12 @@ function TopographicContours() {
         }
 
         void main() {
-          float n = snoise(vPosition * 3.0 + time * 0.02);
-          float lines = sin(n * 20.0);
-          float width = fwidth(lines);
-          float edge = smoothstep(0.9 - width, 0.9, lines);
+          float n = snoise(vPosition * 3.5 + time * 0.05);
+          float lines = abs(fract(n * 8.0) - 0.5);
+          float edge = 1.0 - smoothstep(0.0, 0.05, lines);
           vec3 color = vec3(0.0, 0.4, 0.8);
-          gl_FragColor = vec4(color, edge * 0.3);
-          if(gl_FragColor.a < 0.05) discard;
+          gl_FragColor = vec4(color, edge * 0.15);
+          if (gl_FragColor.a < 0.02) discard;
         }
       `,
       transparent: true,
@@ -134,7 +133,7 @@ function TopographicContours() {
 
   return (
     <mesh>
-      <sphereGeometry args={[1.02, 64, 64]} />
+      <sphereGeometry args={[1.006, 64, 64]} />
       <primitive object={material} attach="material" />
     </mesh>
   );
@@ -143,8 +142,8 @@ function TopographicContours() {
 function OrbitalRings() {
   const rings = useMemo(() => {
     const arr = [];
-    for (let i = 0; i < 3; i++) {
-        const radius = 1.3 + Math.random() * 0.5;
+    for (let i = 0; i < 2; i++) {
+        const radius = 1.1 + Math.random() * 0.15;
         const curve = new THREE.EllipseCurve(0, 0, radius, radius, 0, 2 * Math.PI, false, 0);
         const points = curve.getPoints(64);
         const geometry = new THREE.BufferGeometry().setFromPoints(points);
@@ -155,14 +154,14 @@ function OrbitalRings() {
 
   const groupRef = useRef<THREE.Group>(null);
   useFrame(({ clock }) => {
-    if (groupRef.current) groupRef.current.rotation.y = clock.getElapsedTime() * 0.05;
+    if (groupRef.current) groupRef.current.rotation.y = clock.getElapsedTime() * 0.02;
   });
 
   return (
     <group ref={groupRef}>
       {rings.map((r, i) => (
         <lineLoop key={i} geometry={r.geometry} rotation={[r.rotX, r.rotY, 0]}>
-          <lineBasicMaterial color="#00D1FF" transparent opacity={0.3} blending={THREE.AdditiveBlending} />
+          <lineBasicMaterial color="#00D1FF" transparent opacity={0.15} blending={THREE.AdditiveBlending} />
         </lineLoop>
       ))}
     </group>
@@ -171,16 +170,14 @@ function OrbitalRings() {
 
 function CinematicGlobe3D({ onPointerMove, onClick, onPointerOut }: any) {
   const [texture, setTexture] = useState<THREE.Texture | null>(null);
-  const [bump, setBump] = useState<THREE.Texture | null>(null);
 
   useEffect(() => {
     const loader = new THREE.TextureLoader();
-    loader.load('https://unpkg.com/three-globe/example/img/earth-night.jpg', (tex) => {
+    loader.setCrossOrigin('anonymous');
+    // Using reliable direct URL for earth lights map
+    loader.load('https://raw.githubusercontent.com/mrdoob/three.js/master/examples/textures/planets/earth_lights_2048.png', (tex) => {
       tex.colorSpace = THREE.SRGBColorSpace;
       setTexture(tex);
-    });
-    loader.load('https://unpkg.com/three-globe/example/img/earth-topology.png', (tex) => {
-      setBump(tex);
     });
   }, []);
 
@@ -196,14 +193,12 @@ function CinematicGlobe3D({ onPointerMove, onClick, onPointerOut }: any) {
           map={texture}
           emissiveMap={texture}
           emissive={new THREE.Color(0xFFFFFF)}
-          emissiveIntensity={1.2}
-          bumpMap={bump || undefined}
-          bumpScale={0.02}
-          color="#111111"
-          roughness={0.7}
+          emissiveIntensity={1.5}
+          color="#000000"
+          roughness={0.9}
         />
       ) : (
-        <meshPhongMaterial color="#0F172A" />
+        <meshPhongMaterial color="#050B14" />
       )}
     </mesh>
   );
