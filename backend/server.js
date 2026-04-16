@@ -212,11 +212,11 @@ app.get('/api/history', async (req, res) => {
   }
 });
 
-// Helper to get analytics match stage (filtering for IP-only sources)
+// Helper to get analytics match stage
 const getAnalyticsMatchStage = (query = {}) => {
   const { type, country, from } = query;
   const matchStage = { 
-    source_api: { $in: ['sans', 'threatfox'] } 
+    source_api: { $in: ['sans', 'threatfox', 'ransomwatch', 'alienvault'] } 
   };
 
   if (type) matchStage.a_t = type;
@@ -305,9 +305,13 @@ app.get('/api/stats/timeline', async (req, res) => {
 
 // ─── Sector mapping utility ──────────────────────────────────────────────────
 // Now using the intelligent Enrichment Service for "Real Data" classification.
-// For the IP-only branch, we prioritize Organization over Sector.
+// Prioritizes enriched real-world sectors (Finance, Healthcare) if found over IP organization.
 function estimateSector(event) {
-  return event.meta?.organization || getEnrichedSector(event);
+  const enriched = getEnrichedSector(event);
+  if (enriched && enriched !== 'General / Other') {
+    return enriched;
+  }
+  return event.meta?.organization || enriched;
 }
 
 
@@ -486,8 +490,7 @@ app.get('/api/analytics/sectors', async (req, res) => {
     res.json({
       sectors,
       totalAnalyzed: events.length,
-      note: 'Analytics focused on verified IP sources (SANS/ThreatFox). Categories represent IP-owner organizations where available.'
-
+      note: 'Analytics focused on integrated threat feeds. Categories represent identified industry sectors or IP organizations.'
     });
   } catch (error) {
     console.error('[API] Error fetching sector analytics:', error.message);
@@ -545,7 +548,7 @@ app.get('/api/analytics/combined', async (req, res) => {
       countries: topCountries,
       sectors: topSectors,
       totalAnalyzed: events.length,
-      note: 'Country/Organization breakdown for IP-only sources.'
+      note: 'Country and Sector breakdown of attacks.'
     });
   } catch (error) {
     console.error('[API] Error fetching combined analytics:', error.message);
