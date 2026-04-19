@@ -245,7 +245,7 @@ export function AnalyticsPage() {
       {loading && <div style={{ textAlign: 'center', padding: 20, color: theme.colors.textDim, fontSize: 12, fontFamily: theme.fonts.display, letterSpacing: 2, textTransform: 'uppercase', animation: 'pulse 1.5s infinite' }}>Loading MISP Galaxy intelligence data…</div>}
 
       {/* Tab Content */}
-      {!loading && tab === 'actors' && <ActorsTab actors={actors} stats={galaxyStats} />}
+      {!loading && tab === 'actors' && <ActorsTab actors={actors} />}
       {!loading && tab === 'malware' && <MalwareTab ransomware={ransomware} tools={tools} />}
       {!loading && tab === 'countries' && <CountriesTab countries={countries} totalGlobal={totalGlobal} selected={selectedCountry} onSelect={setSelectedCountry} />}
       {!loading && tab === 'trends' && <TrendsTab timeline={timeline} byType={byType} changePercent={changePercent} currentTotal={currentTotal} period={period} country={trendCountry} onCountryChange={setTrendCountry} onRefresh={fetchTrends} />}
@@ -260,7 +260,7 @@ export function AnalyticsPage() {
 /*  TAB 1: Threat Actors (MISP Galaxy)                                       */
 /* ═══════════════════════════════════════════════════════════════════════════ */
 
-function ActorsTab({ actors, stats }: { actors: GalaxyActor[]; stats: GalaxyStats | null }) {
+function ActorsTab({ actors }: { actors: GalaxyActor[] }) {
   const [search, setSearch] = useState('');
   const [countryFilter, setCountryFilter] = useState('');
   const [selectedActor, setSelectedActor] = useState<GalaxyActor | null>(null);
