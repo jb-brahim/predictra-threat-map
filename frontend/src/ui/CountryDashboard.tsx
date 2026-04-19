@@ -1,6 +1,5 @@
 import { useEffect, useState, useMemo } from 'react';
 import { useStreamStore } from '../stream/useStreamStore';
-import { GlassPanel } from './GlassPanel';
 import { theme } from '../theme/theme';
 import { Canvas } from '@react-three/fiber';
 import { OrbitControls, Stars } from '@react-three/drei';
@@ -26,7 +25,6 @@ export function CountryDashboard() {
   
   const [history, setHistory] = useState<ThreatEvent[]>([]);
   const [stats, setStats] = useState<CountryStats>({ fromCount: 0, onCount: 0, totalWorld: 1 });
-  const [loading, setLoading] = useState(true);
 
   // Fallback values
   const countryName = selectedCountry?.name || 'Unknown Region';
@@ -34,11 +32,9 @@ export function CountryDashboard() {
 
   useEffect(() => {
     if (!countryCode || countryCode === '??') {
-      setLoading(false);
       return;
     }
 
-    setLoading(true);
     const apiUrl = import.meta.env.VITE_API_URL || '';
 
     Promise.all([
@@ -56,8 +52,7 @@ export function CountryDashboard() {
         onCount: countryStats.byTarget?.[countryCode] || 0,
       });
     })
-    .catch(err => console.error("Failed to load country data:", err))
-    .finally(() => setLoading(false));
+    .catch(err => console.error("Failed to load country data:", err));
 
     // Optional: hook it up to refresh every 10s if we want it truly live
     const interval = setInterval(() => {
@@ -151,139 +146,183 @@ export function CountryDashboard() {
       paddingTop: '64px',
     }}>
       {/* Header */}
-      <div style={{ padding: '24px 40px 30px 40px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: `1px solid ${theme.colors.panelBorder}` }}>
-        <div>
-          <h1 style={{ fontFamily: theme.fonts.display, fontSize: '28px', fontWeight: 800, color: '#fff', margin: 0, textTransform: 'uppercase', letterSpacing: '2px' }}>
-            {countryName} <span style={{color: theme.colors.textDim, fontSize: 16, marginLeft: 10}}>[{countryCode}]</span>
-          </h1>
-          <p style={{ color: theme.colors.textDim, fontSize: '14px', marginTop: '4px' }}>
-            In-depth Threat Intelligence & Historical Analysis
-          </p>
+      <div style={{ padding: '20px 40px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: `1px solid ${theme.colors.panelBorder}`, background: 'rgba(8,12,20,0.4)' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 15 }}>
+          <div style={{ padding: '8px 12px', border: `1px solid ${theme.colors.exploit}`, color: theme.colors.exploit, fontSize: 10, fontFamily: theme.fonts.mono, fontWeight: 800 }}>
+            TARGET_ID // {countryCode}
+          </div>
+          <div>
+            <h1 style={{ fontFamily: theme.fonts.display, fontSize: '24px', fontWeight: 900, color: '#fff', margin: 0, textTransform: 'uppercase', letterSpacing: '3px' }}>
+              {countryName}
+            </h1>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 2 }}>
+                <div style={{ width: 6, height: 6, borderRadius: '50%', background: theme.colors.exploit, animation: 'pulse 1s infinite' }} />
+                <span style={{ color: theme.colors.textDim, fontSize: '10px', textTransform: 'uppercase', letterSpacing: 2 }}>Real-Time Intelligence Stream // Active</span>
+            </div>
+          </div>
         </div>
         <button
           onClick={() => setView('map')}
-          style={{ background: 'rgba(0, 209, 255, 0.1)', border: '1px solid rgba(0, 209, 255, 0.3)', color: '#00D1FF', padding: '10px 24px', borderRadius: '8px', cursor: 'pointer', fontWeight: 600 }}
+          style={{ 
+            background: 'transparent', 
+            border: `1px solid ${theme.colors.textDim}`, 
+            color: theme.colors.textDim, 
+            padding: '8px 20px', 
+            borderRadius: '2px', 
+            cursor: 'pointer', 
+            fontSize: 10,
+            fontWeight: 700,
+            letterSpacing: 1.5,
+            transition: 'all 0.2s'
+          }}
+          onMouseEnter={e => e.currentTarget.style.borderColor = '#fff'}
+          onMouseLeave={e => e.currentTarget.style.borderColor = theme.colors.textDim}
         >
-          CLOSE DASHBOARD
+          [ EXIT_TERMINAL ]
         </button>
       </div>
 
       {/* Content Grid */}
-      <div style={{ flex: 1, display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) 450px', gap: '30px', padding: '30px', overflow: 'hidden' }}>
-        {/* Left: Tactical 3D Hologram */}
-        <div style={{ position: 'relative', borderRadius: '20px', overflow: 'hidden', background: 'radial-gradient(circle at 50% 50%, #0D1B31 0%, #05080F 100%)', border: `1px solid ${theme.colors.panelBorder}` }}>
-            {/* Top Stats HUD Overlay */}
-            <div style={{ position: 'absolute', top: 30, left: 30, display: 'flex', gap: 20, zIndex: 10 }}>
-                <StatCard label="PRIMARY ORIGIN" value={String(stats.fromCount)} color={theme.colors.exploit} />
-                <StatCard label="TARGET VOLUME" value={String(stats.onCount)} color={theme.colors.phishing} />
+      <div style={{ flex: 1, display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) 480px', gap: '30px', padding: '30px', overflow: 'hidden' }}>
+        {/* Left: Tactical Point-Cloud Hologram */}
+        <div style={{ position: 'relative', borderRadius: '8px', overflow: 'hidden', background: 'radial-gradient(circle at 50% 50%, #0A1425 0%, #020408 100%)', border: `1px solid rgba(0,255,255,0.05)` }}>
+            {/* HUD Overlay Top */}
+            <div style={{ position: 'absolute', top: 20, left: 20, display: 'flex', gap: 15, zIndex: 10 }}>
+                <MetricBox label="ORIGIN_LOAD" value={stats.fromCount} color={theme.colors.exploit} />
+                <MetricBox label="TARGET_LOAD" value={stats.onCount} color={theme.colors.phishing} />
             </div>
 
-            <Canvas camera={{ position: [0, 10, 100], fov: 45 }}>
-                <ambientLight intensity={0.4} />
-                <pointLight position={[10, 10, 10]} intensity={1} />
-                <Stars radius={100} depth={50} count={5000} factor={4} saturation={0} fade speed={1} />
+            <Canvas camera={{ position: [0, 40, 120], fov: 40 }}>
+                <ambientLight intensity={0.2} />
+                <pointLight position={[10, 50, 10]} intensity={2} color="#00FFFF" />
+                <Stars radius={100} depth={50} count={3000} factor={2} saturation={0} fade speed={1} />
                 <CountryHologram />
-                <OrbitControls enablePan={false} autoRotate autoRotateSpeed={0.3} maxPolarAngle={Math.PI / 2} minPolarAngle={Math.PI / 4} />
+                <OrbitControls enablePan={false} autoRotate autoRotateSpeed={0.4} maxPolarAngle={Math.PI / 2.1} minPolarAngle={Math.PI / 10} />
             </Canvas>
             
-            {/* Tactical Ground Info */}
-            <div style={{ position: 'absolute', bottom: 30, left: 30, display: 'flex', flexDirection: 'column', gap: 8, pointerEvents: 'none' }}>
-                <div style={{ fontSize: 10, color: theme.colors.textDim, fontFamily: theme.fonts.mono, letterSpacing: 2 }}>REGION_LOCKED // {countryCode}</div>
-                <div style={{ fontSize: 12, color: theme.colors.exploit, fontFamily: theme.fonts.display, fontWeight: 700 }}>ACTIVE THREAT MONITORING SYSTEM</div>
+            {/* HUD Overlay Bottom */}
+            <div style={{ position: 'absolute', bottom: 20, left: 20, pointerEvents: 'none', fontFamily: theme.fonts.mono }}>
+                <div style={{ fontSize: 9, color: theme.colors.exploit, letterSpacing: 3, fontWeight: 700 }}>LIVE_TELEMETRY // SYNC_ACTIVE</div>
+                <div style={{ display: 'flex', gap: 15, marginTop: 5 }}>
+                    <div style={{ fontSize: 8, color: theme.colors.textDim }}>LAT: 37.0902</div>
+                    <div style={{ fontSize: 8, color: theme.colors.textDim }}>LON: -95.7129</div>
+                    <div style={{ fontSize: 8, color: theme.colors.textDim }}>ALT: 400KM</div>
+                </div>
             </div>
+            {/* Corner Brackets */}
+            <div style={{ position: 'absolute', top: 10, left: 10, width: 20, height: 20, borderTop: '2px solid #00FFFF30', borderLeft: '2px solid #00FFFF30' }} />
+            <div style={{ position: 'absolute', top: 10, right: 10, width: 20, height: 20, borderTop: '2px solid #00FFFF30', borderRight: '2px solid #00FFFF30' }} />
+            <div style={{ position: 'absolute', bottom: 10, left: 10, width: 20, height: 20, borderBottom: '2px solid #00FFFF30', borderLeft: '2px solid #00FFFF30' }} />
+            <div style={{ position: 'absolute', bottom: 10, right: 10, width: 20, height: 20, borderBottom: '2px solid #00FFFF30', borderRight: '2px solid #00FFFF30' }} />
         </div>
 
-        {/* Right: Detailed Analytics Sidebar */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', overflowY: 'auto', paddingRight: 5 }}>
-            {/* Risk Assessment */}
-            <GlassPanel style={{ padding: '20px' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 15 }}>
-                    <div style={{ fontSize: 10, textTransform: 'uppercase', letterSpacing: 2, color: theme.colors.textSecondary, fontWeight: 700 }}>Security Assessment</div>
-                    <div style={{ padding: '4px 8px', background: `${riskColor}20`, border: `1px solid ${riskColor}40`, borderRadius: 4, color: riskColor, fontSize: 10, fontWeight: 800 }}>{riskLabel}</div>
-                </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 15 }}>
-                    <div style={{ fontSize: 42, fontWeight: 900, color: riskColor, fontFamily: theme.fonts.display }}>{riskScore}%</div>
+        {/* Right: Data Analytics */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', overflowY: 'auto' }}>
+            <Panel title="Security Assessment">
+                <div style={{ display: 'flex', alignItems: 'center', gap: 20, padding: '5px 0' }}>
+                    <div style={{ flexShrink: 0, width: 100, height: 100, borderRadius: '50%', border: `4px solid ${riskColor}20`, borderTopColor: riskColor, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <div style={{ fontSize: 24, fontWeight: 900, color: riskColor }}>{riskScore}%</div>
+                    </div>
                     <div style={{ flex: 1 }}>
-                        <div style={{ height: 4, background: 'rgba(255,255,255,0.05)', borderRadius: 2 }}>
-                            <div style={{ width: `${riskScore}%`, height: '100%', background: riskColor, borderRadius: 2, transition: 'width 1s cubic-bezier(0.16, 1, 0.3, 1)' }} />
+                        <div style={{ fontSize: 14, fontWeight: 800, color: riskColor, letterSpacing: 2 }}>{riskLabel}</div>
+                        <div style={{ fontSize: 9, color: theme.colors.textDim, marginTop: 4, lineHeight: 1.4 }}>
+                            System activity indicates {riskLabel.toLowerCase()} relative to historical baseline for the current 24H window.
                         </div>
-                        <div style={{ fontSize: 9, color: theme.colors.textDim, marginTop: 6 }}>RELATIVE TO GLOBAL COUNTER-DATA</div>
                     </div>
                 </div>
-            </GlassPanel>
+            </Panel>
 
-            {/* Targeted Sectors */}
-            <GlassPanel style={{ padding: '20px' }}>
-                <h3 style={{ margin: '0 0 15px 0', fontSize: 12, textTransform: 'uppercase', letterSpacing: 1.5, color: '#fff', fontWeight: 800 }}>Targeted Sectors</h3>
+            <Panel title="Industry Intelligence">
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                    {sectorData.sectors.map(s => (
-                        <div key={s.name} style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11 }}>
-                                <span style={{ color: theme.colors.textPrimary, fontWeight: 600 }}>{s.name}</span>
-                                <span style={{ color: s.color, fontWeight: 700 }}>{s.count} hits</span>
-                            </div>
-                            <div style={{ height: 2, background: 'rgba(255,255,255,0.03)', borderRadius: 1 }}>
-                                <div style={{ width: `${(s.count / Math.max(...sectorData.sectors.map(x => x.count))) * 100}%`, height: '100%', background: s.color, borderRadius: 1 }} />
+                    {sectorData.sectors.map((s, idx) => (
+                        <div key={s.name} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                            <div style={{ width: 14, fontSize: 8, color: theme.colors.textDim }}>0{idx + 1}</div>
+                            <div style={{ flex: 1 }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 10, marginBottom: 4 }}>
+                                    <span style={{ color: '#fff', fontWeight: 700, textTransform: 'uppercase' }}>{s.name}</span>
+                                    <span style={{ color: theme.colors.textDim }}>{s.count} hits</span>
+                                </div>
+                                <div style={{ height: 2, background: 'rgba(255,255,255,0.03)' }}>
+                                    <div style={{ width: `${(s.count / Math.max(...sectorData.sectors.map(x => x.count))) * 100}%`, height: '100%', background: s.color }} />
+                                </div>
                             </div>
                         </div>
                     ))}
-                    {sectorData.sectors.length === 0 && <div style={{ fontSize: 11, color: theme.colors.textDim, textAlign: 'center' }}>No sector data identified</div>}
+                    {sectorData.sectors.length === 0 && <div style={{ fontSize: 10, color: theme.colors.textDim, textAlign: 'center' }}>ANALYZING DATA...</div>}
                 </div>
-            </GlassPanel>
+            </Panel>
 
-            {/* Top Adversaries */}
-            <GlassPanel style={{ padding: '20px' }}>
-                <h3 style={{ margin: '0 0 15px 0', fontSize: 12, textTransform: 'uppercase', letterSpacing: 1.5, color: '#fff', fontWeight: 800 }}>Primary Adversaries</h3>
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10 }}>
+            <Panel title="Adversary Pattern">
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                     {sectorData.topAdversaries.map(([co, count]) => (
-                        <div key={co} style={{ padding: '8px 12px', background: 'rgba(239, 68, 68, 0.05)', border: '1px solid rgba(239, 68, 68, 0.2)', borderRadius: 8, display: 'flex', alignItems: 'center', gap: 8 }}>
-                            <span style={{ fontSize: 18 }}>{getFlag(co)}</span>
-                            <div style={{ display: 'flex', flexDirection: 'column' }}>
-                                <span style={{ fontSize: 9, color: theme.colors.textDim }}>{co}</span>
-                                <span style={{ fontSize: 11, color: theme.colors.danger, fontWeight: 700 }}>{count}</span>
+                        <div key={co} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '8px 12px', background: 'rgba(255,255,255,0.02)', borderRadius: 2 }}>
+                            <span style={{ fontSize: 20 }}>{getFlag(co)}</span>
+                            <div style={{ flex: 1 }}>
+                                <div style={{ fontSize: 11, color: '#fff', fontWeight: 700 }}>{co} PROFILE</div>
+                                <div style={{ fontSize: 9, color: theme.colors.textDim }}>Origin of verified attack vectors</div>
+                            </div>
+                            <div style={{ textAlign: 'right' }}>
+                                <div style={{ fontSize: 14, color: theme.colors.danger, fontWeight: 900 }}>{count}</div>
+                                <div style={{ fontSize: 8, color: theme.colors.textDim }}>HITS</div>
                             </div>
                         </div>
                     ))}
-                    {sectorData.topAdversaries.length === 0 && <div style={{ fontSize: 11, color: theme.colors.textDim }}>No specific country-to-country patterns detected.</div>}
+                    {sectorData.topAdversaries.length === 0 && <div style={{ fontSize: 10, color: theme.colors.textDim }}>NO PATTERNS DETECTED</div>}
                 </div>
-            </GlassPanel>
+            </Panel>
 
-            {/* Recent Activity Log */}
-            <GlassPanel style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', padding: 0 }}>
-                <div style={{ padding: '15px 20px', borderBottom: '1px solid rgba(255,255,255,0.05)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <h3 style={{ margin: 0, fontSize: 12, textTransform: 'uppercase', letterSpacing: 1.5, color: '#fff', fontWeight: 800 }}>Activity Log</h3>
-                  {loading && <div style={{ width: 8, height: 8, borderRadius: '50%', background: theme.colors.exploit, animation: 'pulse 1s infinite' }} />}
-                </div>
-                <div style={{ flex: 1, overflowY: 'auto', padding: '10px 20px' }}>
-                    {combinedHistory.length === 0 && !loading && (
-                      <div style={{ padding: 20, textAlign: 'center', color: theme.colors.textDim, fontSize: 12 }}>Logs clear. No active interceptions.</div>
-                    )}
-                    {combinedHistory.slice(0, 50).map((ev, i) => (
-                        <div key={ev._id || ev.id || i} style={{ padding: '12px 0', borderBottom: '1px solid rgba(255,255,255,0.03)', fontSize: 11 }}>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
-                                <span style={{ color: getAttackColor(ev.a_t), fontWeight: 700, textTransform: 'uppercase', fontSize: 9 }}>{ev.a_t}</span>
-                                <span style={{ color: theme.colors.textDim, fontSize: 9 }}>{new Date(ev.timestamp || ev.ts || Date.now()).toLocaleTimeString()}</span>
+            <Panel title="Command Log" slim>
+                <div style={{ maxHeight: 300, overflowY: 'auto' }}>
+                    {combinedHistory.slice(0, 30).map((ev, i) => (
+                        <div key={ev._id || ev.id || i} style={{ padding: '10px 0', borderBottom: '1px solid rgba(255,255,255,0.03)', fontSize: 10 }}>
+                            <div style={{ display: 'flex', gap: 8, color: getAttackColor(ev.a_t), fontWeight: 700 }}>
+                                <span>[{new Date(ev.timestamp || ev.ts || Date.now()).toLocaleTimeString([], {hour12: false})}]</span>
+                                <span>{ev.a_t.toUpperCase()}</span>
                             </div>
-                            <div style={{ color: '#fff', fontWeight: 600, fontSize: 12, marginBottom: 2 }}>{ev.a_n}</div>
-                            <div style={{ color: theme.colors.textDim, fontFamily: theme.fonts.mono, fontSize: 10 }}>
-                                {ev.s_ip} ({ev.s_co}) <span style={{ color: theme.colors.exploit }}>▶</span> {ev.d_ip} ({ev.d_co})
-                            </div>
+                            <div style={{ color: '#fff', margin: '2px 0' }}>{ev.a_n}</div>
+                            <div style={{ color: theme.colors.textDim, fontFamily: theme.fonts.mono, fontSize: 9 }}>{ev.s_ip} → {ev.d_ip}</div>
                         </div>
                     ))}
                 </div>
-            </GlassPanel>
+            </Panel>
         </div>
       </div>
+
 
     </div>
   );
 }
 
-function StatCard({ label, value, color }: { label: string, value: string, color: string }) {
+function MetricBox({ label, value, color }: { label: string, value: number, color: string }) {
     return (
-        <div style={{ background: 'rgba(5, 8, 15, 0.8)', backdropFilter: 'blur(10px)', border: `1px solid ${color}40`, padding: '15px 25px', borderRadius: '16px', textAlign: 'center' }}>
-            <div style={{ fontSize: 10, color: theme.colors.textDim, textTransform: 'uppercase', letterSpacing: 1 }}>{label}</div>
-            <div style={{ fontSize: 24, fontWeight: 800, color: color }}>{value}</div>
+        <div style={{ background: 'rgba(5, 8, 15, 0.6)', backdropFilter: 'blur(10px)', border: `1px solid ${color}40`, padding: '12px 20px', borderRadius: '4px', textAlign: 'center' }}>
+            <div style={{ fontSize: 8, color: theme.colors.textDim, textTransform: 'uppercase', letterSpacing: 2, fontWeight: 700, marginBottom: 4 }}>{label}</div>
+            <div style={{ fontSize: 20, fontWeight: 900, color: color, fontFamily: theme.fonts.display }}>{value}</div>
+        </div>
+    );
+}
+
+function Panel({ title, children, slim }: { title: string, children: React.ReactNode, slim?: boolean }) {
+    return (
+        <div style={{ 
+            background: 'rgba(10, 15, 25, 0.7)', 
+            backdropFilter: 'blur(20px)', 
+            border: '1px solid rgba(255,255,255,0.05)',
+            borderLeft: `2px solid ${theme.colors.exploit}80`,
+            padding: slim ? 0 : '15px 20px',
+            borderRadius: 2
+        }}>
+            {title && !slim && (
+                <div style={{ fontSize: 10, textTransform: 'uppercase', letterSpacing: 2, color: theme.colors.textSecondary, fontWeight: 800, marginBottom: 15, display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <span style={{ color: theme.colors.exploit }}>▶</span> {title}
+                </div>
+            )}
+            {title && slim && (
+                <div style={{ padding: '12px 20px', borderBottom: '1px solid rgba(255,255,255,0.05)', fontSize: 10, textTransform: 'uppercase', letterSpacing: 2, color: theme.colors.textSecondary, fontWeight: 800 }}>
+                     {title}
+                </div>
+            )}
+            {children}
         </div>
     );
 }

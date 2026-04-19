@@ -8,15 +8,18 @@ const GEOJSON_URL = 'https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.j
 
 export function CountryHologram() {
   const groupRef = useRef<THREE.Group>(null);
-  const scanRef = useRef<THREE.Mesh>(null);
-  const floorRef = useRef<THREE.Mesh>(null);
+  const pointsRef = useRef<THREE.Points>(null);
+  const scanLineRef = useRef<THREE.Group>(null);
+  
   const selectedCountry = useStreamStore(s => s.selectedCountry);
-  const [geometries, setGeometries] = useState<{ solid: THREE.ExtrudeGeometry; wire: THREE.EdgesGeometry }[]>([]);
+  const [pointGeometry, setPointGeometry] = useState<THREE.BufferGeometry | null>(null);
+  const [edgeGeometry, setEdgeGeometry] = useState<THREE.BufferGeometry | null>(null);
   const [scale, setScale] = useState(1);
 
   useEffect(() => {
     if (!selectedCountry?.code || selectedCountry.code === '??') {
-      setGeometries([]);
+      setPointGeometry(null);
+      setEdgeGeometry(null);
       return;
     }
 
@@ -32,11 +35,12 @@ export function CountryHologram() {
         });
 
         if (!targetGeo) {
-          setGeometries([]);
+          setPointGeometry(null);
+          setEdgeGeometry(null);
           return;
         }
         
-        const polygonArcs: number[][][] = []; // [ring][point][x,y]
+        const polygonArcs: number[][][] = []; 
         if (targetGeo.type === 'Polygon') {
           for (const ring of targetGeo.arcs) polygonArcs.push(resolveArcs(ring, decodedArcs));
         } else if (targetGeo.type === 'MultiPolygon') {
@@ -44,112 +48,139 @@ export function CountryHologram() {
             for (const ring of polygon) polygonArcs.push(resolveArcs(ring, decodedArcs));
         }
 
-        const extrusions: { solid: THREE.ExtrudeGeometry; wire: THREE.EdgesGeometry }[] = [];
-        let combinedPoints: THREE.Vector3[] = [];
+        // 1. Calculate Bounding Box
+        const allPoints: THREE.Vector2[] = [];
+        polygonArcs.forEach(ring => ring.forEach(p => allPoints.push(new THREE.Vector2(p[0], p[1]))));
+        const box = new THREE.Box2().setFromPoints(allPoints);
+        const center = new THREE.Vector2();
+        box.getCenter(center);
 
-        for (const ringPoints of polygonArcs) {
-          if (ringPoints.length < 3) continue;
-          
-          const shape = new THREE.Shape();
-          shape.moveTo(ringPoints[0][0], ringPoints[0][1]);
-          for (let i = 1; i < ringPoints.length; i++) {
-            shape.lineTo(ringPoints[i][0], ringPoints[i][1]);
+        // 2. Point Matrix Generation (Volume Filling)
+        const density = 1.5; // points per unit
+        const matrixPoints: number[] = [];
+        const matrixColors: number[] = [];
+        
+        for (let x = box.min.x; x <= box.max.x; x += density) {
+          for (let y = box.min.y; y <= box.max.y; y += density) {
+            // Point-in-polygon check
+            if (isPointInPolygons([x, y], polygonArcs)) {
+              // Add points at multiple depths for 3D volume
+              for (let z = -3; z <= 3; z += 1.5) {
+                matrixPoints.push(x - center.x, y - center.y, z);
+                const intensity = 0.5 + Math.random() * 0.5;
+                matrixColors.push(0, 0.8, 1, intensity);
+              }
+            }
           }
-
-          const extrudeSettings = {
-            steps: 1,
-            depth: 4,
-            beveled: true,
-            bevelThickness: 1,
-            bevelSize: 1,
-            bevelSegments: 2
-          };
-
-          const solidGeo = new THREE.ExtrudeGeometry(shape, extrudeSettings);
-          solidGeo.center();
-          
-          const wireGeo = new THREE.EdgesGeometry(solidGeo);
-          extrusions.push({ solid: solidGeo, wire: wireGeo });
-
-          // Accumulate for scale calculation
-          solidGeo.computeBoundingBox();
-          combinedPoints.push(solidGeo.boundingBox!.min, solidGeo.boundingBox!.max);
         }
 
-        if (extrusions.length > 0) {
-          // Calculate overall bounding box to normalize scale
-          const box = new THREE.Box3().setFromPoints(combinedPoints);
-          const size = new THREE.Vector3();
-          box.getSize(size);
-          const maxDim = Math.max(size.x, size.y);
-          setScale(120 / maxDim);
-          setGeometries(extrusions);
-        } else {
-          setGeometries([]);
-        }
+        // 3. Edge Outline (Glow Edges)
+        const edgePoints: THREE.Vector3[] = [];
+        polygonArcs.forEach(ring => {
+          for (let i = 0; i < ring.length - 1; i++) {
+            edgePoints.push(new THREE.Vector3(ring[i][0] - center.x, ring[i][1] - center.y, 4));
+            edgePoints.push(new THREE.Vector3(ring[i + 1][0] - center.x, ring[i + 1][1] - center.y, 4));
+            edgePoints.push(new THREE.Vector3(ring[i][0] - center.x, ring[i][1] - center.y, -4));
+            edgePoints.push(new THREE.Vector3(ring[i + 1][0] - center.x, ring[i + 1][1] - center.y, -4));
+          }
+        });
+
+        const pGeo = new THREE.BufferGeometry();
+        pGeo.setAttribute('position', new THREE.Float32BufferAttribute(matrixPoints, 3));
+        pGeo.setAttribute('color', new THREE.Float32BufferAttribute(matrixColors, 4));
+        setPointGeometry(pGeo);
+
+        const eGeo = new THREE.BufferGeometry().setFromPoints(edgePoints);
+        setEdgeGeometry(eGeo);
+
+        const size = new THREE.Vector2();
+        box.getSize(size);
+        setScale(130 / Math.max(size.x, size.y));
       });
   }, [selectedCountry]);
 
   useFrame((state) => {
     const t = state.clock.getElapsedTime();
-    if (scanRef.current) {
-        scanRef.current.position.z = Math.sin(t * 1.5) * 8;
-        (scanRef.current.material as THREE.MeshBasicMaterial).opacity = 0.2 + Math.abs(Math.cos(t * 1.5)) * 0.3;
+    if (pointsRef.current) {
+      pointsRef.current.rotation.y = Math.sin(t * 0.2) * 0.1;
+      // Procedural Glitch
+      if (Math.random() > 0.98) pointsRef.current.position.x = (Math.random() - 0.5) * 0.5;
+      else pointsRef.current.position.x = 0;
     }
-    if (floorRef.current) {
-        floorRef.current.rotation.z = t * 0.1;
+    if (scanLineRef.current) {
+      scanLineRef.current.position.z = Math.sin(t * 2) * 10;
     }
   });
 
-  if (geometries.length === 0) return null;
+  if (!pointGeometry) return null;
 
   return (
     <group ref={groupRef} scale={scale}>
-      {geometries.map((g, i) => (
-        <group key={i}>
-          {/* Solid Base */}
-          <mesh geometry={g.solid}>
-            <meshStandardMaterial 
-              color="#00D0FF" 
-              transparent 
-              opacity={0.15} 
-              emissive="#00D0FF"
-              emissiveIntensity={0.5}
-              roughness={0.1}
-              metalness={0.8}
-            />
-          </mesh>
-          {/* Neon Wireframe */}
-          <lineSegments geometry={g.wire}>
-            <lineBasicMaterial color="#00E8FF" transparent opacity={0.6} blending={THREE.AdditiveBlending} />
-          </lineSegments>
-        </group>
-      ))}
-
-      {/* Holographic Floor / Grid */}
-      <mesh ref={floorRef} position={[0, 0, -10]}>
-        <circleGeometry args={[100, 64]} />
-        <meshBasicMaterial 
-          color="#002233" 
+      {/* 1. Point Matrix volume */}
+      <points ref={pointsRef} geometry={pointGeometry}>
+        <pointsMaterial 
+          size={1.2} 
+          vertexColors 
           transparent 
-          opacity={0.3} 
-          wireframe 
-        />
-      </mesh>
-      
-      {/* Scanning Beam */}
-      <mesh ref={scanRef} position={[0, 0, 0]}>
-        <planeGeometry args={[250, 4]} />
-        <meshBasicMaterial 
-          color="#00E8FF" 
-          transparent 
-          opacity={0.4} 
+          opacity={0.6} 
           blending={THREE.AdditiveBlending}
-          side={THREE.DoubleSide}
+          sizeAttenuation={true}
         />
-      </mesh>
+      </points>
+
+      {/* 2. Tactical Edge Outlines */}
+      {edgeGeometry && (
+        <lineSegments geometry={edgeGeometry}>
+          <lineBasicMaterial color="#00E8FF" transparent opacity={0.3} blending={THREE.AdditiveBlending} />
+        </lineSegments>
+      )}
+
+      {/* 3. High-Frequency Lasers */}
+      <group ref={scanLineRef}>
+        <mesh position={[0, 0, 0]}>
+          <planeGeometry args={[300, 0.5]} />
+          <meshBasicMaterial color="#00FFFF" transparent opacity={0.8} side={THREE.DoubleSide} blending={THREE.AdditiveBlending} />
+        </mesh>
+        <mesh position={[0, 0, 0.4]}>
+          <planeGeometry args={[300, 2]} />
+          <meshBasicMaterial color="#00FFFF" transparent opacity={0.1} side={THREE.DoubleSide} blending={THREE.AdditiveBlending} />
+        </mesh>
+      </group>
+
+      {/* 4. Tactical Floor HUD */}
+      <group position={[0, 0, -10]}>
+        {/* Outer Ring */}
+        <mesh rotation={[Math.PI / 2, 0, 0]}>
+          <ringGeometry args={[115, 120, 64]} />
+          <meshBasicMaterial color="#00FFFF" transparent opacity={0.1} side={THREE.DoubleSide} />
+        </mesh>
+        {/* Tick Marks */}
+        {[0, 45, 90, 135, 180, 225, 270, 315].map(deg => (
+           <mesh key={deg} rotation={[0, 0, (deg * Math.PI) / 180]} position={[0, 125, 0]}>
+             <planeGeometry args={[1, 10]} />
+             <meshBasicMaterial color="#00FFFF" transparent opacity={0.4} />
+           </mesh>
+        ))}
+      </group>
     </group>
   );
+}
+
+// ── Point-In-Polygon Utility ───────────────────────────────────────────────
+
+function isPointInPolygons(point: [number, number], polygons: number[][][]): boolean {
+  let inside = false;
+  for (const ring of polygons) {
+    let j = ring.length - 1;
+    for (let i = 0; i < ring.length; i++) {
+      if (((ring[i][1] > point[1]) !== (ring[j][1] > point[1])) &&
+          (point[0] < (ring[j][0] - ring[i][0]) * (point[1] - ring[i][1]) / (ring[j][1] - ring[i][1]) + ring[i][0])) {
+        inside = !inside;
+      }
+      j = i;
+    }
+  }
+  return inside;
 }
 
 // Helper utilities (copied from CountryOutlines for isolation)
