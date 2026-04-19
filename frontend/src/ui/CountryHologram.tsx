@@ -1,4 +1,4 @@
-import { useRef, useEffect, useState } from 'react';
+import { useRef, useEffect, useState, useMemo } from 'react';
 import * as THREE from 'three';
 import { useFrame } from '@react-three/fiber';
 import { useStreamStore } from '../stream/useStreamStore';
@@ -8,18 +8,20 @@ const GEOJSON_URL = 'https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.j
 
 export function CountryHologram() {
   const groupRef = useRef<THREE.Group>(null);
-  const pointsRef = useRef<THREE.Points>(null);
-  const scanLineRef = useRef<THREE.Group>(null);
-  
+  const meshGroupRef = useRef<THREE.Group>(null);
   const selectedCountry = useStreamStore(s => s.selectedCountry);
-  const [pointGeometry, setPointGeometry] = useState<THREE.BufferGeometry | null>(null);
-  const [edgeGeometry, setEdgeGeometry] = useState<THREE.BufferGeometry | null>(null);
+  const [geometries, setGeometries] = useState<{ mesh: THREE.ExtrudeGeometry; wire: THREE.EdgesGeometry }[]>([]);
   const [scale, setScale] = useState(1);
+
+  const uniforms = useMemo(() => ({
+    uTime: { value: 0 },
+    uColor: { value: new THREE.Color('#00E8FF') },
+    uGlowColor: { value: new THREE.Color('#005577') }
+  }), []);
 
   useEffect(() => {
     if (!selectedCountry?.code || selectedCountry.code === '??') {
-      setPointGeometry(null);
-      setEdgeGeometry(null);
+      setGeometries([]);
       return;
     }
 
@@ -35,11 +37,10 @@ export function CountryHologram() {
         });
 
         if (!targetGeo) {
-          setPointGeometry(null);
-          setEdgeGeometry(null);
+          setGeometries([]);
           return;
         }
-        
+
         const polygonArcs: number[][][] = []; 
         if (targetGeo.type === 'Polygon') {
           for (const ring of targetGeo.arcs) polygonArcs.push(resolveArcs(ring, decodedArcs));
@@ -48,139 +49,130 @@ export function CountryHologram() {
             for (const ring of polygon) polygonArcs.push(resolveArcs(ring, decodedArcs));
         }
 
-        // 1. Calculate Bounding Box
-        const allPoints: THREE.Vector2[] = [];
-        polygonArcs.forEach(ring => ring.forEach(p => allPoints.push(new THREE.Vector2(p[0], p[1]))));
-        const box = new THREE.Box2().setFromPoints(allPoints);
+        // Calculate Bounding Box and Center
+        const allPointsArray: THREE.Vector2[] = [];
+        polygonArcs.forEach(ring => ring.forEach(p => allPointsArray.push(new THREE.Vector2(p[0], p[1]))));
+        const box = new THREE.Box2().setFromPoints(allPointsArray);
         const center = new THREE.Vector2();
         box.getCenter(center);
+        const extrusions: { mesh: THREE.ExtrudeGeometry; wire: THREE.EdgesGeometry }[] = [];
 
-        // 2. Point Matrix Generation (Volume Filling)
-        const density = 1.5; // points per unit
-        const matrixPoints: number[] = [];
-        const matrixColors: number[] = [];
-        
-        for (let x = box.min.x; x <= box.max.x; x += density) {
-          for (let y = box.min.y; y <= box.max.y; y += density) {
-            // Point-in-polygon check
-            if (isPointInPolygons([x, y], polygonArcs)) {
-              // Add points at multiple depths for 3D volume
-              for (let z = -3; z <= 3; z += 1.5) {
-                matrixPoints.push(x - center.x, y - center.y, z);
-                const intensity = 0.5 + Math.random() * 0.5;
-                matrixColors.push(0, 0.8, 1, intensity);
-              }
-            }
+        for (const ringPoints of polygonArcs) {
+          if (ringPoints.length < 3) continue;
+          
+          const shape = new THREE.Shape();
+          shape.moveTo(ringPoints[0][0] - center.x, ringPoints[0][1] - center.y);
+          for (let i = 1; i < ringPoints.length; i++) {
+            shape.lineTo(ringPoints[i][0] - center.x, ringPoints[i][1] - center.y);
           }
+
+          const extrudeSettings = {
+            steps: 1,
+            depth: 8,
+            bevelEnabled: true,
+            bevelThickness: 1,
+            bevelSize: 1,
+            bevelSegments: 2
+          };
+
+          const geo = new THREE.ExtrudeGeometry(shape, extrudeSettings);
+          const wire = new THREE.EdgesGeometry(geo);
+          extrusions.push({ mesh: geo, wire });
         }
 
-        // 3. Edge Outline (Glow Edges)
-        const edgePoints: THREE.Vector3[] = [];
-        polygonArcs.forEach(ring => {
-          for (let i = 0; i < ring.length - 1; i++) {
-            edgePoints.push(new THREE.Vector3(ring[i][0] - center.x, ring[i][1] - center.y, 4));
-            edgePoints.push(new THREE.Vector3(ring[i + 1][0] - center.x, ring[i + 1][1] - center.y, 4));
-            edgePoints.push(new THREE.Vector3(ring[i][0] - center.x, ring[i][1] - center.y, -4));
-            edgePoints.push(new THREE.Vector3(ring[i + 1][0] - center.x, ring[i + 1][1] - center.y, -4));
-          }
-        });
-
-        const pGeo = new THREE.BufferGeometry();
-        pGeo.setAttribute('position', new THREE.Float32BufferAttribute(matrixPoints, 3));
-        pGeo.setAttribute('color', new THREE.Float32BufferAttribute(matrixColors, 4));
-        setPointGeometry(pGeo);
-
-        const eGeo = new THREE.BufferGeometry().setFromPoints(edgePoints);
-        setEdgeGeometry(eGeo);
-
-        const size = new THREE.Vector2();
-        box.getSize(size);
-        setScale(130 / Math.max(size.x, size.y));
+        if (extrusions.length > 0) {
+          const size = new THREE.Vector2();
+          box.getSize(size);
+          setScale(140 / Math.max(size.x, size.y));
+          setGeometries(extrusions);
+        } else {
+          setGeometries([]);
+        }
       });
   }, [selectedCountry]);
 
   useFrame((state) => {
     const t = state.clock.getElapsedTime();
-    if (pointsRef.current) {
-      pointsRef.current.rotation.y = Math.sin(t * 0.2) * 0.1;
-      // Procedural Glitch
-      if (Math.random() > 0.98) pointsRef.current.position.x = (Math.random() - 0.5) * 0.5;
-      else pointsRef.current.position.x = 0;
-    }
-    if (scanLineRef.current) {
-      scanLineRef.current.position.z = Math.sin(t * 2) * 10;
+    uniforms.uTime.value = t;
+    if (meshGroupRef.current) {
+        meshGroupRef.current.position.y = Math.sin(t * 0.5) * 2; // subtle float
+        meshGroupRef.current.rotation.y = Math.sin(t * 0.2) * 0.05;
     }
   });
 
-  if (!pointGeometry) return null;
+  if (geometries.length === 0) return null;
+
+  const vertexShader = `
+    varying vec3 vNormal;
+    varying vec3 vPos;
+    void main() {
+      vNormal = normalize(normalMatrix * normal);
+      vPos = (modelMatrix * vec4(position, 1.0)).xyz;
+      gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+    }
+  `;
+
+  const fragmentShader = `
+    varying vec3 vNormal;
+    varying vec3 vPos;
+    uniform float uTime;
+    uniform vec3 uColor;
+    uniform vec3 uGlowColor;
+
+    void main() {
+      vec3 vDir = normalize(cameraPosition - vPos);
+      float fresnel = 1.0 - max(dot(vDir, vNormal), 0.0);
+      fresnel = pow(fresnel, 2.5);
+
+      float scanlines = pow(sin(vPos.y * 10.0 - uTime * 4.0) * 0.5 + 0.5, 8.0) * 0.4;
+      float scanlinesX = pow(sin(vPos.x * 10.0 + uTime * 2.0) * 0.5 + 0.5, 12.0) * 0.2;
+      
+      float pulse = (sin(uTime * 1.5) * 0.5 + 0.5) * 0.1;
+      float alpha = (fresnel * 0.7 + scanlines + scanlinesX + pulse) * 0.9;
+      
+      vec3 finalColor = mix(uGlowColor, uColor, fresnel + scanlines * 0.5);
+      gl_FragColor = vec4(finalColor, alpha);
+    }
+  `;
 
   return (
     <group ref={groupRef} scale={scale}>
-      {/* 1. Point Matrix volume */}
-      <points ref={pointsRef} geometry={pointGeometry}>
-        <pointsMaterial 
-          size={1.2} 
-          vertexColors 
-          transparent 
-          opacity={0.6} 
-          blending={THREE.AdditiveBlending}
-          sizeAttenuation={true}
-        />
-      </points>
-
-      {/* 2. Tactical Edge Outlines */}
-      {edgeGeometry && (
-        <lineSegments geometry={edgeGeometry}>
-          <lineBasicMaterial color="#00E8FF" transparent opacity={0.3} blending={THREE.AdditiveBlending} />
-        </lineSegments>
-      )}
-
-      {/* 3. High-Frequency Lasers */}
-      <group ref={scanLineRef}>
-        <mesh position={[0, 0, 0]}>
-          <planeGeometry args={[300, 0.5]} />
-          <meshBasicMaterial color="#00FFFF" transparent opacity={0.8} side={THREE.DoubleSide} blending={THREE.AdditiveBlending} />
-        </mesh>
-        <mesh position={[0, 0, 0.4]}>
-          <planeGeometry args={[300, 2]} />
-          <meshBasicMaterial color="#00FFFF" transparent opacity={0.1} side={THREE.DoubleSide} blending={THREE.AdditiveBlending} />
-        </mesh>
+      <group ref={meshGroupRef}>
+        {geometries.map((g, i) => (
+            <group key={i}>
+                {/* Main Holographic Mesh */}
+                <mesh geometry={g.mesh}>
+                    <shaderMaterial
+                        vertexShader={vertexShader}
+                        fragmentShader={fragmentShader}
+                        uniforms={uniforms}
+                        transparent
+                        depthWrite={false}
+                        side={THREE.DoubleSide}
+                        blending={THREE.AdditiveBlending}
+                    />
+                </mesh>
+                {/* High Density Wireframe */}
+                <lineSegments geometry={g.wire}>
+                    <lineBasicMaterial color="#00FFFF" transparent opacity={0.15} blending={THREE.AdditiveBlending} />
+                </lineSegments>
+            </group>
+        ))}
       </group>
 
-      {/* 4. Tactical Floor HUD */}
-      <group position={[0, 0, -10]}>
-        {/* Outer Ring */}
-        <mesh rotation={[Math.PI / 2, 0, 0]}>
-          <ringGeometry args={[115, 120, 64]} />
-          <meshBasicMaterial color="#00FFFF" transparent opacity={0.1} side={THREE.DoubleSide} />
+      {/* Tactical Floor Radials */}
+      <group position={[0, 0, -15]} rotation={[Math.PI / 2, 0, 0]}>
+        <mesh>
+          <ringGeometry args={[140, 142, 64]} />
+          <meshBasicMaterial color="#00FFFF" transparent opacity={0.05} />
         </mesh>
-        {/* Tick Marks */}
-        {[0, 45, 90, 135, 180, 225, 270, 315].map(deg => (
-           <mesh key={deg} rotation={[0, 0, (deg * Math.PI) / 180]} position={[0, 125, 0]}>
-             <planeGeometry args={[1, 10]} />
-             <meshBasicMaterial color="#00FFFF" transparent opacity={0.4} />
-           </mesh>
-        ))}
+        <mesh rotation={[0, 0, uniforms.uTime.value * 0.1]}>
+          <ringGeometry args={[150, 155, 4, 1, 0, Math.PI * 0.1]} />
+          <meshBasicMaterial color="#00FFFF" transparent opacity={0.2} />
+        </mesh>
       </group>
     </group>
   );
-}
-
-// ── Point-In-Polygon Utility ───────────────────────────────────────────────
-
-function isPointInPolygons(point: [number, number], polygons: number[][][]): boolean {
-  let inside = false;
-  for (const ring of polygons) {
-    let j = ring.length - 1;
-    for (let i = 0; i < ring.length; i++) {
-      if (((ring[i][1] > point[1]) !== (ring[j][1] > point[1])) &&
-          (point[0] < (ring[j][0] - ring[i][0]) * (point[1] - ring[i][1]) / (ring[j][1] - ring[i][1]) + ring[i][0])) {
-        inside = !inside;
-      }
-      j = i;
-    }
-  }
-  return inside;
 }
 
 // Helper utilities (copied from CountryOutlines for isolation)
