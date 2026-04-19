@@ -13,6 +13,12 @@ interface CountryStats {
   totalWorld: number;
 }
 
+interface SectorStat {
+  name: string;
+  count: number;
+  color: string;
+}
+
 export function CountryDashboard() {
   const selectedCountry = useStreamStore(s => s.selectedCountry);
   const setView = useStreamStore(s => s.setView);
@@ -96,7 +102,38 @@ export function CountryDashboard() {
     return unique.slice(0, 200);
   }, [recentEvents, history, countryCode]);
 
-  // Calculate Threat Level dynamically
+  // Sector Analytics: Calculate targeted industries from meta
+  const sectorData = useMemo(() => {
+    const counts: Record<string, number> = {};
+    const adversaryCounts: Record<string, number> = {};
+
+    combinedHistory.forEach(ev => {
+      // 1. Sector inference
+      const sector = ev.meta?.sector || ev.meta?.industry || ev.meta?.threat_type || 'General';
+      counts[sector] = (counts[sector] || 0) + 1;
+
+      // 2. Adversary tracking
+      if (ev.d_co === countryCode && ev.s_co && ev.s_co !== countryCode) {
+        adversaryCounts[ev.s_co] = (adversaryCounts[ev.s_co] || 0) + 1;
+      }
+    });
+
+    const sectors: SectorStat[] = Object.entries(counts)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 5)
+      .map(([name, count], i) => ({
+        name,
+        count,
+        color: `hsl(${200 + i * 30}, 80%, 60%)`
+      }));
+
+    const topAdversaries = Object.entries(adversaryCounts)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 5);
+
+    return { sectors, topAdversaries };
+  }, [combinedHistory, countryCode]);
+
   const activityRatio = (stats.fromCount + stats.onCount) / Math.max(stats.totalWorld, 1);
   let riskLabel = "LOW RISK";
   let riskColor = theme.colors.success as string;
@@ -132,51 +169,104 @@ export function CountryDashboard() {
       </div>
 
       {/* Content Grid */}
-      <div style={{ flex: 1, display: 'grid', gridTemplateColumns: '1fr 400px', gap: '40px', padding: '40px', overflow: 'hidden' }}>
-        {/* Left: 3D Visualization */}
-        <div style={{ position: 'relative', borderRadius: '24px', overflow: 'hidden', background: 'radial-gradient(circle at center, #0A1628 0%, #05080F 100%)', border: `1px solid ${theme.colors.panelBorder}` }}>
-            <Canvas camera={{ position: [0, 0, 150], fov: 45 }}>
-                <ambientLight intensity={0.5} />
+      <div style={{ flex: 1, display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) 450px', gap: '30px', padding: '30px', overflow: 'hidden' }}>
+        {/* Left: Tactical 3D Hologram */}
+        <div style={{ position: 'relative', borderRadius: '20px', overflow: 'hidden', background: 'radial-gradient(circle at 50% 50%, #0D1B31 0%, #05080F 100%)', border: `1px solid ${theme.colors.panelBorder}` }}>
+            {/* Top Stats HUD Overlay */}
+            <div style={{ position: 'absolute', top: 30, left: 30, display: 'flex', gap: 20, zIndex: 10 }}>
+                <StatCard label="PRIMARY ORIGIN" value={String(stats.fromCount)} color={theme.colors.exploit} />
+                <StatCard label="TARGET VOLUME" value={String(stats.onCount)} color={theme.colors.phishing} />
+            </div>
+
+            <Canvas camera={{ position: [0, 10, 100], fov: 45 }}>
+                <ambientLight intensity={0.4} />
+                <pointLight position={[10, 10, 10]} intensity={1} />
                 <Stars radius={100} depth={50} count={5000} factor={4} saturation={0} fade speed={1} />
                 <CountryHologram />
-                <OrbitControls enablePan={true} autoRotate autoRotateSpeed={0.5} />
+                <OrbitControls enablePan={false} autoRotate autoRotateSpeed={0.3} maxPolarAngle={Math.PI / 2} minPolarAngle={Math.PI / 4} />
             </Canvas>
             
-            <div style={{ position: 'absolute', bottom: 30, left: 30, display: 'flex', gap: 20 }}>
-                <StatCard label="ATTACKS FROM (24h)" value={loading ? "..." : String(stats.fromCount)} color={theme.colors.exploit} />
-                <StatCard label="ATTACKS ON (24h)" value={loading ? "..." : String(stats.onCount)} color={theme.colors.phishing} />
+            {/* Tactical Ground Info */}
+            <div style={{ position: 'absolute', bottom: 30, left: 30, display: 'flex', flexDirection: 'column', gap: 8, pointerEvents: 'none' }}>
+                <div style={{ fontSize: 10, color: theme.colors.textDim, fontFamily: theme.fonts.mono, letterSpacing: 2 }}>REGION_LOCKED // {countryCode}</div>
+                <div style={{ fontSize: 12, color: theme.colors.exploit, fontFamily: theme.fonts.display, fontWeight: 700 }}>ACTIVE THREAT MONITORING SYSTEM</div>
             </div>
         </div>
 
-        {/* Right: Data Panel */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', overflowY: 'auto' }}>
-            <GlassPanel>
-                <h3 style={{ fontSize: 14, textTransform: 'uppercase', letterSpacing: 1, color: theme.colors.textSecondary, marginBottom: 15 }}>Security Status</h3>
-                <div style={{ padding: '20px', textAlign: 'center', background: `${riskColor}15`, border: `1px solid ${riskColor}40`, borderRadius: 12, transition: 'all 0.3s' }}>
-                    <div style={{ fontSize: 12, color: riskColor, fontWeight: 700, letterSpacing: 1 }}>{riskLabel}</div>
-                    <div style={{ fontSize: 32, fontWeight: 900, color: riskColor, margin: '10px 0' }}>{riskScore}%</div>
-                    <div style={{ fontSize: 10, color: theme.colors.textDim }}>% of global attack volume</div>
+        {/* Right: Detailed Analytics Sidebar */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', overflowY: 'auto', paddingRight: 5 }}>
+            {/* Risk Assessment */}
+            <GlassPanel style={{ padding: '20px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 15 }}>
+                    <div style={{ fontSize: 10, textTransform: 'uppercase', letterSpacing: 2, color: theme.colors.textSecondary, fontWeight: 700 }}>Security Assessment</div>
+                    <div style={{ padding: '4px 8px', background: `${riskColor}20`, border: `1px solid ${riskColor}40`, borderRadius: 4, color: riskColor, fontSize: 10, fontWeight: 800 }}>{riskLabel}</div>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 15 }}>
+                    <div style={{ fontSize: 42, fontWeight: 900, color: riskColor, fontFamily: theme.fonts.display }}>{riskScore}%</div>
+                    <div style={{ flex: 1 }}>
+                        <div style={{ height: 4, background: 'rgba(255,255,255,0.05)', borderRadius: 2 }}>
+                            <div style={{ width: `${riskScore}%`, height: '100%', background: riskColor, borderRadius: 2, transition: 'width 1s cubic-bezier(0.16, 1, 0.3, 1)' }} />
+                        </div>
+                        <div style={{ fontSize: 9, color: theme.colors.textDim, marginTop: 6 }}>RELATIVE TO GLOBAL COUNTER-DATA</div>
+                    </div>
                 </div>
             </GlassPanel>
 
-            <GlassPanel style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 15 }}>
-                  <h3 style={{ margin: 0, fontSize: 14, textTransform: 'uppercase', letterSpacing: 1, color: theme.colors.textSecondary }}>Recent Activity</h3>
-                  {loading && <span style={{ fontSize: 10, color: theme.colors.textDim, animation: 'pulse 1.5s infinite' }}>LOADING...</span>}
-                </div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 10, flex: 1, overflowY: 'auto', paddingRight: 5 }}>
-                    {combinedHistory.length === 0 && !loading && (
-                      <div style={{ padding: 20, textAlign: 'center', color: theme.colors.textDim, fontSize: 12 }}>No recent attacks found for this region.</div>
-                    )}
-                    {combinedHistory.map((ev, i) => (
-                        <div key={ev._id || ev.id || i} style={{ padding: 12, background: 'rgba(255,255,255,0.03)', borderRadius: 8, fontSize: 12, borderLeft: `2px solid ${getAttackColor(ev.a_t)}` }}>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
-                              <span style={{ color: getAttackColor(ev.a_t), fontWeight: 700, textTransform: 'uppercase', fontSize: 10, letterSpacing: 1 }}>{ev.a_t}</span>
-                              <span style={{ color: theme.colors.textDim, fontSize: 10 }}>{new Date(ev.timestamp || ev.ts || Date.now()).toLocaleTimeString()}</span>
+            {/* Targeted Sectors */}
+            <GlassPanel style={{ padding: '20px' }}>
+                <h3 style={{ margin: '0 0 15px 0', fontSize: 12, textTransform: 'uppercase', letterSpacing: 1.5, color: '#fff', fontWeight: 800 }}>Targeted Sectors</h3>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                    {sectorData.sectors.map(s => (
+                        <div key={s.name} style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11 }}>
+                                <span style={{ color: theme.colors.textPrimary, fontWeight: 600 }}>{s.name}</span>
+                                <span style={{ color: s.color, fontWeight: 700 }}>{s.count} hits</span>
                             </div>
-                            <div style={{ color: '#fff', fontWeight: 600, marginBottom: 4 }}>{ev.a_n}</div>
-                            <div style={{ color: theme.colors.textDim, fontSize: 10, fontFamily: theme.fonts.mono }}>
-                                {ev.s_ip} <span style={{color: theme.colors.textSecondary}}>({ev.s_co})</span> → {ev.d_ip} <span style={{color: theme.colors.textSecondary}}>({ev.d_co})</span>
+                            <div style={{ height: 2, background: 'rgba(255,255,255,0.03)', borderRadius: 1 }}>
+                                <div style={{ width: `${(s.count / Math.max(...sectorData.sectors.map(x => x.count))) * 100}%`, height: '100%', background: s.color, borderRadius: 1 }} />
+                            </div>
+                        </div>
+                    ))}
+                    {sectorData.sectors.length === 0 && <div style={{ fontSize: 11, color: theme.colors.textDim, textAlign: 'center' }}>No sector data identified</div>}
+                </div>
+            </GlassPanel>
+
+            {/* Top Adversaries */}
+            <GlassPanel style={{ padding: '20px' }}>
+                <h3 style={{ margin: '0 0 15px 0', fontSize: 12, textTransform: 'uppercase', letterSpacing: 1.5, color: '#fff', fontWeight: 800 }}>Primary Adversaries</h3>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10 }}>
+                    {sectorData.topAdversaries.map(([co, count]) => (
+                        <div key={co} style={{ padding: '8px 12px', background: 'rgba(239, 68, 68, 0.05)', border: '1px solid rgba(239, 68, 68, 0.2)', borderRadius: 8, display: 'flex', alignItems: 'center', gap: 8 }}>
+                            <span style={{ fontSize: 18 }}>{getFlag(co)}</span>
+                            <div style={{ display: 'flex', flexDirection: 'column' }}>
+                                <span style={{ fontSize: 9, color: theme.colors.textDim }}>{co}</span>
+                                <span style={{ fontSize: 11, color: theme.colors.danger, fontWeight: 700 }}>{count}</span>
+                            </div>
+                        </div>
+                    ))}
+                    {sectorData.topAdversaries.length === 0 && <div style={{ fontSize: 11, color: theme.colors.textDim }}>No specific country-to-country patterns detected.</div>}
+                </div>
+            </GlassPanel>
+
+            {/* Recent Activity Log */}
+            <GlassPanel style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', padding: 0 }}>
+                <div style={{ padding: '15px 20px', borderBottom: '1px solid rgba(255,255,255,0.05)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <h3 style={{ margin: 0, fontSize: 12, textTransform: 'uppercase', letterSpacing: 1.5, color: '#fff', fontWeight: 800 }}>Activity Log</h3>
+                  {loading && <div style={{ width: 8, height: 8, borderRadius: '50%', background: theme.colors.exploit, animation: 'pulse 1s infinite' }} />}
+                </div>
+                <div style={{ flex: 1, overflowY: 'auto', padding: '10px 20px' }}>
+                    {combinedHistory.length === 0 && !loading && (
+                      <div style={{ padding: 20, textAlign: 'center', color: theme.colors.textDim, fontSize: 12 }}>Logs clear. No active interceptions.</div>
+                    )}
+                    {combinedHistory.slice(0, 50).map((ev, i) => (
+                        <div key={ev._id || ev.id || i} style={{ padding: '12px 0', borderBottom: '1px solid rgba(255,255,255,0.03)', fontSize: 11 }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
+                                <span style={{ color: getAttackColor(ev.a_t), fontWeight: 700, textTransform: 'uppercase', fontSize: 9 }}>{ev.a_t}</span>
+                                <span style={{ color: theme.colors.textDim, fontSize: 9 }}>{new Date(ev.timestamp || ev.ts || Date.now()).toLocaleTimeString()}</span>
+                            </div>
+                            <div style={{ color: '#fff', fontWeight: 600, fontSize: 12, marginBottom: 2 }}>{ev.a_n}</div>
+                            <div style={{ color: theme.colors.textDim, fontFamily: theme.fonts.mono, fontSize: 10 }}>
+                                {ev.s_ip} ({ev.s_co}) <span style={{ color: theme.colors.exploit }}>▶</span> {ev.d_ip} ({ev.d_co})
                             </div>
                         </div>
                     ))}
@@ -184,6 +274,7 @@ export function CountryDashboard() {
             </GlassPanel>
         </div>
       </div>
+
     </div>
   );
 }
@@ -201,4 +292,14 @@ function getAttackColor(type: string) {
     if (type === 'exploit') return '#FF3366';
     if (type === 'malware') return '#CC33FF';
     return '#00D1FF';
+}
+
+function getFlag(co: string): string {
+    const flags: Record<string, string> = {
+        'US': '🇺🇸', 'CN': '🇨🇳', 'RU': '🇷🇺', 'GB': '🇬🇧', 'FR': '🇫🇷', 'DE': '🇩🇪', 'JP': '🇯🇵', 'IN': '🇮🇳',
+        'BR': '🇧🇷', 'CA': '🇨🇦', 'AU': '🇦🇺', 'KR': '🇰🇷', 'IL': '🇮🇱', 'IR': '🇮🇷', 'KP': '🇰🇵', 'UA': '🇺🇦',
+        'TR': '🇹🇷', 'SA': '🇸🇦', 'AE': '🇦🇪', 'EG': '🇪🇬', 'ZA': '🇿🇦', 'VN': '🇻🇳', 'TH': '🇹🇭', 'ID': '🇮🇩',
+        'PK': '🇵🇰', 'MX': '🇲🇽', 'IT': '🇮🇹', 'ES': '🇪🇸', 'NL': '🇳🇱', 'SE': '🇸🇪', 'CH': '🇨🇭', 'SG': '🇸🇬'
+    };
+    return flags[co] || '🌐';
 }
