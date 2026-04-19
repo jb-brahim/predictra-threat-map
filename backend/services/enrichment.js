@@ -131,8 +131,26 @@ function getEnrichedSector(event) {
     if ([25, 587, 465, 110, 143].includes(p)) return 'Email / Communication';
   }
 
-  // 4. Source-API based fallback
+  // 4. MISP Galaxy sector enrichment
+  const galaxySectors = event.meta?.galaxy_target_sectors || [];
+  if (galaxySectors.length > 0) {
+    const s = galaxySectors[0].toLowerCase();
+    if (s.includes('government') || s.includes('military') || s.includes('defense')) return 'Government / Defense';
+    if (s.includes('private sector') || s.includes('finance') || s.includes('business')) return 'Finance / Business';
+    if (s.includes('health') || s.includes('medical') || s.includes('biomedical')) return 'Healthcare / Medical';
+    if (s.includes('education') || s.includes('academic')) return 'Education / Academic';
+    if (s.includes('energy') || s.includes('utilities')) return 'Energy / Utilities';
+    if (s.includes('telecom') || s.includes('communication')) return 'Telecommunications';
+    if (s.includes('technology') || s.includes('information') || s.includes('it ')) return 'IT Infrastructure';
+    if (s.includes('civil society') || s.includes('ngo') || s.includes('non-profit')) return 'General / Other';
+    if (s.includes('retail') || s.includes('commerce')) return 'Retail / Commerce';
+    if (s.includes('defense') || s.includes('aerospace') || s.includes('intelligence')) return 'Government / Defense';
+    if (s.includes('manufacturing') || s.includes('industrial')) return 'Industrial Manufacturing';
+  }
+
+  // 5. Source-API based fallback
   const src = event.source_api || '';
+  if (src === 'misp-galaxy') return 'IT Infrastructure'; // Galaxy intelligence events default
   if (src === 'ransomwatch') return 'Finance / Business'; // Ransomware usually hits business
   if (src === 'c2tracker' || src === 'kaspersky') return 'IT Infrastructure';
   if (src === 'urlhaus') return 'Web Services';

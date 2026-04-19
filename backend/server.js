@@ -5,8 +5,7 @@ const mongoose = require('mongoose');
 const connectDB = require('./config/db');
 const ThreatEvent = require('./models/ThreatEvent');
 const { startCheckpoint } = require('./services/scrapers/checkpoint');
-const { startSans } = require('./services/scrapers/sans');
-const { startThreatFox } = require('./services/scrapers/threatfox');
+const { startMispGalaxy, getGalaxyData } = require('./services/scrapers/misp-galaxy');
 const { startUrlhaus } = require('./services/scrapers/urlhaus');
 const { startAlienVault } = require('./services/scrapers/alienvault');
 const { startRansomWatch } = require('./services/scrapers/ransomwatch');
@@ -216,7 +215,7 @@ app.get('/api/history', async (req, res) => {
 const getAnalyticsMatchStage = (query = {}) => {
   const { type, country, from } = query;
   const matchStage = { 
-    source_api: { $in: ['sans', 'threatfox', 'ransomwatch', 'alienvault'] } 
+    source_api: { $in: ['misp-galaxy', 'ransomwatch', 'alienvault'] } 
   };
 
   if (type) matchStage.a_t = type;
@@ -490,7 +489,7 @@ app.get('/api/analytics/sectors', async (req, res) => {
     res.json({
       sectors,
       totalAnalyzed: events.length,
-      note: 'Analytics focused on integrated threat feeds. Categories represent identified industry sectors or IP organizations.'
+      note: 'Analytics powered by MISP Galaxy intelligence. Categories represent identified industry sectors.'
     });
   } catch (error) {
     console.error('[API] Error fetching sector analytics:', error.message);
@@ -556,10 +555,151 @@ app.get('/api/analytics/combined', async (req, res) => {
   }
 });
 
-// Start REAL Scraping Services only
+// ─── MISP Galaxy API Endpoints ────────────────────────────────────────────────
+
+// Galaxy: All Threat Actors
+app.get('/api/galaxy/actors', (req, res) => {
+  const { country, search } = req.query;
+  const data = getGalaxyData();
+  let actors = data.threatActors || [];
+
+  if (country) {
+    actors = actors.filter(a => {
+      const cc = (a.meta?.country || '').toUpperCase();
+      return cc === country.toUpperCase();
+    });
+  }
+  if (search) {
+    const q = search.toLowerCase();
+    actors = actors.filter(a =>
+      (a.value || '').toLowerCase().includes(q) ||
+      (a.description || '').toLowerCase().includes(q) ||
+      (a.meta?.synonyms || []).some(s => s.toLowerCase().includes(q))
+    );
+  }
+
+  const mapped = actors.map(a => ({
+    name: a.value,
+    uuid: a.uuid,
+    description: (a.description || '').slice(0, 500),
+    country: a.meta?.country || null,
+    stateSponsor: a.meta?.['cfr-suspected-state-sponsor'] || null,
+    victims: a.meta?.['cfr-suspected-victims'] || [],
+    targetSectors: a.meta?.['cfr-target-category'] || a.meta?.['targeted-sector'] || [],
+    incidentType: a.meta?.['cfr-type-of-incident'] || null,
+    synonyms: a.meta?.synonyms || [],
+    refs: (a.meta?.refs || []).slice(0, 5),
+  }));
+
+  res.json({ total: mapped.length, actors: mapped });
+});
+
+// Galaxy: Ransomware Families
+app.get('/api/galaxy/ransomware', (req, res) => {
+  const { search } = req.query;
+  const data = getGalaxyData();
+  let rw = data.ransomware || [];
+
+  if (search) {
+    const q = search.toLowerCase();
+    rw = rw.filter(r =>
+      (r.value || '').toLowerCase().includes(q) ||
+      (r.description || '').toLowerCase().includes(q) ||
+      (r.meta?.synonyms || []).some(s => s.toLowerCase().includes(q))
+    );
+  }
+
+  const mapped = rw.map(r => ({
+    name: r.value,
+    uuid: r.uuid,
+    description: (r.description || '').slice(0, 500),
+    synonyms: r.meta?.synonyms || [],
+    refs: (r.meta?.refs || []).slice(0, 5),
+    encryption: r.meta?.encryption || null,
+    extensions: r.meta?.extensions || null,
+    ransomnotes: r.meta?.ransomnotes || null,
+  }));
+
+  res.json({ total: mapped.length, ransomware: mapped });
+});
+
+// Galaxy: Adversary Tools
+app.get('/api/galaxy/tools', (req, res) => {
+  const { search } = req.query;
+  const data = getGalaxyData();
+  let tools = data.tools || [];
+
+  if (search) {
+    const q = search.toLowerCase();
+    tools = tools.filter(t =>
+      (t.value || '').toLowerCase().includes(q) ||
+      (t.description || '').toLowerCase().includes(q) ||
+      (t.meta?.synonyms || []).some(s => s.toLowerCase().includes(q))
+    );
+  }
+
+  const mapped = tools.map(t => ({
+    name: t.value,
+    uuid: t.uuid,
+    description: (t.description || '').slice(0, 500),
+    synonyms: t.meta?.synonyms || [],
+    refs: (t.meta?.refs || []).slice(0, 5),
+    type: t.meta?.type || [],
+  }));
+
+  res.json({ total: mapped.length, tools: mapped });
+});
+
+// Galaxy: Aggregate Statistics
+app.get('/api/galaxy/stats', (req, res) => {
+  const data = getGalaxyData();
+  const actors = data.threatActors || [];
+
+  // By country of origin
+  const byCountry = {};
+  actors.forEach(a => {
+    const cc = (a.meta?.country || '').toUpperCase();
+    if (cc) byCountry[cc] = (byCountry[cc] || 0) + 1;
+  });
+
+  // By target sector
+  const bySector = {};
+  actors.forEach(a => {
+    const sectors = a.meta?.['cfr-target-category'] || a.meta?.['targeted-sector'] || [];
+    sectors.forEach(s => { bySector[s] = (bySector[s] || 0) + 1; });
+  });
+
+  // By incident type
+  const byIncident = {};
+  actors.forEach(a => {
+    const t = a.meta?.['cfr-type-of-incident'] || 'Unknown';
+    byIncident[t] = (byIncident[t] || 0) + 1;
+  });
+
+  // Most targeted countries
+  const byVictim = {};
+  actors.forEach(a => {
+    (a.meta?.['cfr-suspected-victims'] || []).forEach(v => {
+      byVictim[v] = (byVictim[v] || 0) + 1;
+    });
+  });
+
+  res.json({
+    totalActors: actors.length,
+    totalRansomware: (data.ransomware || []).length,
+    totalTools: (data.tools || []).length,
+    totalExploitKits: (data.exploitKits || []).length,
+    byCountry,
+    bySector,
+    byIncident,
+    byVictim,
+    lastFetch: data.lastFetch,
+  });
+});
+
+// Start Scraping Services
 startCheckpoint((ev, data) => broadcast(ev, data, 'checkpoint'));
-startSans((ev, data) => broadcast(ev, data, 'sans'));
-startThreatFox((ev, data) => broadcast(ev, data, 'threatfox'));
+startMispGalaxy((ev, data) => broadcast(ev, data, 'misp-galaxy'));
 startUrlhaus((ev, data) => broadcast(ev, data, 'urlhaus'));
 startAlienVault((ev, data) => broadcast(ev, data, 'alienvault'));
 startRansomWatch((ev, data) => broadcast(ev, data, 'ransomwatch'));

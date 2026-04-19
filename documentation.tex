@@ -1,0 +1,237 @@
+\documentclass[12pt,a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage{hyperref}
+\usepackage{geometry}
+\usepackage{longtable}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{enumitem}
+\usepackage{xurl}
+
+\geometry{margin=1in}
+
+\setlength{\LTleft}{0pt}
+\setlength{\LTright}{0pt}
+\renewcommand{\arraystretch}{1.15}
+
+\newcolumntype{L}[1]{>{\raggedright\arraybackslash}p{#1}}
+
+\title{Predictra Threat Map \\ \large Comprehensive Architecture and API Documentation}
+\author{System Documentation}
+\date{\today}
+
+\begin{document}
+
+\maketitle
+\tableofcontents
+\newpage
+
+\section{System Overview \& Functionalities}
+
+The \textbf{Predictra Threat Map} is a comprehensive, real-time threat intelligence visualization platform. Built using a Node.js/Express backend and a React/Three.js frontend, the platform aggregates, processes, and displays live cyber-attacks from various global intelligence feeds.
+
+\subsection{Core Functionalities}
+\begin{itemize}
+    \item \textbf{Real-Time 3D Threat Mapping:} Utilizes high-performance Three.js to render a 3D Earth, displaying live cyber attacks as animated arcs between source and destination coordinates.
+    \item \textbf{Multi-Source Intel Aggregation:} Automated scrapers poll and connect via WebSockets/SSE to over 10 different global external threat feeds, standardizing the data into a unified attack format.
+    \item \textbf{STIX 2.1 Threat Analysis:} Features a dedicated dashboard to ingest, parse, and visualize STIX 2.1 JSON threat bundles. It categorizes reports, maps techniques to MITRE attack phases, and displays relationship graphs via force-directed visualizations.
+    \item \textbf{High-Efficiency SSE Streaming:} Implements a batched Server-Sent Events (SSE) architecture to broadcast hundreds of attacks per second to the client without causing browser throttling.
+    \item \textbf{Data Enrichment \& Persistence:} Classifies raw IP addresses into business sectors (e.g., Healthcare, Finance) automatically, and stores aggregated data into a MongoDB instance for historical analysis.
+    \item \textbf{Analytics Dashboard:} Generates trend analyses, country-by-country breakdown, and sector-based impact matrices based on stored event data.
+\end{itemize}
+
+\newpage
+\section{Unified Attack Data Schema (Payload Structure)}
+
+Regardless of which external intelligence feed data originates from, every scraped event is normalized by the backend into a standardized \textbf{Threat Event} JSON object before being streamed to the frontend or stored in MongoDB. 
+
+The structure strictly adheres to the following schema properties:
+
+\begin{itemize}[leftmargin=*]
+    \item \textbf{\texttt{a\_c}} \textit{(Number)}: \textbf{Attack Count}. The volume or multiplier of the attack instances observed in this single event node. Follows a default of 1 if unspecified.
+    \item \textbf{\texttt{a\_n}} \textit{(String)}: \textbf{Attack Name}. A short, descriptive identifier of the specific threat, vulnerability, alert, or service being exploited (e.g., \textit{``Cobalt Strike C2''}, \textit{``Apache Log4j Exploit''}, \textit{``Port 3306 Scan''}).
+    \item \textbf{\texttt{a\_t}} \textit{(String)}: \textbf{Attack Type}. The generalized category of the threat. Forced into one of three enums for UI color-coding: \texttt{exploit}, \texttt{malware}, or \texttt{phishing}.
+    \item \textbf{\texttt{s\_co}} \textit{(String)}: \textbf{Source Country}. The two-letter ISO country code identifying the geographical origin of the attacker.
+    \item \textbf{\texttt{s\_la}} \textit{(Number)}: \textbf{Source Latitude}. The exact geographic latitude coordinate of the attacker's IP.
+    \item \textbf{\texttt{s\_lo}} \textit{(Number)}: \textbf{Source Longitude}. The exact geographic longitude coordinate of the attacker's IP.
+    \item \textbf{\texttt{d\_co}} \textit{(String)}: \textbf{Destination Country}. The two-letter ISO country code mapping the geographical target/victim.
+    \item \textbf{\texttt{d\_la}} \textit{(Number)}: \textbf{Destination Latitude}. The targeted latitude coordinate.
+    \item \textbf{\texttt{d\_lo}} \textit{(Number)}: \textbf{Destination Longitude}. The targeted longitude coordinate.
+    \item \textbf{\texttt{s\_ip}} \textit{(String)}: \textbf{Source IP}. The IPv4/IPv6 address, or hostname, of the aggressor.
+    \item \textbf{\texttt{d\_ip}} \textit{(String)}: \textbf{Destination IP}. The IP address, or organization identifier, of the target.
+    \item \textbf{\texttt{meta}} \textit{(Object)}: \textbf{Metadata Payload}. A deeply nested JSON bucket for storing api-specific enrichment details. Usually includes properties like \texttt{organization}, \texttt{port}, \texttt{malware\_family}, \texttt{tags}, \texttt{threat\_score}, and \texttt{reporter}.
+    \item \textbf{\texttt{source\_api}} \textit{(String)}: The internal ID of the scraper (e.g., \textit{``alienvault''}, \textit{``checkpoint''}) mapping the origin pipeline of the payload.
+    \item \textbf{\texttt{timestamp}} \textit{(Date)}: The exact ingest moment. By default, MongoDB expires and prunes historical events older than 30 days based on this field.
+\end{itemize}
+
+\newpage
+\section{External Threat Intelligence APIs}
+
+The system integrates multiple external APIs to source live threat data. These are implemented as individual scraper services within the \verb|backend/services/scrapers/| directory.
+
+\begin{itemize}[leftmargin=*]
+    \item \textbf{AlienVault OTX} (\url{https://otx.alienvault.com/api/v1/pulses/activity})
+    \begin{itemize}[noitemsep]
+        \item \textit{Connection:} REST, polling every 5 minutes.
+        \item \textit{Data Provided:} Deep threat intelligence ``pulses''. Returns JSON arrays of the latest community-contributed Advanced Persistent Threat (APT) reports. Includes `indicator_count`, `name` (pulse title), `author_name` (reporter), `malware_families` associated with the pulse, `tags`, long-form `description`, and the direct `url` back to the AlienVault dashboard.
+    \end{itemize}
+    \vspace{0.3cm}
+
+    \item \textbf{Bitdefender} (\url{wss://threatmap.bitdefender.com})
+    \begin{itemize}[noitemsep]
+        \item \textit{Connection:} Live WebSocket stream.
+        \item \textit{Data Provided:} Raw real-time connection events across different global nodes. Provides attacker origin and victim destination (including `ip`, `host`, `c_iso` country code, and exact `lat`/`long`). Also provides granular attack categorizations corresponding to the intercepted service (`event.n`) and threat names (`event.v`) including: botnet, portscan, telnet, ssh, rdp, vnc, mysql, mssql, http, iot, iot\_botnet, infections, malware, phishing, and spam.
+    \end{itemize}
+    \vspace{0.3cm}
+
+    \item \textbf{C2Tracker} (\url{https://github.com/montysecurity/C2-Tracker})
+    \begin{itemize}[noitemsep]
+        \item \textit{Connection:} REST, polling GitHub raw text files every 15 minutes.
+        \item \textit{Data Provided:} Plaintext IP-only feeds of actively communicating Command \& Control (C2) servers. Tracks specific adversary infrastructure frameworks, explicitly separating Cobalt Strike, Sliver, Havoc, Remcos RAT, and Metasploit. The backend utilizes manual IP geocoding to project these active adversary control centers dynamically.
+    \end{itemize}
+    \vspace{0.3cm}
+
+    \item \textbf{Checkpoint} (\url{https://threatmap-api.checkpoint.com/ThreatMap/api/feed})
+    \begin{itemize}[noitemsep]
+        \item \textit{Connection:} Server-Sent Events (SSE) live stream.
+        \item \textit{Data Provided:} A high-volume stream of live network anomalies, including exploit attempts, malware executions, and phishing deliveries. Returns normalized arrays comprising `s_ip` (source IP), `d_ip` (destination IP), latitude and longitude for both points, `a_t` (the categorical attack type such as malware or exploit), and `a_n` (the specific threat signature/service name identified by Checkpoint hardware).
+    \end{itemize}
+    \vspace{0.3cm}
+
+    \item \textbf{Fortinet} (\url{https://fortiguard.fortinet.com/api/threatmap/})
+    \begin{itemize}[noitemsep]
+        \item \textit{Connection:} REST, frequent polling (every 4 seconds).
+        \item \textit{Data Provided:} Retrieves global ``Outbreak'' alerts grouping massive concurrent attack waves. Returns JSON data segmented into time-slices, containing `src_ip`, `dest_ip`, exact geo-coordinates, the specific `vuln_name` (CVE/exploit attempted), severity indicators (`severity`), and a weighted FortiGuard proprietary `threat_score`.
+    \end{itemize}
+    \vspace{0.3cm}
+
+    \item \textbf{Kaspersky / FeodoTracker} (\url{https://feodotracker.abuse.ch/downloads/ipblocklist.json})
+    \begin{itemize}[noitemsep]
+        \item \textit{Connection:} REST, polling every 60 seconds (Abuse.ch data acting as Kaspersky proxy).
+        \item \textit{Data Provided:} Provides a live JSON feed of actively responding botnet infrastructure worldwide. Features explicit mapping of `ip_address` to specific criminal `malware` ecosystem names including Trickbot, Emotet, Qakbot, Cobalt Strike, and Empire. Includes Autonomous System routing information (`as_name`, `as_number`), active open `port` configurations, and ```last_online`'' timestamps.
+    \end{itemize}
+    \vspace{0.3cm}
+
+    \item \textbf{RansomWatch / Ransomlook.io} (\url{https://www.ransomlook.io/api/recent})
+    \begin{itemize}[noitemsep]
+        \item \textit{Connection:} REST, polling every 10 minutes.
+        \item \textit{Data Provided:} Lists newly identified data leaks originating from dark web (TOR) extortion portals. Features the `group_name` identifying the ransomware syndicate (e.g., LockBit, Cl0p, ALPHV), the `post_title` mapping to the compromised corporate victim, publication timestamps, and direct URLs (`link`) to the extortion site. Tagged forcefully in the backend as Ransomware/Data Leak.
+    \end{itemize}
+    \vspace{0.3cm}
+
+    \item \textbf{SANS ISC DShield} (\url{https://isc.sans.edu/api/sources/attacks/100/1?json})
+    \begin{itemize}[noitemsep]
+        \item \textit{Connection:} REST, polling every 15 seconds.
+        \item \textit{Data Provided:} A rolling feed of the top 100 most active attacking IP addresses tracked globally over the preceding 24 hours. Returns the attacker `ip`, the explicitly hunted destination `port`, cumulative `attacks` counts, and a `lastseen` timestamp. The custom backend dynamically correlates this with a real-time WHOIS enrichment engine pointing attacks directly to Cloud and ISP organizations.
+    \end{itemize}
+    \vspace{0.3cm}
+
+    \item \textbf{ThreatFox} (\url{https://threatfox-api.abuse.ch/api/v1/})
+    \begin{itemize}[noitemsep]
+        \item \textit{Connection:} REST POST queries (`get_iocs`), polling every 60 seconds.
+        \item \textit{Data Provided:} Recent, high-confidence Indicators of Compromise (IoCs) sourced from a global intelligence community. Yields the specific IP and port (`ioc_value`), generalized threat types (`threat_type_desc`), human-readable malware labels (`malware_printable`), associated `tags`, and an intel `confidence_level`. Used to detect active botnets, C2 endpoints, and malware staging servers.
+    \end{itemize}
+    \vspace{0.3cm}
+
+    \item \textbf{URLhaus} (\url{https://urlhaus-api.abuse.ch/v1/urls/recent/})
+    \begin{itemize}[noitemsep]
+        \item \textit{Connection:} REST, polling every 90 seconds.
+        \item \textit{Data Provided:} Continuously refreshing directory of toxic, live URLs actively serving malicious payloads. Exposes the malicious `url` string, the `url_status` (verifying if the payload is still successfully reachable/online), the associated exploit `threat` class, threat actor `tags`, and intel `reporter`. The backend automatically parses the hostname from the malicious URL to resolve geolocation vectors.
+    \end{itemize}
+\end{itemize}
+
+\newpage
+\section{Internal Backend APIs}
+
+The Express backend (\verb|server.js|) exposes several endpoints to serve the React frontend interface.
+
+\subsection{Live Streaming \& Database Operations}
+\begin{itemize}
+    \item \verb|GET /api/feed|: Maintains an SSE (Server-Sent Events) connection, pushing batched arrays of recent threat events to connected frontend clients.
+    \item \verb|GET /api/db/status|: Retrieves the current status (enabled/disabled) of MongoDB batch insertions.
+    \item \verb|POST /api/db/toggle|, \verb|GET /api/db/on|, \verb|GET /api/db/off|: Modifies the database persistence state. It automatically halts ingestion if the DB size exceeds 500 MB.
+\end{itemize}
+
+\subsection{Data Analytics \& History}
+\begin{itemize}
+    \item \verb|GET /api/history?q={query}&ip={ip}&country={cc}|: Fetches the last 200 attack events from the database matching the provided search criteria.
+    \item \verb|GET /api/stats|: Aggregates total metrics grouped by attack type, origin country, target country, threat vector, and intelligence source.
+    \item \verb|GET /api/stats/timeline|: Returns hourly volume buckets of cyber attacks over the last 24 hours.
+    \item \verb|GET /api/analytics/countries|: Generates ranked analytics comparing origin vs. target activity broken down by country codes.
+    \item \verb+GET /api/analytics/trends?period={7d|30d|24h}+: Computes comparative threat growth percentages alongside chronological buckets.
+    \item \verb|GET /api/analytics/sectors|: Returns the distribution of cyber attacks targeting different organizational sectors (Finance, Healthcare, Government, etc.).
+    \item \verb|GET /api/analytics/combined|: Creates a multidimensional matrix correlating targeted countries with specific industry sectors.
+\end{itemize}
+
+\newpage
+\section{Comprehensive File Manifest}
+
+The repository structure follows a full-stack monorepo design. Below is a comprehensive list, checked file-by-file.
+
+\subsection{Project Root}
+\begin{itemize}[noitemsep]
+    \item \verb|README.md|: Setup instructions for Vite/React and architectural concepts.
+    \item \verb|threat_map_technical_report.txt|: Detailed technical notes on STIX and scraping mechanisms.
+    \item \verb|package.json|, \verb|package-lock.json|, \verb|.gitignore|: Root workspace definitions.
+\end{itemize}
+
+\subsection{Backend (\texttt{/backend})}
+\begin{itemize}[noitemsep]
+    \item \verb|server.js|: The core Express server handling API routing, SSE connections, DB batching, and instantiating scraper services.
+    \item \verb|.env|, \verb|package.json|, \verb|package-lock.json|: Backend environment and dependencies config.
+    \item \verb|config/db.js|: Initializes the Mongoose connection to the MongoDB cluster.
+    \item \verb|models/ThreatEvent.js|: Mongoose schema defining the standard structure of a normalized threat.
+    \item \verb|services/enrichment.js|: AI/Logic engine assigning business sectors to incoming IPs.
+\end{itemize}
+\textbf{Scrapers (\texttt{/backend/services/scrapers/}):}
+\begin{itemize}[noitemsep]
+    \item \verb|alienvault.js| \textemdash{} ThreatFox API integration.
+    \item \verb|bitdefender.js| \textemdash{} WebSocket connection to BitDefender live stream.
+    \item \verb|c2tracker.js| \textemdash{} Pulls C2 IoCs from MontySecurity GitHub feeds.
+    \item \verb|checkpoint.js| \textemdash{} Checkpoint SSE integration.
+    \item \verb|fortinet.js| \textemdash{} Polling FortiGuard outbreak logs.
+    \item \verb|kaspersky.js| \textemdash{} Abuse.ch FeodoTracker ingestion script.
+    \item \verb|ransomwatch.js| \textemdash{} Ransomlook leak site monitoring.
+    \item \verb|sans.js| \textemdash{} ISC DShield API integration.
+    \item \verb|threatfox.js| \textemdash{} Abuse.ch ThreatFox integration.
+    \item \verb|urlhaus.js| \textemdash{} Abuse.ch URLHaus integration.
+\end{itemize}
+
+\subsection{Frontend (\texttt{/frontend})}
+\begin{itemize}[noitemsep]
+    \item \verb|index.html|, \verb|package.json|, \verb|vite.config.ts|, \verb|eslint.config.js|, \verb|*.json|: React SPA configuration files.
+    \item \verb|src/main.tsx|, \verb|src/App.tsx|: SPA entry points and application routing logic.
+    \item \verb|src/index.css|: Global stylesheet and Tailwind directives.
+\end{itemize}
+\textbf{Three.js Globe Rendering (\texttt{src/globe/}):}
+\begin{itemize}[noitemsep]
+    \item \verb|GlobeScene.tsx|: Main canvas configuring lighting, orbit controls, and the scene.
+    \item \verb|Earth.tsx| \textemdash{} The 3D planet sphere mesh.
+    \item \verb|AttackArcs.tsx| \textemdash{} Calculates bezier curves tracing attack paths.
+    \item \verb|CountryOutlines.tsx| \textemdash{} Highlighting geopolitical bounds.
+    \item \verb|ImpactMarkers.tsx| \textemdash{} Generates explosion/ping effects at destinations.
+    \item \verb|BackgroundEffects.tsx|, \verb|Starfield.tsx| \textemdash{} Visual and aesthetic space elements.
+\end{itemize}
+\textbf{User Interface (\texttt{src/ui/}):}
+\begin{itemize}[noitemsep]
+    \item \verb|Sidebar.tsx|, \verb|StatusBar.tsx|, \verb|GlassPanel.tsx|, \verb|PerfOverlay.tsx|: Persistent HUD components displaying live connection states, frames-per-second, and navigation.
+    \item \verb|DashboardPage.tsx|: Primary interface overlaying the 3D map.
+    \item \verb|AnalyticsPage.tsx|, \verb|HistoryPage.tsx|: Renders charts and historical data logs fetched from backend APIs.
+    \item \verb|CountryDashboard.tsx|, \verb|CountryHologram.tsx|: Focused analytical views for selected nation profiles.
+    \item \verb|StixDashboard.tsx|, \verb|StixVisualizerPage.tsx|: Parsing engine and force-directed graph rendering for STIX 2.1 intelligence bundles.
+\end{itemize}
+\textbf{State \& Utilities (\texttt{src/stream/}, \texttt{src/utils/}, \texttt{src/data/}):}
+\begin{itemize}[noitemsep]
+    \item \verb|stream/useStreamStore.ts|, \verb|stream/types.ts|, \verb|stream/mockData.ts|: Zustand store orchestrating live WebSocket feeds.
+    \item \verb|data/definitions.ts|, \verb|data/sampleStixData.ts|, \verb|data/cisa.json|, \verb|data/ivanti.json|: Hardcoded STIX bundles and MITRE ATT\&CK matrices mapping definitions.
+    \item \verb|utils/geo.ts|, \verb|utils/perf.ts|, \verb|utils/countryNames.ts|, \verb|utils/easing.ts|: Math helpers for spherical coordinates, animation smoothing, and metric mapping.
+    \item \verb|theme/theme.ts|: Global static styling variables.
+\end{itemize}
+
+\subsection{STIX Data Submodule (\texttt{/stix})}
+\begin{itemize}[noitemsep]
+    \item \verb|CISAStix-JSON.stix_.json|
+    \item \verb|Threat ActorsStix Exploiting Ivanti EPMM Vulnerabilities.stix_.json|
+\end{itemize}
+
+\end{document}

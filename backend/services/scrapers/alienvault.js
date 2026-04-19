@@ -41,7 +41,7 @@ async function startAlienVault(broadcast) {
 
       pulses.forEach(item => {
         // OTX Pulses are deeply detailed reports containing IP/Domain indicators
-        // We will broadcast the Pulse itself as a major attack event
+        // We will brodcast the Pulse itself as a major attack event
         const target = randomTarget();
         
         const mappedEvent = {

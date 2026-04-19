@@ -10,11 +10,37 @@ interface CountryRow {
 }
 interface TrendPoint { bucket: string; count: number; }
 interface TrendTypePoint { bucket: string; type: string; count: number; }
-interface SectorRow { name: string; count: number; percentage: string; topTypes: Record<string, number>; }
-interface CombinedCountry { code: string; total: number; sectors: Record<string, number>; }
-interface CombinedSector { name: string; total: number; }
 
-type Tab = 'countries' | 'trends' | 'sectors' | 'combined';
+interface GalaxyActor {
+  name: string; uuid: string; description: string;
+  country: string | null; stateSponsor: string | null;
+  victims: string[]; targetSectors: string[];
+  incidentType: string | null; synonyms: string[]; refs: string[];
+}
+
+interface GalaxyRansomware {
+  name: string; uuid: string; description: string;
+  synonyms: string[]; refs: string[];
+  encryption: string | null; extensions: string | null;
+  ransomnotes: string | null;
+}
+
+interface GalaxyTool {
+  name: string; uuid: string; description: string;
+  synonyms: string[]; refs: string[]; type: string[];
+}
+
+interface GalaxyStats {
+  totalActors: number; totalRansomware: number;
+  totalTools: number; totalExploitKits: number;
+  byCountry: Record<string, number>;
+  bySector: Record<string, number>;
+  byIncident: Record<string, number>;
+  byVictim: Record<string, number>;
+  lastFetch: number | null;
+}
+
+type Tab = 'countries' | 'trends' | 'actors' | 'malware' | 'explorer';
 type Period = '24h' | '7d' | '30d';
 
 const API = (import.meta.env.VITE_API_URL || '').replace(/\/+$/, '');
@@ -24,6 +50,7 @@ const FLAG: Record<string, string> = {
   KR:'🇰🇷',IL:'🇮🇱',NL:'🇳🇱',SE:'🇸🇪',CA:'🇨🇦',SG:'🇸🇬',ZA:'🇿🇦',MX:'🇲🇽',TR:'🇹🇷',UA:'🇺🇦',
   IT:'🇮🇹',ES:'🇪🇸',PL:'🇵🇱',ID:'🇮🇩',EG:'🇪🇬',NG:'🇳🇬',AR:'🇦🇷',TH:'🇹🇭',VN:'🇻🇳',PK:'🇵🇰',
   IR:'🇮🇷',CZ:'🇨🇿',GR:'🇬🇷',FI:'🇫🇮',NZ:'🇳🇿',IE:'🇮🇪',AT:'🇦🇹',EE:'🇪🇪',SA:'🇸🇦',AE:'🇦🇪',
+  KP:'🇰🇵',TW:'🇹🇼',MY:'🇲🇾',PH:'🇵🇭',
 };
 function flag(co: string) {
   if (!co || co === '??') return '🌐';
@@ -32,58 +59,39 @@ function flag(co: string) {
 }
 function fmt(n: number) { if (n >= 1e6) return (n/1e6).toFixed(1)+'M'; if (n >= 1e3) return (n/1e3).toFixed(1)+'K'; return n.toLocaleString(); }
 
-const SECTOR_ICONS: Record<string, string> = {
-  'IT Infrastructure': '🖥️', 
-  'Web Services': '🌐', 
-  'Finance / Business': '💼', 
-  'Healthcare / Medical': '🏥',
-  'Government / Defense': '🏛️',
-  'Education / Academic': '🎓',
-  'Energy / Utilities': '⚡',
-  'Industrial Manufacturing': '🏗️',
-  'Retail / Commerce': '🛒',
-  'Telecommunications': '📡',
-  'Database Services': '🗄️',
-  'Email / Communication': '📧',
-  'Enterprise Network': '🏢',
-  'General / Other': '📊',
+// Country name → CC for Galaxy data display
+const CNAME_TO_CC: Record<string, string> = {
+  'china':'CN','united states':'US','russia':'RU','iran':'IR','north korea':'KP',
+  'south korea':'KR','korea (republic of)':'KR','israel':'IL','india':'IN','pakistan':'PK',
+  'turkey':'TR','ukraine':'UA','vietnam':'VN','united kingdom':'GB','germany':'DE',
+  'france':'FR','japan':'JP','saudi arabia':'SA','taiwan':'TW','singapore':'SG',
+  'australia':'AU','brazil':'BR','netherlands':'NL','canada':'CA','italy':'IT','spain':'ES',
+  'philippines':'PH','indonesia':'ID','thailand':'TH','malaysia':'MY','nigeria':'NG',
+  'egypt':'EG','poland':'PL','sweden':'SE','united arab emirates':'AE','hong kong':'HK',
+  'belgium':'BE','switzerland':'CH','norway':'NO','luxembourg':'LU','south africa':'ZA',
+  'nepal':'NP','myanmar':'MM','cambodia':'KH','laos':'LA',
 };
+function countryToCC(name: string) { return CNAME_TO_CC[name.toLowerCase()] || name.slice(0,2).toUpperCase(); }
 
-  const SECTOR_COLORS: Record<string, string> = {
-    'IT Infrastructure': '#3B82F6', 
-    'Web Services': '#10B981', 
-    'Finance / Business': '#F59E0B', 
-    'Healthcare / Medical': '#EF4444',
-    'Government / Defense': '#6366F1',
-    'Education / Academic': '#A855F7',
-    'Energy / Utilities': '#EAB308',
-    'Industrial Manufacturing': '#F97316',
-    'Retail / Commerce': '#EC4899',
-    'Telecommunications': '#14B8A6',
-    'Database Services': '#475569',
-    'Email / Communication': '#06B6D4',
-    'Enterprise Network': '#8B5CF6',
-    'General / Other': '#64748B',
-  };
-  
-  function getSectorIcon(name: string) {
-    if (SECTOR_ICONS[name]) return SECTOR_ICONS[name];
-    return '🏢'; // Default for organization
-  }
-  
-  function getSectorColor(name: string) {
-    if (SECTOR_COLORS[name]) return SECTOR_COLORS[name];
-    // Hash-based color for unknown organizations
-    let hash = 0;
-    for (let i = 0; i < name.length; i++) hash = name.charCodeAt(i) + ((hash << 5) - hash);
-    return `hsl(${hash % 360}, 60%, 60%)`;
-  }
-
+const SECTOR_COLORS: Record<string, string> = {
+  'Private sector': '#F59E0B', 'Government': '#6366F1', 'Military': '#EF4444',
+  'Civil society': '#10B981', 'Defense': '#DC2626', 'Technology': '#3B82F6',
+  'Telecoms': '#14B8A6', 'Health': '#EC4899', 'Finance': '#F59E0B',
+  'Chemical': '#84CC16', 'Energy': '#EAB308', 'Education': '#A855F7',
+  'Intelligence': '#8B5CF6', 'Mining': '#78716C', 'Justice': '#475569',
+  'Political party': '#D946EF',
+};
+function sectorColor(s: string) {
+  if (SECTOR_COLORS[s]) return SECTOR_COLORS[s];
+  let hash = 0;
+  for (let i = 0; i < s.length; i++) hash = s.charCodeAt(i) + ((hash << 5) - hash);
+  return `hsl(${Math.abs(hash) % 360}, 55%, 55%)`;
+}
 
 /* ─── Main Component ──────────────────────────────────────────────────────── */
 
 export function AnalyticsPage() {
-  const [tab, setTab] = useState<Tab>('countries');
+  const [tab, setTab] = useState<Tab>('actors');
   const [period, setPeriod] = useState<Period>('24h');
   const [loading, setLoading] = useState(false);
 
@@ -99,15 +107,11 @@ export function AnalyticsPage() {
   const [currentTotal, setCurrentTotal] = useState(0);
   const [trendCountry, setTrendCountry] = useState('');
 
-  // Sector tab state
-  const [sectors, setSectors] = useState<SectorRow[]>([]);
-  const [sectorTotal, setSectorTotal] = useState(0);
-
-  // Combined tab state
-  const [combCountries, setCombCountries] = useState<CombinedCountry[]>([]);
-  const [combSectors, setCombSectors] = useState<CombinedSector[]>([]);
-  const [combCountry, setCombCountry] = useState('');
-  const [combSector, setCombSector] = useState('');
+  // Galaxy state
+  const [actors, setActors] = useState<GalaxyActor[]>([]);
+  const [ransomware, setRansomware] = useState<GalaxyRansomware[]>([]);
+  const [tools, setTools] = useState<GalaxyTool[]>([]);
+  const [galaxyStats, setGalaxyStats] = useState<GalaxyStats | null>(null);
 
   const fromDate = useMemo(() => {
     const ms = period === '24h' ? 86400000 : period === '7d' ? 604800000 : 2592000000;
@@ -142,40 +146,56 @@ export function AnalyticsPage() {
     setLoading(false);
   }, [period, trendCountry]);
 
-  // Fetch sector data
-  const fetchSectors = useCallback(async () => {
+  // Fetch Galaxy actors
+  const fetchActors = useCallback(async () => {
     setLoading(true);
     try {
-      const params = new URLSearchParams({ from: fromDate });
-      const r = await fetch(`${API}/api/analytics/sectors?${params}`);
-      const d = await r.json();
-      setSectors(d.sectors || []);
-      setSectorTotal(d.totalAnalyzed || 0);
+      const [actorRes, statsRes] = await Promise.all([
+        fetch(`${API}/api/galaxy/actors`),
+        fetch(`${API}/api/galaxy/stats`)
+      ]);
+      const aData = await actorRes.json();
+      const sData = await statsRes.json();
+      setActors(aData.actors || []);
+      setGalaxyStats(sData);
     } catch (e) { console.error(e); }
     setLoading(false);
-  }, [fromDate]);
+  }, []);
 
-  // Fetch combined data
-  const fetchCombined = useCallback(async () => {
+  // Fetch Galaxy malware/ransomware & tools
+  const fetchMalware = useCallback(async () => {
     setLoading(true);
     try {
-      const params = new URLSearchParams({ from: fromDate });
-      if (combCountry) params.set('country', combCountry);
-      if (combSector) params.set('sector', combSector);
-      const r = await fetch(`${API}/api/analytics/combined?${params}`);
-      const d = await r.json();
-      setCombCountries(d.countries || []);
-      setCombSectors(d.sectors || []);
+      const [rwRes, toolRes] = await Promise.all([
+        fetch(`${API}/api/galaxy/ransomware`),
+        fetch(`${API}/api/galaxy/tools`)
+      ]);
+      const rwData = await rwRes.json();
+      const toolData = await toolRes.json();
+      setRansomware(rwData.ransomware || []);
+      setTools(toolData.tools || []);
     } catch (e) { console.error(e); }
     setLoading(false);
-  }, [fromDate, combCountry, combSector]);
+  }, []);
+
+  // Fetch Galaxy explorer (all stats)
+  const fetchExplorer = useCallback(async () => {
+    setLoading(true);
+    try {
+      const r = await fetch(`${API}/api/galaxy/stats`);
+      const d = await r.json();
+      setGalaxyStats(d);
+    } catch (e) { console.error(e); }
+    setLoading(false);
+  }, []);
 
   useEffect(() => {
     if (tab === 'countries') fetchCountries();
     else if (tab === 'trends') fetchTrends();
-    else if (tab === 'sectors') fetchSectors();
-    else if (tab === 'combined') fetchCombined();
-  }, [tab, fetchCountries, fetchTrends, fetchSectors, fetchCombined]);
+    else if (tab === 'actors') fetchActors();
+    else if (tab === 'malware') fetchMalware();
+    else if (tab === 'explorer') fetchExplorer();
+  }, [tab, fetchCountries, fetchTrends, fetchActors, fetchMalware, fetchExplorer]);
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 20, fontFamily: theme.fonts.body }}>
@@ -186,7 +206,7 @@ export function AnalyticsPage() {
             Threat Analytics
           </h1>
           <p style={{ color: theme.colors.textDim, fontSize: 13, marginTop: 3, marginBottom: 0 }}>
-            Real MongoDB Data · Country Classification · Trends · IP-Only Organizations
+            Powered by MISP Galaxy · Threat Intelligence Knowledge Base · {galaxyStats ? `${fmt(galaxyStats.totalActors)} Actors · ${fmt(galaxyStats.totalRansomware)} Ransomware` : 'Loading…'}
           </p>
         </div>
         <div style={{ display: 'flex', gap: 4, background: 'rgba(255,255,255,0.05)', borderRadius: 8, padding: 4 }}>
@@ -204,10 +224,11 @@ export function AnalyticsPage() {
       {/* Tab Bar */}
       <div style={{ display: 'flex', gap: 4, background: 'rgba(255,255,255,0.03)', borderRadius: 10, padding: 4, border: '1px solid rgba(255,255,255,0.06)' }}>
         {([
+          { id: 'actors' as Tab, label: '🛡️ Threat Actors', color: '#EF4444' },
+          { id: 'malware' as Tab, label: '🦠 Malware & Ransomware', color: '#F59E0B' },
           { id: 'countries' as Tab, label: '🌍 Country Classification', color: '#3B82F6' },
           { id: 'trends' as Tab, label: '📈 Trend Analysis', color: '#10B981' },
-          { id: 'sectors' as Tab, label: '🏢 Organization Breakdown', color: '#F59E0B' },
-          { id: 'combined' as Tab, label: '🔗 Country × Org', color: '#8B5CF6' },
+          { id: 'explorer' as Tab, label: '🔗 Galaxy Explorer', color: '#8B5CF6' },
         ]).map(t => (
           <button key={t.id} onClick={() => setTab(t.id)} style={{
             flex: 1, padding: '10px 16px', borderRadius: 8, border: 'none', cursor: 'pointer',
@@ -221,13 +242,14 @@ export function AnalyticsPage() {
       </div>
 
       {/* Loading */}
-      {loading && <div style={{ textAlign: 'center', padding: 20, color: theme.colors.textDim, fontSize: 12, fontFamily: theme.fonts.display, letterSpacing: 2, textTransform: 'uppercase', animation: 'pulse 1.5s infinite' }}>Loading real data from database…</div>}
+      {loading && <div style={{ textAlign: 'center', padding: 20, color: theme.colors.textDim, fontSize: 12, fontFamily: theme.fonts.display, letterSpacing: 2, textTransform: 'uppercase', animation: 'pulse 1.5s infinite' }}>Loading MISP Galaxy intelligence data…</div>}
 
       {/* Tab Content */}
+      {!loading && tab === 'actors' && <ActorsTab actors={actors} stats={galaxyStats} />}
+      {!loading && tab === 'malware' && <MalwareTab ransomware={ransomware} tools={tools} />}
       {!loading && tab === 'countries' && <CountriesTab countries={countries} totalGlobal={totalGlobal} selected={selectedCountry} onSelect={setSelectedCountry} />}
       {!loading && tab === 'trends' && <TrendsTab timeline={timeline} byType={byType} changePercent={changePercent} currentTotal={currentTotal} period={period} country={trendCountry} onCountryChange={setTrendCountry} onRefresh={fetchTrends} />}
-      {!loading && tab === 'sectors' && <SectorsTab sectors={sectors} total={sectorTotal} />}
-      {!loading && tab === 'combined' && <CombinedTab countries={combCountries} sectors={combSectors} country={combCountry} sector={combSector} onCountryChange={setCombCountry} onSectorChange={setCombSector} />}
+      {!loading && tab === 'explorer' && <ExplorerTab stats={galaxyStats} />}
 
       <style>{`@keyframes pulse{0%,100%{opacity:1}50%{opacity:.5}}`}</style>
     </div>
@@ -235,7 +257,334 @@ export function AnalyticsPage() {
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════ */
-/*  TAB 1: Countries                                                         */
+/*  TAB 1: Threat Actors (MISP Galaxy)                                       */
+/* ═══════════════════════════════════════════════════════════════════════════ */
+
+function ActorsTab({ actors, stats }: { actors: GalaxyActor[]; stats: GalaxyStats | null }) {
+  const [search, setSearch] = useState('');
+  const [countryFilter, setCountryFilter] = useState('');
+  const [selectedActor, setSelectedActor] = useState<GalaxyActor | null>(null);
+
+  const filtered = useMemo(() => {
+    let result = actors;
+    if (countryFilter) result = result.filter(a => (a.country || '').toUpperCase() === countryFilter.toUpperCase());
+    if (search) {
+      const q = search.toLowerCase();
+      result = result.filter(a =>
+        a.name.toLowerCase().includes(q) ||
+        a.description.toLowerCase().includes(q) ||
+        a.synonyms.some(s => s.toLowerCase().includes(q))
+      );
+    }
+    return result;
+  }, [actors, search, countryFilter]);
+
+  // By country stats
+  const countryBreakdown = useMemo(() => {
+    const map: Record<string, number> = {};
+    actors.forEach(a => { if (a.country) map[a.country] = (map[a.country] || 0) + 1; });
+    return Object.entries(map).sort((a, b) => b[1] - a[1]);
+  }, [actors]);
+
+  return (
+    <div style={{ display: 'grid', gridTemplateColumns: selectedActor ? '1fr 420px' : '1fr', gap: 20 }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+        {/* MISP Galaxy banner */}
+        <div style={{ padding: '10px 16px', background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)', borderRadius: 8, fontSize: 11, color: '#EF4444', fontFamily: theme.fonts.display }}>
+          🛡️ Intelligence from <strong>MISP Galaxy Threat Actor Cluster</strong> — {actors.length} known adversary groups with country attribution, target sectors, and synonyms from the open-source MISP knowledge base.
+        </div>
+
+        {/* KPIs */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12 }}>
+          <KPI label="Total Actors" value={String(actors.length)} color="#EF4444" />
+          <KPI label="State-Sponsored" value={String(actors.filter(a => a.stateSponsor).length)} color="#F59E0B" />
+          <KPI label="Countries" value={String(countryBreakdown.length)} color="#3B82F6" />
+          <KPI label="With Victims" value={String(actors.filter(a => a.victims.length > 0).length)} color="#10B981" />
+        </div>
+
+        {/* Filters */}
+        <div style={{ display: 'flex', gap: 10 }}>
+          <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search actors, synonyms (e.g. APT28, Fancy Bear)…"
+            style={{ flex: 1, padding: '10px 14px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 8, color: '#fff', fontSize: 12, fontFamily: theme.fonts.mono, outline: 'none' }} />
+          <input value={countryFilter} onChange={e => setCountryFilter(e.target.value.toUpperCase().slice(0, 2))} placeholder="CC" maxLength={2}
+            style={{ width: 50, padding: '10px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 8, color: '#fff', fontSize: 12, fontFamily: theme.fonts.mono, outline: 'none', textAlign: 'center' }} />
+        </div>
+
+        {/* Country Distribution Bar */}
+        <GlassPanel>
+          <div style={{ fontSize: 12, fontFamily: theme.fonts.display, textTransform: 'uppercase', letterSpacing: 2, color: theme.colors.textSecondary, marginBottom: 14 }}>
+            Threat Actors by State Sponsor
+          </div>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+            {countryBreakdown.slice(0, 15).map(([cc, count]) => (
+              <div key={cc} onClick={() => setCountryFilter(countryFilter === cc ? '' : cc)} style={{
+                padding: '6px 12px', borderRadius: 8, cursor: 'pointer', transition: 'all 0.2s',
+                background: countryFilter === cc ? 'rgba(239,68,68,0.15)' : 'rgba(255,255,255,0.04)',
+                border: `1px solid ${countryFilter === cc ? 'rgba(239,68,68,0.4)' : 'rgba(255,255,255,0.06)'}`,
+              }}>
+                <span style={{ fontSize: 16, marginRight: 6 }}>{flag(cc)}</span>
+                <span style={{ fontSize: 12, fontWeight: 700, color: countryFilter === cc ? '#EF4444' : '#fff' }}>{cc}</span>
+                <span style={{ fontSize: 10, color: theme.colors.textDim, marginLeft: 6, fontFamily: theme.fonts.mono }}>{count}</span>
+              </div>
+            ))}
+          </div>
+        </GlassPanel>
+
+        {/* Actor List */}
+        <GlassPanel>
+          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 12 }}>
+            <div style={{ fontSize: 12, fontFamily: theme.fonts.display, textTransform: 'uppercase', letterSpacing: 2, color: theme.colors.textSecondary }}>
+              {filtered.length === actors.length ? 'All Threat Actors' : `Filtered: ${filtered.length} of ${actors.length}`}
+            </div>
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 6, maxHeight: 500, overflowY: 'auto' }}>
+            {filtered.slice(0, 50).map(actor => {
+              const isSelected = selectedActor?.uuid === actor.uuid;
+              return (
+                <div key={actor.uuid} onClick={() => setSelectedActor(isSelected ? null : actor)} style={{
+                  display: 'flex', alignItems: 'center', gap: 12, padding: '10px 14px', borderRadius: 10, cursor: 'pointer',
+                  background: isSelected ? 'rgba(239,68,68,0.1)' : 'rgba(255,255,255,0.02)',
+                  border: `1px solid ${isSelected ? 'rgba(239,68,68,0.3)' : 'transparent'}`,
+                  transition: 'all 0.2s',
+                }}>
+                  <span style={{ fontSize: 20, width: 32, textAlign: 'center' }}>{actor.country ? flag(actor.country) : '🌐'}</span>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <span style={{ fontSize: 13, fontWeight: 700, color: isSelected ? '#EF4444' : '#fff' }}>{actor.name}</span>
+                      {actor.incidentType && <span style={{ fontSize: 9, padding: '2px 6px', borderRadius: 4, background: 'rgba(99,102,241,0.15)', color: '#818CF8', fontWeight: 600, textTransform: 'uppercase' }}>{actor.incidentType}</span>}
+                    </div>
+                    {actor.synonyms.length > 0 && (
+                      <div style={{ fontSize: 10, color: theme.colors.textDim, marginTop: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {actor.synonyms.slice(0, 4).join(' · ')}
+                      </div>
+                    )}
+                  </div>
+                  <div style={{ display: 'flex', gap: 4 }}>
+                    {actor.targetSectors.slice(0, 2).map(s => (
+                      <span key={s} style={{ fontSize: 9, padding: '2px 6px', borderRadius: 4, background: `${sectorColor(s)}18`, color: sectorColor(s), fontWeight: 600 }}>{s}</span>
+                    ))}
+                  </div>
+                  <span style={{ fontSize: 10, color: theme.colors.textDim, fontFamily: theme.fonts.mono }}>{actor.victims.length > 0 ? `${actor.victims.length} victims` : ''}</span>
+                </div>
+              );
+            })}
+          </div>
+        </GlassPanel>
+      </div>
+
+      {/* Actor Detail Panel */}
+      {selectedActor && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+          <GlassPanel>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
+              <span style={{ fontSize: 40 }}>{selectedActor.country ? flag(selectedActor.country) : '🌐'}</span>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: 20, fontWeight: 800, color: '#EF4444', fontFamily: theme.fonts.display }}>{selectedActor.name}</div>
+                <div style={{ fontSize: 11, color: theme.colors.textDim, textTransform: 'uppercase', letterSpacing: 1 }}>
+                  {selectedActor.stateSponsor ? `State Sponsor: ${selectedActor.stateSponsor}` : 'Attribution Unknown'}
+                </div>
+              </div>
+              <button onClick={() => setSelectedActor(null)} style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 8, color: theme.colors.textDim, width: 28, height: 28, cursor: 'pointer', fontSize: 14, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>×</button>
+            </div>
+
+            {/* Description */}
+            {selectedActor.description && (
+              <div style={{ fontSize: 12, color: theme.colors.textDim, lineHeight: 1.6, marginBottom: 16, padding: 12, background: 'rgba(255,255,255,0.03)', borderRadius: 8, borderLeft: '3px solid rgba(239,68,68,0.3)' }}>
+                {selectedActor.description}
+              </div>
+            )}
+
+            {/* Synonyms */}
+            {selectedActor.synonyms.length > 0 && (
+              <div style={{ marginBottom: 16 }}>
+                <div style={{ fontSize: 11, fontFamily: theme.fonts.display, textTransform: 'uppercase', letterSpacing: 1.5, color: theme.colors.textSecondary, marginBottom: 8 }}>Also Known As</div>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                  {selectedActor.synonyms.map(s => (
+                    <span key={s} style={{ fontSize: 10, padding: '3px 8px', borderRadius: 6, background: 'rgba(239,68,68,0.1)', color: '#FCA5A5', fontWeight: 500 }}>{s}</span>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Target Sectors */}
+            {selectedActor.targetSectors.length > 0 && (
+              <div style={{ marginBottom: 16 }}>
+                <div style={{ fontSize: 11, fontFamily: theme.fonts.display, textTransform: 'uppercase', letterSpacing: 1.5, color: theme.colors.textSecondary, marginBottom: 8 }}>Target Sectors</div>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                  {selectedActor.targetSectors.map(s => (
+                    <span key={s} style={{ fontSize: 10, padding: '4px 10px', borderRadius: 6, background: `${sectorColor(s)}15`, color: sectorColor(s), fontWeight: 600, border: `1px solid ${sectorColor(s)}30` }}>{s}</span>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Victims */}
+            {selectedActor.victims.length > 0 && (
+              <div style={{ marginBottom: 16 }}>
+                <div style={{ fontSize: 11, fontFamily: theme.fonts.display, textTransform: 'uppercase', letterSpacing: 1.5, color: theme.colors.textSecondary, marginBottom: 8 }}>Suspected Victims</div>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                  {selectedActor.victims.map(v => {
+                    const cc = countryToCC(v);
+                    return <span key={v} style={{ fontSize: 10, padding: '3px 8px', borderRadius: 6, background: 'rgba(59,130,246,0.1)', color: '#93C5FD' }}>{flag(cc)} {v}</span>;
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* References */}
+            {selectedActor.refs.length > 0 && (
+              <div>
+                <div style={{ fontSize: 11, fontFamily: theme.fonts.display, textTransform: 'uppercase', letterSpacing: 1.5, color: theme.colors.textSecondary, marginBottom: 8 }}>References</div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                  {selectedActor.refs.map((r, i) => {
+                    let domain = '';
+                    try { domain = new URL(r).hostname; } catch { domain = r.slice(0, 40); }
+                    return <a key={i} href={r} target="_blank" rel="noreferrer" style={{ fontSize: 10, color: '#60A5FA', textDecoration: 'none', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>🔗 {domain}</a>;
+                  })}
+                </div>
+              </div>
+            )}
+          </GlassPanel>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════ */
+/*  TAB 2: Malware & Ransomware (MISP Galaxy)                                */
+/* ═══════════════════════════════════════════════════════════════════════════ */
+
+function MalwareTab({ ransomware, tools }: { ransomware: GalaxyRansomware[]; tools: GalaxyTool[] }) {
+  const [subTab, setSubTab] = useState<'ransomware' | 'tools'>('ransomware');
+  const [search, setSearch] = useState('');
+  const [selectedRw, setSelectedRw] = useState<GalaxyRansomware | null>(null);
+  const [selectedTool, setSelectedTool] = useState<GalaxyTool | null>(null);
+
+  const filteredRw = useMemo(() => {
+    if (!search) return ransomware.slice(0, 100);
+    const q = search.toLowerCase();
+    return ransomware.filter(r => r.name.toLowerCase().includes(q) || r.description.toLowerCase().includes(q) || r.synonyms.some(s => s.toLowerCase().includes(q))).slice(0, 100);
+  }, [ransomware, search]);
+
+  const filteredTools = useMemo(() => {
+    if (!search) return tools.slice(0, 100);
+    const q = search.toLowerCase();
+    return tools.filter(t => t.name.toLowerCase().includes(q) || t.description.toLowerCase().includes(q) || t.synonyms.some(s => s.toLowerCase().includes(q))).slice(0, 100);
+  }, [tools, search]);
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+      {/* Info Banner */}
+      <div style={{ padding: '10px 16px', background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.2)', borderRadius: 8, fontSize: 11, color: '#F59E0B', fontFamily: theme.fonts.display }}>
+        🦠 <strong>MISP Galaxy Malware Intelligence</strong> — {ransomware.length} ransomware families · {tools.length} adversary tools from the open-source MISP knowledge base.
+      </div>
+
+      {/* KPIs */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12 }}>
+        <KPI label="Ransomware Families" value={fmt(ransomware.length)} color="#EF4444" />
+        <KPI label="Adversary Tools" value={fmt(tools.length)} color="#F59E0B" />
+        <KPI label="Total Entries" value={fmt(ransomware.length + tools.length)} color="#8B5CF6" />
+      </div>
+
+      {/* Sub-tab toggle */}
+      <div style={{ display: 'flex', gap: 8 }}>
+        {(['ransomware', 'tools'] as const).map(st => (
+          <button key={st} onClick={() => { setSubTab(st); setSearch(''); setSelectedRw(null); setSelectedTool(null); }} style={{
+            flex: 1, padding: '10px 16px', borderRadius: 8, border: 'none', cursor: 'pointer',
+            background: subTab === st ? 'rgba(245,158,11,0.15)' : 'rgba(255,255,255,0.03)',
+            color: subTab === st ? '#F59E0B' : theme.colors.textDim,
+            fontFamily: theme.fonts.display, fontSize: 12, fontWeight: subTab === st ? 700 : 400, letterSpacing: 1, textTransform: 'uppercase',
+          }}>{st === 'ransomware' ? `🔒 Ransomware (${ransomware.length})` : `🔧 Tools (${tools.length})`}</button>
+        ))}
+      </div>
+
+      {/* Search */}
+      <input value={search} onChange={e => setSearch(e.target.value)} placeholder={`Search ${subTab}… (e.g. ${subTab === 'ransomware' ? 'WannaCry, LockBit' : 'Cobalt Strike, Mimikatz'})`}
+        style={{ padding: '10px 14px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 8, color: '#fff', fontSize: 12, fontFamily: theme.fonts.mono, outline: 'none' }} />
+
+      <div style={{ display: 'grid', gridTemplateColumns: (selectedRw || selectedTool) ? '1fr 380px' : '1fr', gap: 20 }}>
+        {/* List */}
+        <GlassPanel>
+          <div style={{ fontSize: 12, fontFamily: theme.fonts.display, textTransform: 'uppercase', letterSpacing: 2, color: theme.colors.textSecondary, marginBottom: 12 }}>
+            {subTab === 'ransomware' ? 'Ransomware Families' : 'Adversary Tools'} {search && `· matching "${search}"`}
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 6, maxHeight: 500, overflowY: 'auto' }}>
+            {subTab === 'ransomware' ? filteredRw.map(rw => (
+              <div key={rw.uuid} onClick={() => { setSelectedRw(selectedRw?.uuid === rw.uuid ? null : rw); setSelectedTool(null); }} style={{
+                display: 'flex', alignItems: 'center', gap: 12, padding: '10px 14px', borderRadius: 10, cursor: 'pointer',
+                background: selectedRw?.uuid === rw.uuid ? 'rgba(239,68,68,0.1)' : 'rgba(255,255,255,0.02)',
+                border: `1px solid ${selectedRw?.uuid === rw.uuid ? 'rgba(239,68,68,0.3)' : 'transparent'}`,
+                transition: 'all 0.2s',
+              }}>
+                <span style={{ fontSize: 20 }}>🔒</span>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: 13, fontWeight: 700, color: selectedRw?.uuid === rw.uuid ? '#EF4444' : '#fff' }}>{rw.name}</div>
+                  {rw.synonyms.length > 0 && <div style={{ fontSize: 10, color: theme.colors.textDim, marginTop: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{rw.synonyms.slice(0, 3).join(' · ')}</div>}
+                </div>
+                {rw.encryption && <span style={{ fontSize: 9, padding: '2px 6px', borderRadius: 4, background: 'rgba(239,68,68,0.12)', color: '#FCA5A5' }}>{rw.encryption}</span>}
+              </div>
+            )) : filteredTools.map(tool => (
+              <div key={tool.uuid} onClick={() => { setSelectedTool(selectedTool?.uuid === tool.uuid ? null : tool); setSelectedRw(null); }} style={{
+                display: 'flex', alignItems: 'center', gap: 12, padding: '10px 14px', borderRadius: 10, cursor: 'pointer',
+                background: selectedTool?.uuid === tool.uuid ? 'rgba(245,158,11,0.1)' : 'rgba(255,255,255,0.02)',
+                border: `1px solid ${selectedTool?.uuid === tool.uuid ? 'rgba(245,158,11,0.3)' : 'transparent'}`,
+                transition: 'all 0.2s',
+              }}>
+                <span style={{ fontSize: 20 }}>🔧</span>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: 13, fontWeight: 700, color: selectedTool?.uuid === tool.uuid ? '#F59E0B' : '#fff' }}>{tool.name}</div>
+                  {tool.synonyms.length > 0 && <div style={{ fontSize: 10, color: theme.colors.textDim, marginTop: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{tool.synonyms.slice(0, 3).join(' · ')}</div>}
+                </div>
+              </div>
+            ))}
+          </div>
+        </GlassPanel>
+
+        {/* Detail Panel */}
+        {(selectedRw || selectedTool) && (
+          <GlassPanel>
+            {selectedRw && (
+              <>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
+                  <span style={{ fontSize: 36 }}>🔒</span>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontSize: 18, fontWeight: 800, color: '#EF4444', fontFamily: theme.fonts.display }}>{selectedRw.name}</div>
+                    <div style={{ fontSize: 10, color: theme.colors.textDim, textTransform: 'uppercase', letterSpacing: 1 }}>Ransomware Family</div>
+                  </div>
+                  <button onClick={() => setSelectedRw(null)} style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 8, color: theme.colors.textDim, width: 28, height: 28, cursor: 'pointer', fontSize: 14, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>×</button>
+                </div>
+                {selectedRw.description && <div style={{ fontSize: 12, color: theme.colors.textDim, lineHeight: 1.6, marginBottom: 16, padding: 12, background: 'rgba(255,255,255,0.03)', borderRadius: 8, borderLeft: '3px solid rgba(239,68,68,0.3)' }}>{selectedRw.description}</div>}
+                {selectedRw.synonyms.length > 0 && <div style={{ marginBottom: 16 }}><div style={{ fontSize: 11, fontFamily: theme.fonts.display, textTransform: 'uppercase', letterSpacing: 1.5, color: theme.colors.textSecondary, marginBottom: 6 }}>Aliases</div><div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>{selectedRw.synonyms.map(s => <span key={s} style={{ fontSize: 10, padding: '2px 8px', borderRadius: 6, background: 'rgba(239,68,68,0.1)', color: '#FCA5A5' }}>{s}</span>)}</div></div>}
+                {selectedRw.encryption && <div style={{ marginBottom: 12 }}><div style={{ fontSize: 11, fontFamily: theme.fonts.display, textTransform: 'uppercase', letterSpacing: 1.5, color: theme.colors.textSecondary, marginBottom: 4 }}>Encryption</div><div style={{ fontSize: 12, color: '#fff', fontFamily: theme.fonts.mono }}>{selectedRw.encryption}</div></div>}
+                {selectedRw.extensions && <div style={{ marginBottom: 12 }}><div style={{ fontSize: 11, fontFamily: theme.fonts.display, textTransform: 'uppercase', letterSpacing: 1.5, color: theme.colors.textSecondary, marginBottom: 4 }}>File Extensions</div><div style={{ fontSize: 12, color: '#fff', fontFamily: theme.fonts.mono }}>{selectedRw.extensions}</div></div>}
+                {selectedRw.refs.length > 0 && <div><div style={{ fontSize: 11, fontFamily: theme.fonts.display, textTransform: 'uppercase', letterSpacing: 1.5, color: theme.colors.textSecondary, marginBottom: 6 }}>References</div>{selectedRw.refs.map((r, i) => { let d = ''; try { d = new URL(r).hostname; } catch { d = r.slice(0, 40); } return <a key={i} href={r} target="_blank" rel="noreferrer" style={{ display: 'block', fontSize: 10, color: '#60A5FA', textDecoration: 'none', marginBottom: 3 }}>🔗 {d}</a>; })}</div>}
+              </>
+            )}
+            {selectedTool && (
+              <>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
+                  <span style={{ fontSize: 36 }}>🔧</span>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontSize: 18, fontWeight: 800, color: '#F59E0B', fontFamily: theme.fonts.display }}>{selectedTool.name}</div>
+                    <div style={{ fontSize: 10, color: theme.colors.textDim, textTransform: 'uppercase', letterSpacing: 1 }}>Adversary Tool</div>
+                  </div>
+                  <button onClick={() => setSelectedTool(null)} style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 8, color: theme.colors.textDim, width: 28, height: 28, cursor: 'pointer', fontSize: 14, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>×</button>
+                </div>
+                {selectedTool.description && <div style={{ fontSize: 12, color: theme.colors.textDim, lineHeight: 1.6, marginBottom: 16, padding: 12, background: 'rgba(255,255,255,0.03)', borderRadius: 8, borderLeft: '3px solid rgba(245,158,11,0.3)' }}>{selectedTool.description}</div>}
+                {selectedTool.synonyms.length > 0 && <div style={{ marginBottom: 16 }}><div style={{ fontSize: 11, fontFamily: theme.fonts.display, textTransform: 'uppercase', letterSpacing: 1.5, color: theme.colors.textSecondary, marginBottom: 6 }}>Aliases</div><div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>{selectedTool.synonyms.map(s => <span key={s} style={{ fontSize: 10, padding: '2px 8px', borderRadius: 6, background: 'rgba(245,158,11,0.1)', color: '#FCD34D' }}>{s}</span>)}</div></div>}
+                {selectedTool.refs.length > 0 && <div><div style={{ fontSize: 11, fontFamily: theme.fonts.display, textTransform: 'uppercase', letterSpacing: 1.5, color: theme.colors.textSecondary, marginBottom: 6 }}>References</div>{selectedTool.refs.map((r, i) => { let d = ''; try { d = new URL(r).hostname; } catch { d = r.slice(0, 40); } return <a key={i} href={r} target="_blank" rel="noreferrer" style={{ display: 'block', fontSize: 10, color: '#60A5FA', textDecoration: 'none', marginBottom: 3 }}>🔗 {d}</a>; })}</div>}
+              </>
+            )}
+          </GlassPanel>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════ */
+/*  TAB 3: Countries                                                         */
 /* ═══════════════════════════════════════════════════════════════════════════ */
 
 function CountriesTab({ countries, totalGlobal, selected, onSelect }: {
@@ -365,7 +714,7 @@ function CountriesTab({ countries, totalGlobal, selected, onSelect }: {
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════ */
-/*  TAB 2: Trends                                                            */
+/*  TAB 4: Trends                                                            */
 /* ═══════════════════════════════════════════════════════════════════════════ */
 
 function TrendsTab({ timeline, byType, changePercent, currentTotal, period, country, onCountryChange, onRefresh }: {
@@ -479,83 +828,116 @@ function TrendsTab({ timeline, byType, changePercent, currentTotal, period, coun
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════ */
-/*  TAB 3: Sectors                                                           */
+/*  TAB 5: Galaxy Explorer                                                   */
 /* ═══════════════════════════════════════════════════════════════════════════ */
 
-function SectorsTab({ sectors, total }: { sectors: SectorRow[]; total: number }) {
-  const maxCount = Math.max(...sectors.map(s => s.count), 1);
+function ExplorerTab({ stats }: { stats: GalaxyStats | null }) {
+  if (!stats) return <div style={{ padding: 40, textAlign: 'center', color: theme.colors.textDim }}>Loading Galaxy statistics…</div>;
 
-  // Donut chart data
-  const donutSize = 180;
-  const donutR = 70, donutInner = 48;
-  let cumAngle = -90;
+  const sortedCountries = Object.entries(stats.byCountry).sort((a, b) => b[1] - a[1]);
+  const sortedSectors = Object.entries(stats.bySector).sort((a, b) => b[1] - a[1]);
+  const sortedVictims = Object.entries(stats.byVictim).sort((a, b) => b[1] - a[1]).slice(0, 20);
+  const sortedIncidents = Object.entries(stats.byIncident).sort((a, b) => b[1] - a[1]);
+  const maxCountry = Math.max(...sortedCountries.map(e => e[1]), 1);
+  const maxSector = Math.max(...sortedSectors.map(e => e[1]), 1);
+  const maxVictim = Math.max(...sortedVictims.map(e => e[1]), 1);
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-      <div style={{ padding: '8px 14px', background: 'rgba(59,130,246,0.08)', border: '1px solid rgba(59,130,246,0.2)', borderRadius: 8, fontSize: 11, color: '#3B82F6', fontFamily: theme.fonts.display }}>
-        🛡️ Organizations are identified via RDAP/WHOIS lookups for verified IP-based sources (SANS ISC & ThreatFox).
+      {/* Banner */}
+      <div style={{ padding: '10px 16px', background: 'rgba(139,92,246,0.08)', border: '1px solid rgba(139,92,246,0.2)', borderRadius: 8, fontSize: 11, color: '#8B5CF6', fontFamily: theme.fonts.display }}>
+        🔗 <strong>MISP Galaxy Knowledge Base Explorer</strong> — Aggregated statistics across all Galaxy clusters. Data sourced from <a href="https://github.com/MISP/misp-galaxy" target="_blank" rel="noreferrer" style={{ color: '#A78BFA' }}>github.com/MISP/misp-galaxy</a>
+        {stats.lastFetch && <span style={{ marginLeft: 12, opacity: 0.7 }}>Last updated: {new Date(stats.lastFetch).toLocaleTimeString()}</span>}
       </div>
 
+      {/* KPIs */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12 }}>
+        <KPI label="Threat Actors" value={fmt(stats.totalActors)} color="#EF4444" />
+        <KPI label="Ransomware" value={fmt(stats.totalRansomware)} color="#F59E0B" />
+        <KPI label="Adversary Tools" value={fmt(stats.totalTools)} color="#3B82F6" />
+        <KPI label="Exploit Kits" value={fmt(stats.totalExploitKits)} color="#10B981" />
+      </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '280px 1fr', gap: 20 }}>
-        {/* Donut */}
-        <GlassPanel style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: 24 }}>
-          <svg width={donutSize} height={donutSize} viewBox={`0 0 ${donutSize} ${donutSize}`}>
-            {sectors.map(s => {
-              const pct = s.count / Math.max(total, 1);
-              const angle = pct * 360;
-              const startAngle = cumAngle;
-              cumAngle += angle;
-              const endAngle = cumAngle;
-              const largeArc = angle > 180 ? 1 : 0;
-              const cx = donutSize/2, cy = donutSize/2;
-              const toRad = (a: number) => (a * Math.PI) / 180;
-              const x1 = cx + donutR * Math.cos(toRad(startAngle));
-              const y1 = cy + donutR * Math.sin(toRad(startAngle));
-              const x2 = cx + donutR * Math.cos(toRad(endAngle));
-              const y2 = cy + donutR * Math.sin(toRad(endAngle));
-              const ix1 = cx + donutInner * Math.cos(toRad(endAngle));
-              const iy1 = cy + donutInner * Math.sin(toRad(endAngle));
-              const ix2 = cx + donutInner * Math.cos(toRad(startAngle));
-              const iy2 = cy + donutInner * Math.sin(toRad(startAngle));
-              const color = getSectorColor(s.name);
-              if (angle < 1) return null;
-              return <path key={s.name} d={`M${x1},${y1} A${donutR},${donutR} 0 ${largeArc},1 ${x2},${y2} L${ix1},${iy1} A${donutInner},${donutInner} 0 ${largeArc},0 ${ix2},${iy2} Z`} fill={color} opacity={0.85} />;
-            })}
-            <text x={donutSize/2} y={donutSize/2-8} textAnchor="middle" fontSize={20} fontWeight={800} fill="#fff">{fmt(total)}</text>
-            <text x={donutSize/2} y={donutSize/2+10} textAnchor="middle" fontSize={9} fill={theme.colors.textDim}>EVENTS</text>
-          </svg>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 16, justifyContent: 'center' }}>
-            {sectors.slice(0, 6).map(s => (
-              <div key={s.name} style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 9, color: theme.colors.textDim }}>
-                <div style={{ width: 8, height: 8, borderRadius: 2, background: getSectorColor(s.name) }} />
-                {s.name}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}>
+        {/* State Sponsors */}
+        <GlassPanel>
+          <div style={{ fontSize: 12, fontFamily: theme.fonts.display, textTransform: 'uppercase', letterSpacing: 2, color: theme.colors.textSecondary, marginBottom: 14 }}>
+            Threat Actors by State Sponsor
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            {sortedCountries.map(([cc, count]) => (
+              <div key={cc} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <span style={{ fontSize: 16, width: 28, textAlign: 'center' }}>{flag(cc)}</span>
+                <span style={{ width: 24, fontSize: 11, fontWeight: 700, color: '#fff' }}>{cc}</span>
+                <div style={{ flex: 1, height: 6, background: 'rgba(255,255,255,0.05)', borderRadius: 3 }}>
+                  <div style={{ width: `${(count/maxCountry)*100}%`, height: '100%', background: 'linear-gradient(90deg, #EF444480, #EF4444)', borderRadius: 3 }} />
+                </div>
+                <span style={{ fontSize: 11, fontFamily: theme.fonts.mono, color: '#EF4444', fontWeight: 600, width: 32, textAlign: 'right' }}>{count}</span>
               </div>
             ))}
           </div>
         </GlassPanel>
 
-        {/* Table */}
+        {/* Target Sectors */}
         <GlassPanel>
-          <div style={{ fontSize: 12, fontFamily: theme.fonts.display, textTransform: 'uppercase', letterSpacing: 2, color: theme.colors.textSecondary, marginBottom: 12 }}>Organization Distribution</div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-            {sectors.map((s, i) => {
-              const color = getSectorColor(s.name);
-              const icon = getSectorIcon(s.name);
-              const topType = Object.entries(s.topTypes).sort((a,b) => b[1]-a[1])[0];
+          <div style={{ fontSize: 12, fontFamily: theme.fonts.display, textTransform: 'uppercase', letterSpacing: 2, color: theme.colors.textSecondary, marginBottom: 14 }}>
+            Most Targeted Sectors
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            {sortedSectors.map(([sector, count]) => (
+              <div key={sector} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <span style={{ fontSize: 12, fontWeight: 600, color: sectorColor(sector), width: 120, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{sector}</span>
+                <div style={{ flex: 1, height: 6, background: 'rgba(255,255,255,0.05)', borderRadius: 3 }}>
+                  <div style={{ width: `${(count/maxSector)*100}%`, height: '100%', background: `linear-gradient(90deg, ${sectorColor(sector)}80, ${sectorColor(sector)})`, borderRadius: 3 }} />
+                </div>
+                <span style={{ fontSize: 11, fontFamily: theme.fonts.mono, color: sectorColor(sector), fontWeight: 600, width: 32, textAlign: 'right' }}>{count}</span>
+              </div>
+            ))}
+          </div>
+        </GlassPanel>
+      </div>
+
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}>
+        {/* Most Targeted Countries */}
+        <GlassPanel>
+          <div style={{ fontSize: 12, fontFamily: theme.fonts.display, textTransform: 'uppercase', letterSpacing: 2, color: theme.colors.textSecondary, marginBottom: 14 }}>
+            Most Targeted Countries (Victim Count)
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+            {sortedVictims.map(([name, count]) => {
+              const cc = countryToCC(name);
               return (
-                <div key={s.name} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', borderRadius: 8, background: 'rgba(255,255,255,0.02)', borderLeft: `3px solid ${color}` }}>
-                  <span style={{ fontSize: 10, fontFamily: theme.fonts.mono, color: theme.colors.textDim, width: 16 }}>{i+1}</span>
-                  <span style={{ fontSize: 18, width: 28, textAlign: 'center' }}>{icon}</span>
-                  <div style={{ flex: 1 }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
-                      <span style={{ fontSize: 12, fontWeight: 600, color: '#fff' }}>{s.name}</span>
-                      <span style={{ fontSize: 11, fontFamily: theme.fonts.mono, color }}>{fmt(s.count)} · {s.percentage}%</span>
-                    </div>
-                    <div style={{ height: 4, background: 'rgba(255,255,255,0.05)', borderRadius: 2 }}>
-                      <div style={{ width: `${(s.count/maxCount)*100}%`, height: '100%', background: `linear-gradient(90deg, ${color}80, ${color})`, borderRadius: 2, transition: 'width 0.5s' }} />
-                    </div>
-                    {topType && <div style={{ fontSize: 9, color: theme.colors.textDim, marginTop: 4 }}>Top: <span style={{ color: getAttackColor(topType[0]) }}>{topType[0]}</span> ({fmt(topType[1])})</div>}
+                <div key={name} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <span style={{ fontSize: 14, width: 24, textAlign: 'center' }}>{flag(cc)}</span>
+                  <span style={{ fontSize: 11, color: '#fff', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{name}</span>
+                  <div style={{ width: 80, height: 5, background: 'rgba(255,255,255,0.05)', borderRadius: 3 }}>
+                    <div style={{ width: `${(count/maxVictim)*100}%`, height: '100%', background: 'linear-gradient(90deg, #3B82F680, #3B82F6)', borderRadius: 3 }} />
+                  </div>
+                  <span style={{ fontSize: 10, fontFamily: theme.fonts.mono, color: '#3B82F6', fontWeight: 600, width: 24, textAlign: 'right' }}>{count}</span>
+                </div>
+              );
+            })}
+          </div>
+        </GlassPanel>
+
+        {/* Incident Types */}
+        <GlassPanel>
+          <div style={{ fontSize: 12, fontFamily: theme.fonts.display, textTransform: 'uppercase', letterSpacing: 2, color: theme.colors.textSecondary, marginBottom: 14 }}>
+            Incident Types
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+            {sortedIncidents.map(([type, count]) => {
+              const total = Object.values(stats.byIncident).reduce((a, b) => a + b, 0);
+              const pct = ((count / total) * 100).toFixed(1);
+              const color = type === 'Espionage' ? '#8B5CF6' : type === 'Unknown' ? '#64748B' : '#F59E0B';
+              return (
+                <div key={type}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
+                    <span style={{ fontSize: 12, fontWeight: 600, color }}>{type}</span>
+                    <span style={{ fontSize: 11, fontFamily: theme.fonts.mono, color: theme.colors.textDim }}>{count} ({pct}%)</span>
+                  </div>
+                  <div style={{ height: 8, background: 'rgba(255,255,255,0.05)', borderRadius: 4 }}>
+                    <div style={{ width: `${pct}%`, height: '100%', background: `linear-gradient(90deg, ${color}80, ${color})`, borderRadius: 4, transition: 'width 0.5s' }} />
                   </div>
                 </div>
               );
@@ -563,130 +945,6 @@ function SectorsTab({ sectors, total }: { sectors: SectorRow[]; total: number })
           </div>
         </GlassPanel>
       </div>
-    </div>
-  );
-}
-
-/* ═══════════════════════════════════════════════════════════════════════════ */
-/*  TAB 4: Combined (Country × Sector)                                       */
-/* ═══════════════════════════════════════════════════════════════════════════ */
-
-function CombinedTab({ countries, sectors, country, sector, onCountryChange, onSectorChange }: {
-  countries: CombinedCountry[]; sectors: CombinedSector[];
-  country: string; sector: string;
-  onCountryChange: (c: string) => void; onSectorChange: (s: string) => void;
-}) {
-  const allSectorNames = useMemo(() => {
-    const names = new Set<string>();
-    countries.forEach(c => Object.keys(c.sectors).forEach(s => names.add(s)));
-    return [...names].sort();
-  }, [countries]);
-
-  const maxCell = useMemo(() => {
-    let m = 1;
-    countries.forEach(c => Object.values(c.sectors).forEach(v => { if (v > m) m = v; }));
-    return m;
-  }, [countries]);
-
-  return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-      {/* Filters */}
-      <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
-        <GlassPanel style={{ padding: '12px 16px', flex: '1 1 200px' }}>
-          <div style={{ fontSize: 10, fontFamily: theme.fonts.display, textTransform: 'uppercase', letterSpacing: 1.5, color: theme.colors.textDim, marginBottom: 6 }}>Filter by Country</div>
-          <input value={country} onChange={e => onCountryChange(e.target.value.toUpperCase().slice(0, 2))} placeholder="e.g. US (leave empty for all)"
-            style={{ width: '100%', boxSizing: 'border-box', padding: '8px 12px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 8, color: '#fff', fontSize: 12, fontFamily: theme.fonts.mono, outline: 'none' }} />
-        </GlassPanel>
-        <GlassPanel style={{ padding: '12px 16px', flex: '1 1 300px' }}>
-          <div style={{ fontSize: 10, fontFamily: theme.fonts.display, textTransform: 'uppercase', letterSpacing: 1.5, color: theme.colors.textDim, marginBottom: 6 }}>Filter by Organization</div>
-          <select value={sector} onChange={e => onSectorChange(e.target.value)}
-            style={{ width: '100%', boxSizing: 'border-box', padding: '8px 12px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 8, color: '#fff', fontSize: 12, outline: 'none', cursor: 'pointer' }}>
-            <option value="">All Organizations</option>
-            {sectors.map(s => <option key={s.name} value={s.name}>{s.name} ({fmt(s.total)})</option>)}
-          </select>
-        </GlassPanel>
-      </div>
-
-      {/* Heatmap Grid */}
-      <GlassPanel>
-        <div style={{ fontSize: 12, fontFamily: theme.fonts.display, textTransform: 'uppercase', letterSpacing: 2, color: theme.colors.textSecondary, marginBottom: 16 }}>
-          Country × Org Heatmap {country && `· ${flag(country)} ${country}`} {sector && `· ${sector}`}
-        </div>
-        {countries.length === 0 ? (
-          <div style={{ padding: 40, textAlign: 'center', color: theme.colors.textDim, fontSize: 13 }}>No data. Try adjusting filters or ensure the backend has stored events.</div>
-        ) : (
-          <div style={{ overflowX: 'auto' }}>
-            <table style={{ borderCollapse: 'collapse', width: '100%', fontSize: 11 }}>
-              <thead>
-                <tr>
-                  <th style={{ padding: '8px', textAlign: 'left', fontSize: 10, color: theme.colors.textDim, fontFamily: theme.fonts.display, letterSpacing: 1, minWidth: 60 }}>Country</th>
-                  {allSectorNames.map(s => (
-                    <th key={s} style={{ padding: '6px 4px', fontSize: 9, color: getSectorColor(s), fontFamily: theme.fonts.display, letterSpacing: 0.5, textAlign: 'center', minWidth: 50, maxWidth: 80, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                      {getSectorIcon(s)}<br/>{s.split('/')[0].trim()}
-                    </th>
-                  ))}
-                  <th style={{ padding: '8px', fontSize: 10, color: theme.colors.textDim, fontFamily: theme.fonts.display, textAlign: 'right' }}>Total</th>
-                </tr>
-              </thead>
-              <tbody>
-                {countries.slice(0, 15).map(c => (
-                  <tr key={c.code} style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
-                    <td style={{ padding: '8px', fontWeight: 700 }}>
-                      <span style={{ fontSize: 14, marginRight: 6 }}>{flag(c.code)}</span>
-                      <span style={{ color: '#fff' }}>{c.code}</span>
-                    </td>
-                    {allSectorNames.map(s => {
-                      const val = c.sectors[s] || 0;
-                      const intensity = val / maxCell;
-                      const color = getSectorColor(s);
-                      return (
-                        <td key={s} style={{ padding: '4px', textAlign: 'center' }}>
-                          {val > 0 ? (
-                            <div style={{
-                              display: 'inline-block', padding: '4px 6px', borderRadius: 4,
-                              background: `${color}${Math.round(intensity * 40 + 10).toString(16).padStart(2, '0')}`,
-                              color: intensity > 0.3 ? color : theme.colors.textDim,
-                              fontSize: 10, fontFamily: theme.fonts.mono, fontWeight: intensity > 0.5 ? 700 : 400,
-                              minWidth: 28
-                            }}>{fmt(val)}</div>
-                          ) : (
-                            <span style={{ color: 'rgba(255,255,255,0.08)', fontSize: 10 }}>—</span>
-                          )}
-                        </td>
-                      );
-                    })}
-                    <td style={{ padding: '8px', textAlign: 'right', fontFamily: theme.fonts.mono, color: '#fff', fontWeight: 700 }}>{fmt(c.total)}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </GlassPanel>
-
-      {/* Sector Summary */}
-      <GlassPanel>
-        <div style={{ fontSize: 12, fontFamily: theme.fonts.display, textTransform: 'uppercase', letterSpacing: 2, color: theme.colors.textSecondary, marginBottom: 12 }}>
-          Organization Totals {country && `for ${flag(country)} ${country}`}
-        </div>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 10 }}>
-          {sectors.map(s => {
-            const color = getSectorColor(s.name);
-            const icon = getSectorIcon(s.name);
-            return (
-              <div key={s.name} onClick={() => onSectorChange(sector === s.name ? '' : s.name)} style={{
-                padding: '12px 16px', borderRadius: 10, cursor: 'pointer', transition: 'all 0.2s',
-                background: sector === s.name ? `${color}15` : 'rgba(255,255,255,0.02)',
-                border: `1px solid ${sector === s.name ? `${color}40` : 'rgba(255,255,255,0.05)'}`,
-              }}>
-                <div style={{ fontSize: 18, marginBottom: 4 }}>{icon}</div>
-                <div style={{ fontSize: 11, fontWeight: 600, color: sector === s.name ? color : '#fff', marginBottom: 2 }}>{s.name}</div>
-                <div style={{ fontSize: 18, fontWeight: 800, color, fontFamily: theme.fonts.display }}>{fmt(s.total)}</div>
-              </div>
-            );
-          })}
-        </div>
-      </GlassPanel>
     </div>
   );
 }
