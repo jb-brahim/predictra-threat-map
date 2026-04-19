@@ -1,3 +1,4 @@
+import React from 'react';
 import { useStreamStore } from '../stream/useStreamStore';
 import { GlobeScene } from '../globe/GlobeScene';
 import { GlassPanel } from './GlassPanel';
@@ -443,284 +444,365 @@ export function DashboardPage() {
 
   return (
     <div style={{
-      display: 'flex', flexDirection: 'column', gap: '20px',
-      fontFamily: theme.fonts.body,
+      position: 'relative', height: '100%', minHeight: 'calc(100vh - 64px)',
+      overflow: 'hidden', background: '#080C14',
+      fontFamily: theme.fonts.mono,
     }}>
-
-      {/* ── Header ─────────────────────────────────────────────────────────── */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: `1px solid ${theme.colors.panelBorder}`, paddingBottom: '16px', gap: 16, flexWrap: 'wrap' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 20, flex: 1, minWidth: 260 }}>
-          <div>
-            <h1 style={{ fontFamily: theme.fonts.display, fontSize: '26px', fontWeight: 800, letterSpacing: '2px', textTransform: 'uppercase', color: '#fff', margin: 0 }}>
-              Global Command Center
-            </h1>
-            <p style={{ color: theme.colors.textDim, fontSize: '13px', marginTop: '3px', marginBottom: 0 }}>
-              Real-time Threat Intelligence · Interactive Analytics
-            </p>
-          </div>
-          
-          <div style={{ display: 'flex', background: 'rgba(255,255,255,0.05)', borderRadius: 8, padding: 4 }}>
-            {(['live', 5, 15, 60] as const).map(mode => (
-              <button
-                key={mode}
-                onClick={() => setTimeMode(mode)}
-                style={{
-                  padding: '6px 12px', background: timeMode === mode ? 'rgba(0,209,255,0.2)' : 'transparent',
-                  border: 'none', borderRadius: 6, color: timeMode === mode ? '#fff' : theme.colors.textDim,
-                  fontSize: 12, fontFamily: theme.fonts.display, fontWeight: timeMode === mode ? 700 : 400,
-                  cursor: 'pointer', transition: 'all 0.2s', textTransform: 'uppercase', letterSpacing: 1
-                }}
-              >
-                {mode === 'live' ? 'Live' : `${mode}m`}
-              </button>
-            ))}
-          </div>
-
-          <div style={{ display: 'flex', gap: 6 }}>
-            <button onClick={handleExportCSV} style={{ padding: '6px 14px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 6, color: '#fff', fontSize: 11, fontFamily: theme.fonts.display, cursor: 'pointer', letterSpacing: 1, transition: 'background 0.2s' }}>
-              CSV
-            </button>
-            <button onClick={handleExportJSON} style={{ padding: '6px 14px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 6, color: '#fff', fontSize: 11, fontFamily: theme.fonts.display, cursor: 'pointer', letterSpacing: 1, transition: 'background 0.2s' }}>
-              JSON
-            </button>
-            <button onClick={handleExportExcel} style={{ padding: '6px 14px', background: 'rgba(0,209,255,0.15)', border: '1px solid rgba(0,209,255,0.3)', borderRadius: 6, color: '#00d1ff', fontSize: 11, fontFamily: theme.fonts.display, fontWeight: 700, cursor: 'pointer', letterSpacing: 1, transition: 'background 0.2s', display: 'flex', alignItems: 'center', gap: 4 }}>
-              <span style={{ fontSize: 13 }}>📥</span> EXCEL
-            </button>
-          </div>
-
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '6px 16px', background: `${threatLevel.color}15`, border: `1px solid ${threatLevel.color}50`, borderRadius: 10 }}>
-            <div style={{ width: 10, height: 10, borderRadius: '50%', background: threatLevel.color, boxShadow: `0 0 10px ${threatLevel.color}`, animation: 'pulse 2s infinite' }} />
-            <div style={{ display: 'flex', flexDirection: 'column' }}>
-              <span style={{ fontSize: 9, fontFamily: theme.fonts.display, textTransform: 'uppercase', letterSpacing: 2, color: theme.colors.textDim }}>Threat Level</span>
-              <span style={{ fontSize: 14, fontFamily: theme.fonts.display, fontWeight: 700, color: threatLevel.color }}>{threatLevel.label}</span>
-            </div>
-          </div>
-        </div>
-
-        {/* Search bar */}
-        <div style={{ position: 'relative', flex: '0 0 300px' }}>
-          <span style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', fontSize: 14, color: theme.colors.textDim, pointerEvents: 'none' }}>🔍</span>
-          <input
-            ref={searchRef}
-            value={searchQuery}
-            onChange={e => setSearchQuery(e.target.value)}
-            placeholder='Search threats, IPs, countries…  [/]'
-            style={{
-              width: '100%', boxSizing: 'border-box',
-              padding: '9px 12px 9px 36px',
-              background: 'rgba(0,209,255,0.06)',
-              border: `1px solid ${searchQuery ? theme.colors.exploit : theme.colors.panelBorder}`,
-              borderRadius: 10, color: theme.colors.textPrimary,
-              fontFamily: theme.fonts.body, fontSize: 13,
-              outline: 'none', transition: 'border-color 0.2s',
-            }}
-          />
-          {searchQuery && (
-            <button onClick={() => setSearchQuery('')} style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: theme.colors.textDim, cursor: 'pointer', fontSize: 16, lineHeight: 1 }}>×</button>
-          )}
-        </div>
+      {/* ── World Map SVG Background ────────────────────────────────── */}
+      <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: 0.18 }}>
+        <WorldMapSVG />
       </div>
 
-      {/* ── Filter Chips ───────────────────────────────────────────────────── */}
-      {/* User requested removal to save space */}
+      {/* ── Tactical Grid Overlay ───────────────────────────────────── */}
+      <div className="hud-tactical-grid" style={{ position: 'absolute', inset: 0, zIndex: 1 }} />
 
-      {/* ── KPI Row ────────────────────────────────────────────────────────── */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16 }}>
-        <KPICard title={timeMode === 'live' ? "Total Attacks (24h)" : `Total Attacks (${timeMode}m)`} value={fmt(total)} color={theme.colors.exploit}
-          trend={trendUp ? 'up' : 'down'}
-          onClick={() => { setActiveTypes(new Set()); setActiveSource(null); }}
-          active={activeTypes.size === 0 && !activeSource}
-        />
-        <KPICard title="Exploit / Scan" value={fmt(typeDistribution.exploit)} color={theme.colors.exploit}
-          trend={trendUp ? 'up' : 'down'}
-          onClick={() => setActiveTypes(new Set(['exploit']))}
-          active={activeTypes.size === 1 && activeTypes.has('exploit')}
-        />
-        <KPICard title="Malware / C2" value={fmt(typeDistribution.malware)} color={theme.colors.malware}
-          trend='neutral'
-          onClick={() => setActiveTypes(new Set(['malware']))}
-          active={activeTypes.size === 1 && activeTypes.has('malware')}
-        />
-        <KPICard title="Phishing / BEC" value={fmt(typeDistribution.phishing)} color={theme.colors.phishing}
-          trend='neutral'
-          onClick={() => setActiveTypes(new Set(['phishing']))}
-          active={activeTypes.size === 1 && activeTypes.has('phishing')}
-        />
-      </div>
+      {/* ── Scan Line Effect ────────────────────────────────────────── */}
+      <div className="hud-scanline-sweep" />
 
-      {/* ── Main Grid ──────────────────────────────────────────────────────── */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: 20 }}>
-      
-        {/* Live Feed – spans 3 cols */}
-        <div style={{ gridColumn: 'span 3' }}>
-          <GlassPanel style={{ height: '340px', display: 'flex', flexDirection: 'column' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                <span style={{ fontSize: 13, fontFamily: theme.fonts.display, textTransform: 'uppercase', letterSpacing: 2, color: theme.colors.textSecondary }}>
-                  Live Threat Feed
-                </span>
-                <span style={{ fontSize: 11, padding: '1px 8px', borderRadius: 20, background: 'rgba(0,209,255,0.1)', border: '1px solid rgba(0,209,255,0.2)', color: theme.colors.exploit, fontFamily: theme.fonts.mono }}>
-                  {filteredFeed.length}/{recentFeed.length}
-                </span>
-              </div>
-              <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                {feedPaused && <span style={{ fontSize: 10, color: theme.colors.warning, fontFamily: theme.fonts.display, textTransform: 'uppercase', letterSpacing: 1 }}>⏸ PAUSED</span>}
-                <button
-                  onClick={() => setFeedPaused(p => !p)}
-                  style={{ padding: '4px 10px', background: feedPaused ? 'rgba(255,215,0,0.15)' : 'rgba(255,255,255,0.05)', border: `1px solid ${feedPaused ? 'rgba(255,215,0,0.4)' : 'rgba(255,255,255,0.1)'}`, borderRadius: 6, color: feedPaused ? theme.colors.warning : theme.colors.textDim, fontSize: 11, fontFamily: theme.fonts.display, cursor: 'pointer', letterSpacing: 1 }}
-                >
-                  {feedPaused ? '▶ RESUME' : '⏸ PAUSE'}
-                </button>
-              </div>
-            </div>
-            <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 5 }}>
-              {filteredFeed.length === 0 ? (
-                <div style={{ color: theme.colors.textDim, fontStyle: 'italic', fontSize: 13, textAlign: 'center', padding: 20 }}>
-                  {hasFilters ? '🔍 No events match your filters' : 'Awaiting threat data…'}
+      {/* ── All HUD Floating Panels ─────────────────────────────────── */}
+      <div style={{ position: 'absolute', inset: 0, zIndex: 10, pointerEvents: 'none' }}>
+
+        {/* ═══ TOP BAR: Title + Search + Time + Exports ═══ */}
+        <div className="hud-entrance-top" style={{
+          position: 'absolute', top: 0, left: 0, right: 0,
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          padding: '10px 20px',
+          background: 'linear-gradient(180deg, rgba(8,12,20,0.95) 0%, rgba(8,12,20,0.6) 80%, transparent 100%)',
+          pointerEvents: 'auto', zIndex: 20,
+          borderBottom: '1px solid rgba(255,255,255,0.04)',
+        }}>
+          {/* Left: Title */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <span style={{ fontSize: 16, color: theme.colors.exploit }}>⚠</span>
+              <div>
+                <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: 3, textTransform: 'uppercase', color: '#fff' }}>
+                  GLOBAL COMMAND CENTER
                 </div>
-              ) : (
-                filteredFeed.map((event, i) => (
-                  <FeedEventCard
-                    key={event.id || i}
-                    event={event}
-                    expanded={expandedId === (event.id || String(i))}
-                    onToggle={() => setExpandedId(prev => prev === (event.id || String(i)) ? null : (event.id || String(i)))}
-                    onCountryClick={(co) => { setActiveCountry(co); }}
-                  />
-                ))
-              )}
+                <div style={{ fontSize: 8, letterSpacing: 2, color: theme.colors.textDim, textTransform: 'uppercase' }}>
+                  PREDICTRA THREAT INTELLIGENCE · {timeMode === 'live' ? 'LIVE' : `${timeMode}M WINDOW`}
+                </div>
+              </div>
             </div>
-          </GlassPanel>
+
+            {/* Time mode selector */}
+            <div style={{ display: 'flex', gap: 2, marginLeft: 12 }}>
+              {(['live', 5, 15, 60] as const).map(mode => (
+                <button
+                  key={mode}
+                  onClick={() => setTimeMode(mode)}
+                  style={{
+                    padding: '3px 10px',
+                    background: timeMode === mode ? 'rgba(239, 68, 68, 0.2)' : 'rgba(255,255,255,0.03)',
+                    border: timeMode === mode ? '1px solid rgba(239, 68, 68, 0.4)' : '1px solid rgba(255,255,255,0.06)',
+                    borderRadius: 2, color: timeMode === mode ? theme.colors.exploit : theme.colors.textDim,
+                    fontSize: 9, fontFamily: theme.fonts.mono, fontWeight: 700,
+                    cursor: 'pointer', textTransform: 'uppercase', letterSpacing: 1, transition: 'all 0.2s',
+                  }}
+                >
+                  {mode === 'live' ? '● LIVE' : `${mode}m`}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Center: Clock */}
+          <HudClock />
+
+          {/* Right: Search + Exports + Threat Level */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <div style={{ position: 'relative' }}>
+              <input
+                ref={searchRef}
+                value={searchQuery}
+                onChange={e => setSearchQuery(e.target.value)}
+                placeholder='SEARCH…'
+                style={{
+                  width: 180, padding: '5px 10px 5px 28px',
+                  background: 'rgba(255,255,255,0.04)',
+                  border: `1px solid ${searchQuery ? theme.colors.exploit + '60' : 'rgba(255,255,255,0.08)'}`,
+                  borderRadius: 2, color: theme.colors.textPrimary,
+                  fontFamily: theme.fonts.mono, fontSize: 9, letterSpacing: 1,
+                  outline: 'none', transition: 'border-color 0.2s',
+                }}
+              />
+              <span style={{ position: 'absolute', left: 8, top: '50%', transform: 'translateY(-50%)', fontSize: 11, color: theme.colors.textDim }}>⌕</span>
+            </div>
+
+            <div style={{ display: 'flex', gap: 3 }}>
+              <button onClick={handleExportCSV} style={{ ...hudBtnStyle }}>CSV</button>
+              <button onClick={handleExportJSON} style={{ ...hudBtnStyle }}>JSON</button>
+              <button onClick={handleExportExcel} style={{ ...hudBtnStyle, borderColor: 'rgba(239,68,68,0.3)', color: theme.colors.exploit }}>XLSX</button>
+            </div>
+
+            {/* Threat Level Badge */}
+            <div style={{
+              display: 'flex', alignItems: 'center', gap: 6, padding: '4px 10px',
+              background: `${threatLevel.color}12`, border: `1px solid ${threatLevel.color}40`,
+              borderRadius: 2,
+            }}>
+              <div className="hud-beacon" style={{ width: 6, height: 6, borderRadius: '50%', background: threatLevel.color, boxShadow: `0 0 8px ${threatLevel.color}` }} />
+              <span style={{ fontSize: 9, fontWeight: 700, color: threatLevel.color, letterSpacing: 1.5 }}>{threatLevel.label}</span>
+            </div>
+          </div>
         </div>
 
-        {/* Trend Sparkline */}
-        <div style={{ gridColumn: 'span 1' }}>
-          <GlassPanel style={{ height: '340px', display: 'flex', flexDirection: 'column' }}>
-            <div style={{ fontSize: 13, fontFamily: theme.fonts.display, textTransform: 'uppercase', letterSpacing: 2, color: theme.colors.textSecondary, marginBottom: 10 }}>
-              Attack Trend
+        {/* ═══ TOP-LEFT: System Status Panel ═══ */}
+        <div className="hud-entrance-left" style={{ position: 'absolute', top: 60, left: 16, width: 260, pointerEvents: 'auto' }}>
+          <HudPanel accent="red" title="SYSTEM STATUS">
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
+              <div className="hud-beacon" style={{ width: 8, height: 8, borderRadius: '50%', background: threatLevel.color, boxShadow: `0 0 10px ${threatLevel.color}` }} />
+              <span style={{ fontSize: 14, fontWeight: 800, color: threatLevel.color, letterSpacing: 1.5, fontFamily: theme.fonts.display }}>{threatLevel.label}</span>
             </div>
-            <div style={{ fontSize: 10, color: theme.colors.textDim, marginBottom: 12 }}>Last 10 minutes · 10s buckets</div>
-            <TrendSparkline data={trendData} />
-            <div style={{ marginTop: 16 }}>
-              <div style={{ fontSize: 12, color: theme.colors.textDim, marginBottom: 10, fontFamily: theme.fonts.display, textTransform: 'uppercase', letterSpacing: 1.5 }}>Threat Types</div>
-              {(['exploit', 'malware', 'phishing'] as AttackType[]).map(type => {
-                const count = typeDistribution[type];
-                const pct = (count / distTotal) * 100;
-                const color = getAttackColor(type);
-                return (
-                  <div key={type} style={{ marginBottom: 10 }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, marginBottom: 4 }}>
-                      <span style={{ color: color, fontFamily: theme.fonts.display, textTransform: 'uppercase', letterSpacing: 1 }}>{type}</span>
-                      <span style={{ color: theme.colors.textDim, fontFamily: theme.fonts.mono }}>{pct.toFixed(1)}%</span>
-                    </div>
-                    <div style={{ height: 5, background: 'rgba(255,255,255,0.05)', borderRadius: 3 }}>
-                      <div style={{ width: `${pct}%`, height: '100%', background: `linear-gradient(90deg, ${color}CC, ${color})`, borderRadius: 3, transition: 'width 0.6s ease' }} />
-                    </div>
+            <div style={{ fontSize: 8, letterSpacing: 2, color: theme.colors.textDim, marginBottom: 2, textTransform: 'uppercase' }}>Total Attacks {timeMode === 'live' ? '(24H)' : `(${timeMode}M)`}</div>
+            <div style={{ fontSize: 28, fontWeight: 800, color: '#fff', fontFamily: theme.fonts.display, marginBottom: 10 }}>{fmt(total)}</div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: 8 }}>
+              <div>
+                <div style={{ fontSize: 7, letterSpacing: 1.5, color: theme.colors.textDim, textTransform: 'uppercase' }}>THREATS/MIN</div>
+                <div style={{ fontSize: 16, fontWeight: 700, color: theme.colors.warning, fontFamily: theme.fonts.display }}>{threatsPerMin}</div>
+              </div>
+              <div style={{ textAlign: 'right' }}>
+                <div style={{ fontSize: 7, letterSpacing: 1.5, color: theme.colors.textDim, textTransform: 'uppercase' }}>ACTIVE ARCS</div>
+                <div style={{ fontSize: 16, fontWeight: 700, color: theme.colors.exploit, fontFamily: theme.fonts.display }}>{activeArcCount}</div>
+              </div>
+              <div style={{ textAlign: 'right' }}>
+                <div style={{ fontSize: 7, letterSpacing: 1.5, color: theme.colors.textDim, textTransform: 'uppercase' }}>TREND</div>
+                <div style={{ fontSize: 16, fontWeight: 700, color: trendUp ? theme.colors.danger : theme.colors.success, fontFamily: theme.fonts.display }}>
+                  {trendUp ? '▲ UP' : '▼ DOWN'}
+                </div>
+              </div>
+            </div>
+          </HudPanel>
+        </div>
+
+        {/* ═══ TOP-LEFT (Below Status): KPI Breakdown ═══ */}
+        <div className="hud-entrance-left" style={{ position: 'absolute', top: 270, left: 16, width: 260, pointerEvents: 'auto', animationDelay: '0.1s' }}>
+          <HudPanel accent="yellow" title="THREAT BREAKDOWN">
+            {(['exploit', 'malware', 'phishing'] as AttackType[]).map(type => {
+              const count = typeDistribution[type];
+              const pct = (count / distTotal) * 100;
+              const color = getAttackColor(type);
+              return (
+                <div
+                  key={type}
+                  onClick={() => setActiveTypes(new Set([type]))}
+                  style={{
+                    marginBottom: 8, cursor: 'pointer', padding: '4px 6px', borderRadius: 2,
+                    background: activeTypes.has(type) ? `${color}15` : 'transparent',
+                    border: activeTypes.has(type) ? `1px solid ${color}30` : '1px solid transparent',
+                    transition: 'all 0.2s',
+                  }}
+                >
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 9, marginBottom: 3 }}>
+                    <span style={{ color, letterSpacing: 1.5, textTransform: 'uppercase', fontWeight: 700 }}>
+                      ⚠ {type}
+                    </span>
+                    <span style={{ color: theme.colors.textDim }}>{fmt(count)} · {pct.toFixed(1)}%</span>
                   </div>
-                );
-              })}
-            </div>
-          </GlassPanel>
+                  <div style={{ height: 3, background: 'rgba(255,255,255,0.05)', borderRadius: 1 }}>
+                    <div className="hud-bar-fill" style={{ width: `${pct}%`, height: '100%', background: `linear-gradient(90deg, ${color}80, ${color})`, borderRadius: 1 }} />
+                  </div>
+                </div>
+              );
+            })}
+          </HudPanel>
         </div>
 
-        {/* Intelligence Providers */}
-        <div style={{ gridColumn: 'span 1' }}>
-          <GlassPanel style={{ height: '320px', display: 'flex', flexDirection: 'column' }}>
-            <div style={{ fontSize: 13, fontFamily: theme.fonts.display, textTransform: 'uppercase', letterSpacing: 2, color: theme.colors.textSecondary, marginBottom: 12 }}>
-              Intelligence Providers
-            </div>
-            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 10, overflowY: 'auto' }}>
+        {/* ═══ LEFT-MID: Intelligence Providers ═══ */}
+        <div className="hud-entrance-left" style={{ position: 'absolute', top: 450, left: 16, width: 260, pointerEvents: 'auto', animationDelay: '0.15s' }}>
+          <HudPanel accent="purple" title="INTEL SOURCES">
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 5, maxHeight: 180, overflowY: 'auto' }}>
               {topApis.map(([api, count], idx) => {
                 const pct = (count / distTotal) * 100;
-                const color = `hsl(${idx * 40 + 180}, 100%, 60%)`;
+                const color = `hsl(${idx * 40 + 180}, 80%, 55%)`;
                 const active = activeSource === api;
                 return (
                   <div
                     key={api}
                     onClick={() => setActiveSource(active ? null : api)}
                     style={{
-                      cursor: 'pointer', padding: '8px 10px', borderRadius: 8,
+                      cursor: 'pointer', padding: '4px 6px', borderRadius: 2,
                       background: active ? `${color}15` : 'transparent',
-                      border: `1px solid ${active ? color + '50' : 'transparent'}`,
+                      border: active ? `1px solid ${color}40` : '1px solid transparent',
                       transition: 'all 0.2s',
                     }}
                   >
-                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, marginBottom: 4 }}>
-                      <span style={{ textTransform: 'capitalize', color: active ? color : theme.colors.textPrimary, fontWeight: active ? 700 : 400 }}>{api}</span>
-                      <span style={{ fontFamily: theme.fonts.mono, color: theme.colors.textDim }}>{fmt(count)} · {pct.toFixed(1)}%</span>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 9, marginBottom: 2 }}>
+                      <span style={{ textTransform: 'uppercase', color: active ? color : theme.colors.textPrimary, fontWeight: active ? 700 : 400, letterSpacing: 0.5 }}>{api}</span>
+                      <span style={{ color: theme.colors.textDim }}>{fmt(count)}</span>
                     </div>
-                    <div style={{ width: '100%', height: 3, background: 'rgba(255,255,255,0.05)', borderRadius: 2 }}>
-                      <div style={{ width: `${pct}%`, height: '100%', background: color, borderRadius: 2, transition: 'width 0.6s' }} />
+                    <div style={{ height: 2, background: 'rgba(255,255,255,0.04)', borderRadius: 1 }}>
+                      <div style={{ width: `${pct}%`, height: '100%', background: color, borderRadius: 1, transition: 'width 0.6s' }} />
                     </div>
                   </div>
                 );
               })}
             </div>
-          </GlassPanel>
+          </HudPanel>
         </div>
 
-        {/* Top Threat Vectors */}
-        <div style={{ gridColumn: 'span 1' }}>
-          <ClickableTopTable
-            title="Top Threat Vectors"
-            items={filteredVectors}
-            color={theme.colors.warning}
-            sort={sort}
-            onSortToggle={() => setSort(s => s === 'count' ? 'alpha' : 'count')}
-            onRowClick={(name) => setSearchQuery(name === searchQuery ? '' : name)}
-            activeRow={searchQuery}
-            total={distTotal}
-          />
+        {/* ═══ TOP-RIGHT: Attack Trend ═══ */}
+        <div className="hud-entrance-right" style={{ position: 'absolute', top: 60, right: 16, width: 300, pointerEvents: 'auto' }}>
+          <HudPanel accent="red" title="ATTACK TREND · 10 MIN">
+            <TrendSparkline data={trendData} />
+          </HudPanel>
         </div>
 
-        {/* Primary Targets */}
-        <div style={{ gridColumn: 'span 1' }}>
-          <ClickableTopTable
-            title="Primary Targets"
-            items={filteredTargets}
-            color={theme.colors.phishing}
-            sort={sort}
-            onSortToggle={() => setSort(s => s === 'count' ? 'alpha' : 'count')}
-            onRowClick={(co) => { setActiveCountry(co === activeCountry ? null : co); setDrillCountry(co); }}
-            activeRow={activeCountry}
-            total={distTotal}
-            isCountry
-          />
+        {/* ═══ RIGHT-MID: Top Threat Vectors ═══ */}
+        <div className="hud-entrance-right" style={{ position: 'absolute', top: 210, right: 16, width: 300, pointerEvents: 'auto', animationDelay: '0.1s' }}>
+          <HudPanel accent="yellow" title="THREAT VECTORS">
+            <HudCompactTable
+              items={filteredVectors}
+              color={theme.colors.warning}
+              total={distTotal}
+              onRowClick={(name) => setSearchQuery(name === searchQuery ? '' : name)}
+              activeRow={searchQuery}
+            />
+          </HudPanel>
         </div>
 
-        {/* Major Origins */}
-        <div style={{ gridColumn: 'span 1' }}>
-          <ClickableTopTable
-            title="Major Origins"
-            items={filteredOrigins}
-            color={theme.colors.exploit}
-            sort={sort}
-            onSortToggle={() => setSort(s => s === 'count' ? 'alpha' : 'count')}
-            onRowClick={(co) => { setActiveCountry(co === activeCountry ? null : co); setDrillCountry(co); }}
-            activeRow={activeCountry}
-            total={distTotal}
-            isCountry
-          />
+        {/* ═══ RIGHT-MID-LOWER: Primary Targets ═══ */}
+        <div className="hud-entrance-right" style={{ position: 'absolute', top: 420, right: 16, width: 300, pointerEvents: 'auto', animationDelay: '0.15s' }}>
+          <HudPanel accent="blue" title="PRIMARY TARGETS">
+            <HudCompactTable
+              items={filteredTargets}
+              color={theme.colors.phishing}
+              total={distTotal}
+              isCountry
+              onRowClick={(co) => { setActiveCountry(co === activeCountry ? null : co); setDrillCountry(co); }}
+              activeRow={activeCountry}
+            />
+          </HudPanel>
         </div>
 
-        {/* Attack Corridors */}
-        <div style={{ gridColumn: 'span 1' }}>
-          <ClickableTopTable
-            title="Attack Corridors"
-            items={filteredCorridors}
-            color={theme.colors.malware}
-            sort={sort}
-            onSortToggle={() => setSort(s => s === 'count' ? 'alpha' : 'count')}
-            onRowClick={() => {}}
-            activeRow={null}
-            total={distTotal}
-            isCorridor
-          />
+        {/* ═══ BOTTOM-LEFT: Major Origins ═══ */}
+        <div className="hud-entrance-bottom" style={{ position: 'absolute', bottom: 16, left: 16, width: 260, pointerEvents: 'auto' }}>
+          <HudPanel accent="red" title="MAJOR ORIGINS">
+            <HudCompactTable
+              items={filteredOrigins.slice(0, 6)}
+              color={theme.colors.exploit}
+              total={distTotal}
+              isCountry
+              onRowClick={(co) => { setActiveCountry(co === activeCountry ? null : co); setDrillCountry(co); }}
+              activeRow={activeCountry}
+            />
+          </HudPanel>
+        </div>
+
+        {/* ═══ BOTTOM-CENTER: Attack Corridors ═══ */}
+        <div className="hud-entrance-bottom" style={{ position: 'absolute', bottom: 16, left: '50%', transform: 'translateX(-50%)', width: 320, pointerEvents: 'auto', animationDelay: '0.05s' }}>
+          <HudPanel accent="yellow" title="ATTACK CORRIDORS">
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+              {filteredCorridors.slice(0, 5).map(([name, count]) => {
+                const [src, dst] = name.split('-');
+                const pct = ((count / distTotal) * 100).toFixed(1);
+                return (
+                  <div key={name} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '3px 0', borderBottom: '1px solid rgba(255,255,255,0.03)' }}>
+                    <span style={{ fontSize: 13 }}>{getFlag(src)}</span>
+                    <span style={{ fontSize: 8, color: theme.colors.textDim }}>→</span>
+                    <span style={{ fontSize: 13 }}>{getFlag(dst)}</span>
+                    <span style={{ fontSize: 9, color: theme.colors.textPrimary, flex: 1 }}>{src} → {dst}</span>
+                    <span style={{ fontSize: 9, color: theme.colors.textDim }}>{pct}%</span>
+                    <span style={{ fontSize: 9, color: theme.colors.malware, fontWeight: 700 }}>{fmt(count)}</span>
+                  </div>
+                );
+              })}
+            </div>
+          </HudPanel>
+        </div>
+
+        {/* ═══ BOTTOM-RIGHT: Live Threat Feed ═══ */}
+        <div className="hud-entrance-right" style={{ position: 'absolute', bottom: 16, right: 16, width: 340, pointerEvents: 'auto', animationDelay: '0.1s' }}>
+          <HudPanel accent="red" title={`LIVE INTERCEPTS · ${filteredFeed.length}/${recentFeed.length}`}>
+            <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 6 }}>
+              <button
+                onClick={() => setFeedPaused(p => !p)}
+                style={{
+                  padding: '2px 8px', fontSize: 8, fontFamily: theme.fonts.mono,
+                  background: feedPaused ? 'rgba(245,158,11,0.15)' : 'rgba(255,255,255,0.05)',
+                  border: `1px solid ${feedPaused ? 'rgba(245,158,11,0.4)' : 'rgba(255,255,255,0.08)'}`,
+                  borderRadius: 2, color: feedPaused ? theme.colors.warning : theme.colors.textDim,
+                  cursor: 'pointer', letterSpacing: 1, textTransform: 'uppercase',
+                }}
+              >
+                {feedPaused ? '▶ RESUME' : '⏸ PAUSE'}
+              </button>
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 4, maxHeight: 220, overflowY: 'auto' }}>
+              {filteredFeed.length === 0 ? (
+                <div style={{ color: theme.colors.textDim, fontSize: 9, textAlign: 'center', padding: 12, letterSpacing: 1 }}>
+                  {hasFilters ? 'NO MATCHING EVENTS' : 'AWAITING DATA…'}
+                </div>
+              ) : (
+                filteredFeed.slice(0, 6).map((event, i) => {
+                  const evColor = getAttackColor(event.a_t);
+                  return (
+                    <div
+                      key={event.id || i}
+                      onClick={() => setExpandedId(prev => prev === (event.id || String(i)) ? null : (event.id || String(i)))}
+                      style={{
+                        padding: '6px 8px', borderRadius: 2,
+                        background: 'rgba(255,255,255,0.02)',
+                        borderLeft: `2px solid ${evColor}`,
+                        cursor: 'pointer', transition: 'background 0.15s',
+                      }}
+                      onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'}
+                      onMouseLeave={e => e.currentTarget.style.background = 'rgba(255,255,255,0.02)'}
+                    >
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 6 }}>
+                        <span style={{ fontSize: 8, fontWeight: 700, color: evColor, letterSpacing: 1, textTransform: 'uppercase', padding: '1px 4px', background: `${evColor}15`, borderRadius: 2 }}>
+                          {event.a_t}
+                        </span>
+                        <span style={{ fontSize: 9, color: theme.colors.textPrimary, flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          {event.a_n}
+                        </span>
+                        <span style={{ fontSize: 8, color: theme.colors.textDim }}>{relativeTime(event.timestamp || event.ts)}</span>
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 3, fontSize: 9 }}>
+                        <span>{getFlag(event.s_co)}</span>
+                        <span style={{ color: theme.colors.textDim, fontFamily: theme.fonts.mono, fontSize: 8 }}>{event.s_ip || event.s_co}</span>
+                        <span style={{ color: theme.colors.textDim }}>→</span>
+                        <span>{getFlag(event.d_co)}</span>
+                        <span style={{ color: theme.colors.textDim, fontFamily: theme.fonts.mono, fontSize: 8 }}>{event.d_ip || event.d_co}</span>
+                        <span style={{ marginLeft: 'auto', fontSize: 7, color: theme.colors.textDim, letterSpacing: 0.5 }}>via {event.source_api || '?'}</span>
+                      </div>
+                      {/* Expanded meta */}
+                      {expandedId === (event.id || String(i)) && event.meta && (
+                        <div style={{ marginTop: 6, padding: '6px 8px', background: 'rgba(0,0,0,0.3)', borderRadius: 2, border: '1px solid rgba(255,255,255,0.05)' }}>
+                          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
+                            {event.meta.malware_family && <MiniTag label="MAL" value={event.meta.malware_family} color="#CC33FF" />}
+                            {event.meta.port && <MiniTag label="PORT" value={String(event.meta.port)} color={theme.colors.textSecondary} />}
+                            {event.meta.threat_type && <MiniTag label="TYPE" value={event.meta.threat_type} color={theme.colors.warning} />}
+                            {event.meta.tags?.slice(0, 3).map((tag: string) => (
+                              <MiniTag key={tag} label="TAG" value={`#${tag}`} color={theme.colors.exploit} />
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })
+              )}
+            </div>
+          </HudPanel>
+        </div>
+
+        {/* ═══ CENTER: Map Legend / Crosshair ═══ */}
+        <div style={{
+          position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)',
+          width: 50, height: 50, pointerEvents: 'none',
+        }}>
+          <div style={{ position: 'absolute', top: '50%', left: 0, right: 0, height: 1, background: 'rgba(239, 68, 68, 0.15)' }} />
+          <div style={{ position: 'absolute', left: '50%', top: 0, bottom: 0, width: 1, background: 'rgba(239, 68, 68, 0.15)' }} />
+          <div style={{
+            position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)',
+            width: 8, height: 8, borderRadius: '50%', border: '1px solid rgba(239, 68, 68, 0.3)',
+          }} />
         </div>
 
       </div>
 
-      {/* ── Country Drill-Down Slide-Over ──────────────────────────────────── */}
+      {/* ── Country Drill-Down Slide-Over ──────────────────────────────── */}
       {drillCountry && drillData && (
         <CountryDrillOver data={drillData} onClose={() => setDrillCountry(null)} />
       )}
@@ -730,9 +812,6 @@ export function DashboardPage() {
         @keyframes slideIn { from{transform:translateX(100%);opacity:0} to{transform:translateX(0);opacity:1} }
         @keyframes fadeUp { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
         input::placeholder { color: rgba(90,122,148,0.7); }
-        ::-webkit-scrollbar { width: 4px; } 
-        ::-webkit-scrollbar-track { background: rgba(255,255,255,0.02); }
-        ::-webkit-scrollbar-thumb { background: rgba(0,209,255,0.2); border-radius: 2px; }
       `}</style>
     </div>
   );
@@ -1055,3 +1134,266 @@ function hexToRgb(hex: string): string {
   const b = parseInt(clean.substring(4, 6), 16);
   return `${r}, ${g}, ${b}`;
 }
+
+/* ─── HUD Button Style ───────────────────────────────────────────────────── */
+
+const hudBtnStyle: React.CSSProperties = {
+  padding: '3px 10px',
+  background: 'rgba(255,255,255,0.04)',
+  border: '1px solid rgba(255,255,255,0.08)',
+  borderRadius: 2,
+  color: '#fff',
+  fontSize: 8,
+  fontFamily: "'JetBrains Mono', monospace",
+  fontWeight: 700,
+  cursor: 'pointer',
+  letterSpacing: 1,
+  textTransform: 'uppercase' as const,
+  transition: 'all 0.2s',
+};
+
+/* ─── HUD Panel with Corner Brackets ─────────────────────────────────────── */
+
+function HudPanel({ children, title, accent = 'red' }: {
+  children: React.ReactNode;
+  title?: string;
+  accent?: 'red' | 'yellow' | 'blue' | 'purple';
+}) {
+  const accentColors: Record<string, string> = {
+    red: theme.colors.exploit,
+    yellow: theme.colors.malware,
+    blue: theme.colors.phishing,
+    purple: '#8B5CF6',
+  };
+  const accentColor = accentColors[accent] || accentColors.red;
+
+  return (
+    <div className={`hud-panel hud-panel--${accent}`} style={{ padding: '12px 14px' }}>
+      <div className="hud-corner-bl" />
+      <div className="hud-corner-br" />
+      {title && (
+        <div style={{
+          display: 'flex', alignItems: 'center', gap: 6,
+          marginBottom: 10, paddingBottom: 6,
+          borderBottom: '1px solid rgba(255,255,255,0.05)',
+        }}>
+          <span style={{ color: accentColor, fontSize: 11 }}>⚠</span>
+          <span style={{
+            fontSize: 8, fontWeight: 700, letterSpacing: 2.5,
+            textTransform: 'uppercase', color: accentColor,
+            fontFamily: theme.fonts.mono,
+          }}>
+            {title}
+          </span>
+          <div style={{ flex: 1 }} />
+          <div style={{
+            width: 4, height: 4, borderRadius: '50%',
+            background: accentColor,
+            boxShadow: `0 0 6px ${accentColor}`,
+            animation: 'pulse 2s infinite',
+          }} />
+        </div>
+      )}
+      {children}
+    </div>
+  );
+}
+
+/* ─── HUD Clock ──────────────────────────────────────────────────────────── */
+
+function HudClock() {
+  const [time, setTime] = useState(new Date());
+
+  useEffect(() => {
+    const t = setInterval(() => setTime(new Date()), 1000);
+    return () => clearInterval(t);
+  }, []);
+
+  const h = time.getHours().toString().padStart(2, '0');
+  const m = time.getMinutes().toString().padStart(2, '0');
+  const s = time.getSeconds().toString().padStart(2, '0');
+  const dateStr = time.toISOString().split('T')[0];
+
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+      <div style={{
+        fontSize: 22, fontWeight: 800, letterSpacing: 4,
+        fontFamily: theme.fonts.mono, color: '#fff',
+        textShadow: '0 0 10px rgba(239,68,68,0.3)',
+      }}>
+        {h}:{m}<span style={{ opacity: 0.4, fontSize: 16 }}>:{s}</span>
+      </div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+        <span style={{ fontSize: 7, letterSpacing: 2, color: theme.colors.textDim, textTransform: 'uppercase', fontFamily: theme.fonts.mono }}>
+          {dateStr}
+        </span>
+        <span style={{ fontSize: 7, letterSpacing: 2, color: theme.colors.exploit, textTransform: 'uppercase', fontFamily: theme.fonts.mono }}>
+          UTC {time.getTimezoneOffset() > 0 ? '-' : '+'}{Math.abs(Math.floor(time.getTimezoneOffset() / 60))}
+        </span>
+      </div>
+    </div>
+  );
+}
+
+/* ─── HUD Compact Table ──────────────────────────────────────────────────── */
+
+function HudCompactTable({ items, color, total, isCountry, onRowClick, activeRow }: {
+  items: [string, number][];
+  color: string;
+  total: number;
+  isCountry?: boolean;
+  onRowClick: (name: string) => void;
+  activeRow: string | null;
+}) {
+  const max = Math.max(...items.map(i => i[1]), 1);
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+      {items.slice(0, 8).map(([name, count], idx) => {
+        const pct = ((count / total) * 100).toFixed(1);
+        const barPct = (count / max) * 100;
+        const isActive = activeRow === name;
+
+        return (
+          <div
+            key={name}
+            onClick={() => onRowClick(name)}
+            style={{
+              display: 'flex', flexDirection: 'column', gap: 2,
+              padding: '3px 6px', borderRadius: 2, cursor: 'pointer',
+              background: isActive ? `${color}12` : 'transparent',
+              border: isActive ? `1px solid ${color}30` : '1px solid transparent',
+              transition: 'all 0.15s',
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              <span style={{ fontSize: 8, fontFamily: theme.fonts.mono, color: theme.colors.textDim, width: 14 }}>{idx + 1}.</span>
+              {isCountry && <span style={{ fontSize: 12 }}>{getFlag(name)}</span>}
+              <span style={{
+                fontSize: 9, color: isActive ? color : theme.colors.textPrimary, flex: 1,
+                overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                fontWeight: isActive ? 700 : 400,
+              }}>{name}</span>
+              <span style={{ fontSize: 8, fontFamily: theme.fonts.mono, color: theme.colors.textDim }}>{pct}%</span>
+              <span style={{ fontSize: 9, fontFamily: theme.fonts.mono, color, fontWeight: 600 }}>{fmt(count)}</span>
+            </div>
+            <div style={{ height: 1.5, background: 'rgba(255,255,255,0.04)', borderRadius: 1, marginLeft: isCountry ? 40 : 20 }}>
+              <div style={{ width: `${barPct}%`, height: '100%', background: `linear-gradient(90deg, ${color}60, ${color})`, borderRadius: 1, transition: 'width 0.5s ease' }} />
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+/* ─── MiniTag ─────────────────────────────────────────────────────────────── */
+
+function MiniTag({ label, value, color }: { label: string; value: string; color: string }) {
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 3 }}>
+      <span style={{ fontSize: 7, letterSpacing: 1, color: theme.colors.textDim, textTransform: 'uppercase', fontFamily: theme.fonts.mono }}>{label}</span>
+      <span style={{ fontSize: 8, color, padding: '1px 4px', background: `${color}15`, borderRadius: 2, border: `1px solid ${color}20`, fontFamily: theme.fonts.mono }}>{value}</span>
+    </div>
+  );
+}
+
+/* ─── World Map SVG ──────────────────────────────────────────────────────── */
+
+function WorldMapSVG() {
+  return (
+    <svg
+      viewBox="0 0 1200 600"
+      style={{ width: '100%', height: '100%', maxHeight: '100vh' }}
+      xmlns="http://www.w3.org/2000/svg"
+    >
+      {/* Grid lines */}
+      <defs>
+        <pattern id="grid" width="60" height="60" patternUnits="userSpaceOnUse">
+          <path d="M 60 0 L 0 0 0 60" fill="none" stroke="rgba(255,255,255,0.03)" strokeWidth="0.5" />
+        </pattern>
+      </defs>
+      <rect width="1200" height="600" fill="url(#grid)" />
+
+      {/* Latitude lines */}
+      {[100, 200, 300, 400, 500].map(y => (
+        <line key={`lat-${y}`} x1="0" y1={y} x2="1200" y2={y} stroke="rgba(255,255,255,0.04)" strokeWidth="0.5" strokeDasharray="4,8" />
+      ))}
+      {/* Longitude lines */}
+      {[200, 400, 600, 800, 1000].map(x => (
+        <line key={`lon-${x}`} x1={x} y1="0" x2={x} y2="600" stroke="rgba(255,255,255,0.04)" strokeWidth="0.5" strokeDasharray="4,8" />
+      ))}
+
+      {/* Simplified world map - continents as path shapes */}
+      <g fill="rgba(255,255,255,0.12)" stroke="rgba(255,255,255,0.08)" strokeWidth="0.5">
+        {/* North America */}
+        <path d="M150,100 L180,80 L220,75 L280,80 L320,100 L340,130 L350,160 L340,190 L320,210 L280,240 L260,280 L240,300 L220,290 L200,280 L180,260 L160,230 L140,200 L130,170 L140,140 Z" />
+        {/* Central America */}
+        <path d="M220,290 L240,300 L250,320 L240,340 L230,350 L220,340 L215,320 L218,300 Z" />
+        {/* South America */}
+        <path d="M240,340 L260,350 L290,370 L310,400 L320,440 L310,480 L290,510 L270,530 L260,520 L250,490 L240,460 L230,420 L225,390 L230,360 Z" />
+        {/* Europe */}
+        <path d="M520,100 L540,90 L570,85 L600,90 L620,100 L630,120 L620,140 L600,160 L580,170 L560,165 L540,150 L520,130 L515,115 Z" />
+        {/* UK/Ireland */}
+        <path d="M490,100 L505,95 L510,110 L505,125 L495,120 L490,110 Z" />
+        {/* Scandinavia */}
+        <path d="M560,60 L570,50 L590,55 L600,70 L595,85 L580,90 L565,80 Z" />
+        {/* Africa */}
+        <path d="M530,200 L560,190 L590,195 L620,210 L640,240 L650,280 L645,320 L630,360 L610,400 L590,430 L570,440 L550,430 L540,400 L520,360 L510,320 L505,280 L510,240 L520,220 Z" />
+        {/* Middle East */}
+        <path d="M630,160 L660,150 L690,160 L700,180 L690,200 L670,210 L650,205 L635,190 L630,175 Z" />
+        {/* Russia/Central Asia */}
+        <path d="M620,80 L680,60 L740,50 L800,45 L860,50 L920,60 L960,70 L980,85 L970,100 L940,110 L900,115 L850,110 L800,105 L750,100 L700,95 L660,95 L630,90 Z" />
+        {/* India */}
+        <path d="M720,200 L740,190 L760,200 L770,230 L760,260 L740,280 L720,270 L710,240 L715,220 Z" />
+        {/* China/East Asia */}
+        <path d="M800,120 L840,110 L880,115 L920,130 L940,150 L930,170 L910,185 L880,195 L850,190 L820,180 L800,165 L790,145 Z" />
+        {/* Japan */}
+        <path d="M950,140 L960,130 L965,145 L960,160 L955,155 Z" />
+        {/* Southeast Asia */}
+        <path d="M830,230 L860,220 L880,230 L890,250 L880,270 L860,280 L840,275 L830,260 L825,245 Z" />
+        {/* Indonesia */}
+        <path d="M840,300 L870,295 L900,300 L920,310 L910,320 L880,315 L855,310 Z" />
+        {/* Australia */}
+        <path d="M880,380 L920,370 L960,375 L990,390 L1000,420 L990,450 L970,470 L940,475 L910,470 L890,450 L880,420 L875,400 Z" />
+        {/* New Zealand */}
+        <path d="M1020,460 L1030,450 L1035,465 L1030,480 L1022,475 Z" />
+        {/* Greenland */}
+        <path d="M340,40 L380,35 L410,45 L420,60 L410,75 L380,80 L350,70 L340,55 Z" />
+        {/* Madagascar */}
+        <path d="M650,400 L660,395 L665,415 L660,430 L652,422 Z" />
+      </g>
+
+      {/* Equator */}
+      <line x1="0" y1="300" x2="1200" y2="300" stroke="rgba(239,68,68,0.08)" strokeWidth="0.5" strokeDasharray="8,4" />
+      {/* Tropics */}
+      <line x1="0" y1="200" x2="1200" y2="200" stroke="rgba(245,158,11,0.05)" strokeWidth="0.5" strokeDasharray="4,12" />
+      <line x1="0" y1="400" x2="1200" y2="400" stroke="rgba(245,158,11,0.05)" strokeWidth="0.5" strokeDasharray="4,12" />
+
+      {/* Marker dots for key cities/hotspots */}
+      {[
+        { x: 280, y: 180, label: 'US' },
+        { x: 560, y: 130, label: 'EU' },
+        { x: 850, y: 150, label: 'CN' },
+        { x: 950, y: 145, label: 'JP' },
+        { x: 740, y: 250, label: 'IN' },
+        { x: 650, y: 120, label: 'RU' },
+        { x: 560, y: 300, label: 'AF' },
+        { x: 940, y: 420, label: 'AU' },
+        { x: 270, y: 390, label: 'BR' },
+      ].map(({ x, y, label }) => (
+        <g key={label}>
+          <circle cx={x} cy={y} r="3" fill="rgba(239,68,68,0.4)" />
+          <circle cx={x} cy={y} r="6" fill="none" stroke="rgba(239,68,68,0.15)" strokeWidth="0.5" />
+          <text x={x + 10} y={y + 3} fill="rgba(255,255,255,0.2)" fontSize="7" fontFamily="'JetBrains Mono', monospace">{label}</text>
+        </g>
+      ))}
+
+      {/* Coordinate labels */}
+      <text x="1190" y="305" fill="rgba(255,255,255,0.1)" fontSize="6" textAnchor="end" fontFamily="'JetBrains Mono', monospace">0°</text>
+      <text x="1190" y="205" fill="rgba(255,255,255,0.06)" fontSize="6" textAnchor="end" fontFamily="'JetBrains Mono', monospace">23.4°N</text>
+      <text x="1190" y="405" fill="rgba(255,255,255,0.06)" fontSize="6" textAnchor="end" fontFamily="'JetBrains Mono', monospace">23.4°S</text>
+    </svg>
+  );
+}
+

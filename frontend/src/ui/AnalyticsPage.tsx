@@ -88,6 +88,12 @@ function sectorColor(s: string) {
   return `hsl(${Math.abs(hash) % 360}, 55%, 55%)`;
 }
 
+interface ActorFilters {
+  country: string;
+  sector: string;
+  search: string;
+}
+
 /* ─── Main Component ──────────────────────────────────────────────────────── */
 
 export function AnalyticsPage() {
@@ -112,6 +118,14 @@ export function AnalyticsPage() {
   const [ransomware, setRansomware] = useState<GalaxyRansomware[]>([]);
   const [tools, setTools] = useState<GalaxyTool[]>([]);
   const [galaxyStats, setGalaxyStats] = useState<GalaxyStats | null>(null);
+
+  // Initial filters for drill-down
+  const [actorFilters, setActorFilters] = useState<ActorFilters>({ country: '', sector: '', search: '' });
+
+  const drillToActors = useCallback((filters: Partial<ActorFilters>) => {
+    setActorFilters(prev => ({ ...prev, ...filters }));
+    setTab('actors');
+  }, []);
 
   const fromDate = useMemo(() => {
     const ms = period === '24h' ? 86400000 : period === '7d' ? 604800000 : 2592000000;
@@ -245,11 +259,11 @@ export function AnalyticsPage() {
       {loading && <div style={{ textAlign: 'center', padding: 20, color: theme.colors.textDim, fontSize: 12, fontFamily: theme.fonts.display, letterSpacing: 2, textTransform: 'uppercase', animation: 'pulse 1.5s infinite' }}>Loading MISP Galaxy intelligence data…</div>}
 
       {/* Tab Content */}
-      {!loading && tab === 'actors' && <ActorsTab actors={actors} />}
+      {!loading && tab === 'actors' && <ActorsTab actors={actors} initialFilters={actorFilters} onFiltersChange={setActorFilters} />}
       {!loading && tab === 'malware' && <MalwareTab ransomware={ransomware} tools={tools} />}
       {!loading && tab === 'countries' && <CountriesTab countries={countries} totalGlobal={totalGlobal} selected={selectedCountry} onSelect={setSelectedCountry} />}
       {!loading && tab === 'trends' && <TrendsTab timeline={timeline} byType={byType} changePercent={changePercent} currentTotal={currentTotal} period={period} country={trendCountry} onCountryChange={setTrendCountry} onRefresh={fetchTrends} />}
-      {!loading && tab === 'explorer' && <ExplorerTab stats={galaxyStats} />}
+      {!loading && tab === 'explorer' && <ExplorerTab stats={galaxyStats} onDrillDown={drillToActors} />}
 
       <style>{`@keyframes pulse{0%,100%{opacity:1}50%{opacity:.5}}`}</style>
     </div>
@@ -260,14 +274,27 @@ export function AnalyticsPage() {
 /*  TAB 1: Threat Actors (MISP Galaxy)                                       */
 /* ═══════════════════════════════════════════════════════════════════════════ */
 
-function ActorsTab({ actors }: { actors: GalaxyActor[] }) {
-  const [search, setSearch] = useState('');
-  const [countryFilter, setCountryFilter] = useState('');
+function ActorsTab({ actors, initialFilters, onFiltersChange }: {
+  actors: GalaxyActor[];
+  initialFilters: ActorFilters;
+  onFiltersChange: (f: ActorFilters) => void;
+}) {
+  const [search, setSearch] = useState(initialFilters.search || '');
+  const [countryFilter, setCountryFilter] = useState(initialFilters.country || '');
+  const [sectorFilter, setSectorFilter] = useState(initialFilters.sector || '');
   const [selectedActor, setSelectedActor] = useState<GalaxyActor | null>(null);
+
+  // Sync internal state with props (important for drill-downs)
+  useEffect(() => {
+    setSearch(initialFilters.search || '');
+    setCountryFilter(initialFilters.country || '');
+    setSectorFilter(initialFilters.sector || '');
+  }, [initialFilters]);
 
   const filtered = useMemo(() => {
     let result = actors;
     if (countryFilter) result = result.filter(a => (a.country || '').toUpperCase() === countryFilter.toUpperCase());
+    if (sectorFilter) result = result.filter(a => a.targetSectors.includes(sectorFilter));
     if (search) {
       const q = search.toLowerCase();
       result = result.filter(a =>
@@ -277,7 +304,7 @@ function ActorsTab({ actors }: { actors: GalaxyActor[] }) {
       );
     }
     return result;
-  }, [actors, search, countryFilter]);
+  }, [actors, search, countryFilter, sectorFilter]);
 
   // By country stats
   const countryBreakdown = useMemo(() => {
@@ -304,9 +331,18 @@ function ActorsTab({ actors }: { actors: GalaxyActor[] }) {
 
         {/* Filters */}
         <div style={{ display: 'flex', gap: 10 }}>
-          <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search actors, synonyms (e.g. APT28, Fancy Bear)…"
+          <input value={search} onChange={e => { setSearch(e.target.value); onFiltersChange({ ...initialFilters, search: e.target.value }); }} placeholder="Search actors, synonyms (e.g. APT28, Fancy Bear)…"
             style={{ flex: 1, padding: '10px 14px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 8, color: '#fff', fontSize: 12, fontFamily: theme.fonts.mono, outline: 'none' }} />
-          <input value={countryFilter} onChange={e => setCountryFilter(e.target.value.toUpperCase().slice(0, 2))} placeholder="CC" maxLength={2}
+
+          {sectorFilter && (
+            <div onClick={() => { setSectorFilter(''); onFiltersChange({ ...initialFilters, sector: '' }); }} style={{
+              display: 'flex', alignItems: 'center', gap: 8, padding: '0 12px', background: `${sectorColor(sectorFilter)}20`, border: `1px solid ${sectorColor(sectorFilter)}50`, borderRadius: 8, cursor: 'pointer', color: sectorColor(sectorFilter), fontSize: 11, fontWeight: 700
+            }}>
+               sektor: {sectorFilter} <span style={{ opacity: 0.5 }}>×</span>
+            </div>
+          )}
+
+          <input value={countryFilter} onChange={e => { const v = e.target.value.toUpperCase().slice(0, 2); setCountryFilter(v); onFiltersChange({ ...initialFilters, country: v }); }} placeholder="CC" maxLength={2}
             style={{ width: 50, padding: '10px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 8, color: '#fff', fontSize: 12, fontFamily: theme.fonts.mono, outline: 'none', textAlign: 'center' }} />
         </div>
 
@@ -317,7 +353,11 @@ function ActorsTab({ actors }: { actors: GalaxyActor[] }) {
           </div>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
             {countryBreakdown.slice(0, 15).map(([cc, count]) => (
-              <div key={cc} onClick={() => setCountryFilter(countryFilter === cc ? '' : cc)} style={{
+              <div key={cc} onClick={() => {
+                const newCo = countryFilter === cc ? '' : cc;
+                setCountryFilter(newCo);
+                onFiltersChange({ ...initialFilters, country: newCo });
+              }} style={{
                 padding: '6px 12px', borderRadius: 8, cursor: 'pointer', transition: 'all 0.2s',
                 background: countryFilter === cc ? 'rgba(239,68,68,0.15)' : 'rgba(255,255,255,0.04)',
                 border: `1px solid ${countryFilter === cc ? 'rgba(239,68,68,0.4)' : 'rgba(255,255,255,0.06)'}`,
@@ -831,7 +871,7 @@ function TrendsTab({ timeline, byType, changePercent, currentTotal, period, coun
 /*  TAB 5: Galaxy Explorer                                                   */
 /* ═══════════════════════════════════════════════════════════════════════════ */
 
-function ExplorerTab({ stats }: { stats: GalaxyStats | null }) {
+function ExplorerTab({ stats, onDrillDown }: { stats: GalaxyStats | null; onDrillDown: (f: Partial<ActorFilters>) => void }) {
   if (!stats) return <div style={{ padding: 40, textAlign: 'center', color: theme.colors.textDim }}>Loading Galaxy statistics…</div>;
 
   const sortedCountries = Object.entries(stats.byCountry).sort((a, b) => b[1] - a[1]);
@@ -866,7 +906,9 @@ function ExplorerTab({ stats }: { stats: GalaxyStats | null }) {
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
             {sortedCountries.map(([cc, count]) => (
-              <div key={cc} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <div key={cc} onClick={() => onDrillDown({ country: cc, sector: '', search: '' })} style={{
+                display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer', padding: '4px 8px', borderRadius: 6, transition: 'all 0.2s'
+              }} className="hoverable-row">
                 <span style={{ fontSize: 16, width: 28, textAlign: 'center' }}>{flag(cc)}</span>
                 <span style={{ width: 24, fontSize: 11, fontWeight: 700, color: '#fff' }}>{cc}</span>
                 <div style={{ flex: 1, height: 6, background: 'rgba(255,255,255,0.05)', borderRadius: 3 }}>
@@ -885,7 +927,9 @@ function ExplorerTab({ stats }: { stats: GalaxyStats | null }) {
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
             {sortedSectors.map(([sector, count]) => (
-              <div key={sector} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <div key={sector} onClick={() => onDrillDown({ sector, country: '', search: '' })} style={{
+                display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer', padding: '4px 8px', borderRadius: 6, transition: 'all 0.2s'
+              }} className="hoverable-row">
                 <span style={{ fontSize: 12, fontWeight: 600, color: sectorColor(sector), width: 120, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{sector}</span>
                 <div style={{ flex: 1, height: 6, background: 'rgba(255,255,255,0.05)', borderRadius: 3 }}>
                   <div style={{ width: `${(count/maxSector)*100}%`, height: '100%', background: `linear-gradient(90deg, ${sectorColor(sector)}80, ${sectorColor(sector)})`, borderRadius: 3 }} />
@@ -907,7 +951,9 @@ function ExplorerTab({ stats }: { stats: GalaxyStats | null }) {
             {sortedVictims.map(([name, count]) => {
               const cc = countryToCC(name);
               return (
-                <div key={name} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <div key={name} onClick={() => onDrillDown({ search: name, country: '', sector: '' })} style={{
+                  display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer', padding: '4px 8px', borderRadius: 6, transition: 'all 0.2s'
+                }} className="hoverable-row">
                   <span style={{ fontSize: 14, width: 24, textAlign: 'center' }}>{flag(cc)}</span>
                   <span style={{ fontSize: 11, color: '#fff', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{name}</span>
                   <div style={{ width: 80, height: 5, background: 'rgba(255,255,255,0.05)', borderRadius: 3 }}>
@@ -944,7 +990,10 @@ function ExplorerTab({ stats }: { stats: GalaxyStats | null }) {
             })}
           </div>
         </GlassPanel>
-      </div>
+    </div>
+      <style>{`
+        .hoverable-row:hover { background: rgba(255,255,255,0.05); }
+      `}</style>
     </div>
   );
 }

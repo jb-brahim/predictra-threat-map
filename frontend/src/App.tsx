@@ -37,9 +37,9 @@ function App() {
     <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', width: '100vw', background: '#050B14', overflow: 'hidden' }}>
       <StatusBar />
       <div style={{ display: 'flex', flex: 1, marginTop: 64, overflow: 'hidden' }}>
-        {currentView !== 'stix' && currentView !== 'map' && <Sidebar />}
+        {currentView !== 'stix' && currentView !== 'map' && currentView !== 'dashboard' && <Sidebar />}
         
-        <div style={{ flex: 1, position: 'relative', overflowY: 'auto', padding: currentView === 'stix' || currentView === 'map' ? '0' : '24px' }}>
+        <div style={{ flex: 1, position: 'relative', overflowY: 'auto', padding: currentView === 'stix' || currentView === 'map' || currentView === 'dashboard' ? '0' : '24px' }}>
           {(currentView === 'map' || currentView === 'dashboard') && <DashboardPage />}
           {currentView === 'history' && <HistoryPage />}
           {currentView === 'country' && <CountryDashboard />}

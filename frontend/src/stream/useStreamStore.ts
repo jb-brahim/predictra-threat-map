@@ -2,7 +2,6 @@ import { create } from 'zustand';
 import type { ThreatEvent, CounterData, ConnectionStatus, TypeDistribution, ArcData, MarkerData } from './types';
 import { RingBuffer, perfTelemetry, fastId } from '../utils/perf';
 import { latLonToVector3 } from '../utils/geo';
-import { startMockStream } from './mockData';
 
 const MAX_EVENTS = 10000;
 const MAX_ARCS = 150;
@@ -379,16 +378,6 @@ export const useStreamStore = create<StreamState>((set, get) => ({
     if (state._cleanup) state._cleanup();
 
     const apiUrl = import.meta.env.VITE_API_URL || '/api/feed';
-    const mockMode = import.meta.env.VITE_MOCK_MODE === 'true';
-
-    if (mockMode) {
-      set({ status: 'live' });
-      const cleanup = startMockStream((events) => {
-        get().addEvents(events);
-      }, 600);
-      set({ _cleanup: cleanup });
-      return;
-    }
 
     // SSE connection with exponential backoff
     let reconnectDelay = 1000;
@@ -497,12 +486,8 @@ export const useStreamStore = create<StreamState>((set, get) => ({
           reconnectDelay = Math.min(reconnectDelay * 2, 30000);
         };
       } catch {
-        // If EventSource constructor fails, fall back to mock mode
-        set({ status: 'live' });
-        const cleanup = startMockStream((events) => {
-          get().addEvents(events);
-        }, 600);
-        set({ _cleanup: cleanup });
+        // If EventSource constructor fails, report disconnection
+        set({ status: 'disconnected' });
       }
     };
 

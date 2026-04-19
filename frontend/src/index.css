@@ -180,3 +180,195 @@ body,
   box-shadow: 0 0 15px rgba(0, 224, 255, 0.1), inset 0 0 10px rgba(0, 224, 255, 0.05) !important;
 }
 
+/* ========================
+   TACTICAL HUD STYLES
+   ======================== */
+
+/* HUD Panel with corner bracket decorations */
+.hud-panel {
+  position: relative;
+  background: rgba(10, 14, 20, 0.82);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  font-family: 'JetBrains Mono', 'Fira Code', monospace;
+  color: #F8FAFC;
+  overflow: visible;
+  transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+.hud-panel:hover {
+  border-color: rgba(255, 255, 255, 0.15);
+  box-shadow: 0 0 20px rgba(0, 0, 0, 0.4);
+}
+
+/* Corner bracket decorations */
+.hud-panel::before,
+.hud-panel::after {
+  content: '';
+  position: absolute;
+  width: 12px;
+  height: 12px;
+  pointer-events: none;
+  z-index: 2;
+}
+
+.hud-panel::before {
+  top: -1px;
+  left: -1px;
+  border-top: 2px solid rgba(255, 255, 255, 0.25);
+  border-left: 2px solid rgba(255, 255, 255, 0.25);
+}
+
+.hud-panel::after {
+  top: -1px;
+  right: -1px;
+  border-top: 2px solid rgba(255, 255, 255, 0.25);
+  border-right: 2px solid rgba(255, 255, 255, 0.25);
+}
+
+.hud-panel .hud-corner-bl,
+.hud-panel .hud-corner-br {
+  position: absolute;
+  width: 12px;
+  height: 12px;
+  pointer-events: none;
+  z-index: 2;
+}
+
+.hud-panel .hud-corner-bl {
+  bottom: -1px;
+  left: -1px;
+  border-bottom: 2px solid rgba(255, 255, 255, 0.25);
+  border-left: 2px solid rgba(255, 255, 255, 0.25);
+}
+
+.hud-panel .hud-corner-br {
+  bottom: -1px;
+  right: -1px;
+  border-bottom: 2px solid rgba(255, 255, 255, 0.25);
+  border-right: 2px solid rgba(255, 255, 255, 0.25);
+}
+
+/* Accent color variants */
+.hud-panel--red::before,
+.hud-panel--red::after,
+.hud-panel--red .hud-corner-bl,
+.hud-panel--red .hud-corner-br {
+  border-color: rgba(239, 68, 68, 0.5);
+}
+
+.hud-panel--yellow::before,
+.hud-panel--yellow::after,
+.hud-panel--yellow .hud-corner-bl,
+.hud-panel--yellow .hud-corner-br {
+  border-color: rgba(245, 158, 11, 0.5);
+}
+
+.hud-panel--blue::before,
+.hud-panel--blue::after,
+.hud-panel--blue .hud-corner-bl,
+.hud-panel--blue .hud-corner-br {
+  border-color: rgba(59, 130, 246, 0.5);
+}
+
+.hud-panel--purple::before,
+.hud-panel--purple::after,
+.hud-panel--purple .hud-corner-bl,
+.hud-panel--purple .hud-corner-br {
+  border-color: rgba(139, 92, 246, 0.5);
+}
+
+/* HUD horizontal scan line sweeping across viewport */
+.hud-scanline-sweep {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, rgba(239, 68, 68, 0.15), rgba(245, 158, 11, 0.1), transparent);
+  pointer-events: none;
+  animation: hud-scan 6s linear infinite;
+  z-index: 3;
+}
+
+@keyframes hud-scan {
+  0% { transform: translateY(0); }
+  100% { transform: translateY(100vh); }
+}
+
+/* Subtle CRT-like noise overlay */
+.hud-noise {
+  position: absolute;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");
+  pointer-events: none;
+  z-index: 1;
+  opacity: 0.4;
+}
+
+/* Panel entrance animations */
+.hud-entrance-left {
+  animation: hud-slide-left 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.hud-entrance-right {
+  animation: hud-slide-right 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.hud-entrance-top {
+  animation: hud-slide-top 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.hud-entrance-bottom {
+  animation: hud-slide-bottom 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes hud-slide-left {
+  from { opacity: 0; transform: translateX(-30px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes hud-slide-right {
+  from { opacity: 0; transform: translateX(30px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes hud-slide-top {
+  from { opacity: 0; transform: translateY(-20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes hud-slide-bottom {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Warning beacon pulse */
+@keyframes hud-beacon {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}
+
+.hud-beacon {
+  animation: hud-beacon 1.5s ease-in-out infinite;
+}
+
+/* Tactical grid on map */
+.hud-tactical-grid {
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.02) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
+  background-size: 40px 40px;
+  pointer-events: none;
+}
+
+/* Data bar fill animation */
+@keyframes hud-bar-fill {
+  from { width: 0; }
+}
+
+.hud-bar-fill {
+  animation: hud-bar-fill 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
