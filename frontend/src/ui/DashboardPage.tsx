@@ -250,7 +250,7 @@ export function DashboardPage() {
   const [feedPaused, setFeedPaused]     = useState(false);
   const [expandedId, setExpandedId]     = useState<string | null>(null);
   const [drillCountry, setDrillCountry] = useState<string | null>(null);
-  const [sort, setSort]                 = useState<SortMode>('count');
+  const [sort]                         = useState<SortMode>('count');
 
   /* frozen feed when paused */
   const frozenFeed = useRef<ThreatEvent[]>([]);
@@ -819,39 +819,6 @@ export function DashboardPage() {
 
 
 
-/* ─── KPICard ─────────────────────────────────────────────────────────────── */
-
-function KPICard({ title, value, color, trend, onClick, active }: { title: string; value: string; color: string; trend: 'up' | 'down' | 'neutral'; onClick: () => void; active: boolean }) {
-  const [hovered, setHovered] = useState(false);
-  return (
-    <GlassPanel
-      style={{
-        padding: '20px 24px', borderLeft: `4px solid ${color}`,
-        cursor: 'pointer', transition: 'all 0.25s',
-        background: active ? `rgba(${hexToRgb(color)}, 0.07)` : undefined,
-        boxShadow: (active || hovered) ? `0 0 30px ${color}20` : 'none',
-        transform: hovered ? 'translateY(-2px)' : 'none',
-      }}
-      onClick={onClick}
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
-    >
-      <div style={{ fontSize: 11, fontFamily: theme.fonts.display, textTransform: 'uppercase', letterSpacing: 2, color: theme.colors.textDim, marginBottom: 6 }}>{title}</div>
-      <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
-        <div style={{ fontSize: 32, fontFamily: theme.fonts.display, fontWeight: 800, color }}>{value}</div>
-        {trend !== 'neutral' && (
-          <span style={{ fontSize: 16, color: trend === 'up' ? theme.colors.danger : theme.colors.success }}>
-            {trend === 'up' ? '↑' : '↓'}
-          </span>
-        )}
-      </div>
-      <div style={{ fontSize: 10, color: theme.colors.textDim, marginTop: 4, fontFamily: theme.fonts.display, textTransform: 'uppercase', letterSpacing: 1 }}>
-        Click to filter ›
-      </div>
-    </GlassPanel>
-  );
-}
-
 /* ─── FeedEventCard ───────────────────────────────────────────────────────── */
 
 function FeedEventCard({ event, expanded, onToggle, onCountryClick }: { event: ThreatEvent; expanded: boolean; onToggle: () => void; onCountryClick: (co: string) => void }) {
@@ -980,70 +947,6 @@ function TrendSparkline({ data }: { data: number[] }) {
   );
 }
 
-/* ─── ClickableTopTable ───────────────────────────────────────────────────── */
-
-function ClickableTopTable({ title, items, color, sort, onSortToggle, onRowClick, activeRow, total, isCountry, isCorridor }: {
-  title: string; items: [string, number][]; color: string; sort: SortMode;
-  onSortToggle: () => void; onRowClick: (name: string) => void;
-  activeRow: string | null; total: number; isCountry?: boolean; isCorridor?: boolean;
-}) {
-  const max = Math.max(...items.map(i => i[1]), 1);
-  const [hovered, setHovered] = useState<string | null>(null);
-
-  return (
-    <GlassPanel style={{ padding: '16px 20px' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-        <span style={{ fontSize: 12, fontFamily: theme.fonts.display, textTransform: 'uppercase', letterSpacing: 2, color: theme.colors.textSecondary }}>{title}</span>
-        <button onClick={onSortToggle} style={{ fontSize: 9, padding: '2px 8px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 6, color: theme.colors.textDim, cursor: 'pointer', fontFamily: theme.fonts.display, textTransform: 'uppercase', letterSpacing: 1 }}>
-          {sort === 'count' ? '▼ Count' : 'A–Z ▼'}
-        </button>
-      </div>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-        {items.map(([name, count], index) => {
-          let label = name;
-          let iconEl: React.ReactNode = <span style={{ fontSize: 14, width: 24, textAlign: 'center' }}>⚡</span>;
-          if (isCountry) iconEl = <span style={{ fontSize: 14, width: 24, textAlign: 'center' }}>{getFlag(name)}</span>;
-          if (isCorridor) {
-            const [src, dst] = name.split('-');
-            label = `${src} → ${dst}`;
-            iconEl = <span style={{ fontSize: 13, width: 36, textAlign: 'center' }}>{getFlag(src)}{getFlag(dst)}</span>;
-          }
-          const isActive = activeRow === name;
-          const isHovered = hovered === name;
-          const pct = ((count / total) * 100).toFixed(1);
-
-          return (
-            <div
-              key={name}
-              onClick={() => onRowClick(name)}
-              onMouseEnter={() => setHovered(name)}
-              onMouseLeave={() => setHovered(null)}
-              style={{
-                display: 'flex', flexDirection: 'column', gap: 3,
-                padding: '5px 8px', borderRadius: 8,
-                background: isActive ? `${color}12` : isHovered ? 'rgba(255,255,255,0.03)' : 'transparent',
-                border: `1px solid ${isActive ? color + '40' : 'transparent'}`,
-                cursor: 'pointer', transition: 'all 0.15s',
-              }}
-            >
-              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                <span style={{ fontSize: 10, fontFamily: theme.fonts.mono, color: theme.colors.textDim, width: 16 }}>{index + 1}.</span>
-                {iconEl}
-                <span style={{ fontSize: 12, color: isActive ? color : theme.colors.textPrimary, flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontWeight: isActive ? 700 : 400 }}>{label}</span>
-                <span style={{ fontSize: 10, fontFamily: theme.fonts.mono, color: theme.colors.textDim }}>{pct}%</span>
-                <span style={{ fontSize: 12, fontFamily: theme.fonts.mono, color, fontWeight: 600 }}>{fmt(count)}</span>
-              </div>
-              <div style={{ width: '100%', height: 2, background: 'rgba(255,255,255,0.04)', borderRadius: 1, marginLeft: isCorridor ? 60 : 48 }}>
-                <div style={{ width: `${(count / max) * 100}%`, height: '100%', background: `linear-gradient(90deg, ${color}80, ${color})`, borderRadius: 1, transition: 'width 0.5s ease' }} />
-              </div>
-            </div>
-          );
-        })}
-      </div>
-    </GlassPanel>
-  );
-}
-
 /* ─── CountryDrillOver ────────────────────────────────────────────────────── */
 
 function CountryDrillOver({ data, onClose }: { data: { co: string; asOrigin: number; asTarget: number; topVectors: [string, number][]; corridors: string[]; topIPs: string[] }; onClose: () => void }) {
@@ -1126,14 +1029,6 @@ function CountryDrillOver({ data, onClose }: { data: { co: string; asOrigin: num
 }
 
 /* ─── util ────────────────────────────────────────────────────────────────── */
-
-function hexToRgb(hex: string): string {
-  const clean = hex.replace('#', '');
-  const r = parseInt(clean.substring(0, 2), 16);
-  const g = parseInt(clean.substring(2, 4), 16);
-  const b = parseInt(clean.substring(4, 6), 16);
-  return `${r}, ${g}, ${b}`;
-}
 
 /* ─── HUD Button Style ───────────────────────────────────────────────────── */
 
