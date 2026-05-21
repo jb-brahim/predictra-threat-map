@@ -1,0 +1,166 @@
+\documentclass[12pt,a4paper,oneside]{book}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[french,english]{babel}
+\usepackage{geometry}
+\usepackage{hyperref}
+\usepackage{graphicx}
+\usepackage{amsmath}
+\usepackage{amsfonts}
+\usepackage{amssymb}
+\usepackage{enumitem}
+\usepackage{titlesec}
+\usepackage{fancyhdr}
+\usepackage{longtable}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{xcolor}
+\usepackage{tikz}
+\usetikzlibrary{shapes.geometric, arrows, positioning, fit, calc}
+
+% Standard academic page geometry
+\geometry{
+    a4paper,
+    total={160mm,247mm},
+    left=25mm,
+    top=25mm,
+    headheight=15pt
+}
+
+% Theme Colors
+\definecolor{cyberblue}{HTML}{3B82F6}
+\definecolor{cyberamber}{HTML}{F59E0B}
+\definecolor{cyberred}{HTML}{EF4444}
+\definecolor{charcoal}{HTML}{1E293B}
+
+% Fancy headers and footers
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\nouppercase{\leftmark}}
+\fancyhead[R]{\textcolor{cyberblue}{\textbf{Predictra Threat Map}}}
+\fancyfoot[C]{\thepage}
+\renewcommand{\headrulewidth}{0.4pt}
+\renewcommand{\footrulewidth}{0pt}
+
+% Title Formatting matching academic standards
+\titleformat{\chapter}[display]
+  {\normalfont\huge\bfseries\color{charcoal}}
+  {\chaptertitlename\ \thechapter}{20pt}{\Huge\color{cyberblue}}
+\titleformat{\section}
+  {\normalfont\Large\bfseries\color{charcoal}}
+  {\thesection}{1em}{\color{cyberblue}}
+\titleformat{\subsection}
+  {\normalfont\large\bfseries\color{charcoal}}
+  {\thesubsection}{1em}{}
+
+\hypersetup{
+    colorlinks=true,
+    linkcolor=cyberblue,
+    filecolor=cyberamber,      
+    urlcolor=cyberblue,
+    citecolor=cyberblue,
+    pdftitle={Predictra Threat Map - Graduation Project Report},
+    pdfpagemode=FullScreen,
+}
+
+\begin{document}
+
+\selectlanguage{english}
+
+% Preliminary Pages
+\include{sections/cover}
+\include{sections/dedicaces}
+\include{sections/remerciements}
+
+\frontmatter
+
+\tableofcontents
+\newpage
+\listoffigures
+\newpage
+\listoftables
+\newpage
+
+\chapter*{List of Abbreviations}
+\addcontentsline{toc}{chapter}{List of Abbreviations}
+\begin{longtable}{ll}
+\textbf{API} & Application Programming Interface \\
+\textbf{APT} & Advanced Persistent Threat \\
+\textbf{ASN} & Autonomous System Number \\
+\textbf{C2} & Command and Control \\
+\textbf{CDN} & Content Delivery Network \\
+\textbf{CISA} & Cybersecurity and Infrastructure Security Agency \\
+\textbf{CORS} & Cross-Origin Resource Sharing \\
+\textbf{CS} & Cybersecurity \\
+\textbf{CTI} & Cyber Threat Intelligence \\
+\textbf{DOM} & Document Object Model \\
+\textbf{DVR} & Digital Video Recorder \\
+\textbf{EDR} & Endpoint Detection and Response \\
+\textbf{FPS} & Frames Per Second \\
+\textbf{GLSL} & OpenGL Shading Language \\
+\textbf{HUD} & Heads-Up Display \\
+\textbf{IOC} & Indicator of Compromise \\
+\textbf{IP} & Internet Protocol \\
+\textbf{JSON} & JavaScript Object Notation \\
+\textbf{KPI} & Key Performance Indicator \\
+\textbf{MISP} & Malware Information Sharing Platform \\
+\textbf{OS} & Operating System \\
+\textbf{PFE} & Projet de Fin d'Études (Graduation Project) \\
+\textbf{R3F} & React Three Fiber \\
+\textbf{RaaS} & Ransomware-as-a-Service \\
+\textbf{RDAP} & Registration Data Access Protocol \\
+\textbf{REST} & Representational State Transfer \\
+\textbf{SIEM} & Security Information and Event Management \\
+\textbf{SOC} & Security Operations Center \\
+\textbf{SPA} & Single Page Application \\
+\textbf{SSE} & Server-Sent Events \\
+\textbf{STIX} & Structured Threat Information Expression \\
+\textbf{TTP} & Tactics, Techniques, and Procedures \\
+\textbf{TTL} & Time-To-Live \\
+\textbf{UI} & User Interface \\
+\textbf{UML} & Unified Modeling Language \\
+\textbf{URL} & Uniform Resource Locator \\
+\textbf{VM} & Virtual Machine \\
+\textbf{WebGL} & Web Graphics Library \\
+\textbf{WHOIS} & Protocol for querying databases that store registered users \\
+\textbf{WS} & WebSocket \\
+\textbf{XDR} & Extended Detection and Response \\
+\end{longtable}
+
+\mainmatter
+
+% Introduction & Chapters
+\include{sections/introduction}
+\include{sections/chapitre1}
+\include{sections/chapitre2}
+\include{sections/chapitre3}
+\include{sections/chapitre4}
+\include{sections/appendices}
+
+\backmatter
+
+% General Conclusion
+\chapter*{General Conclusion}
+\addcontentsline{toc}{chapter}{General Conclusion}
+This graduation project represents a significant milestone in our engineering education. By designing and implementing the \textbf{Predictra Threat Map}, we have successfully combined high-volume cyber threat aggregation, real-time spatial visualization using modern WebGL technologies, and structured threat intelligence analysis utilizing the STIX 2.1 framework. The resulting CTI platform fulfills all operational requirements set forth by the Predictra product vision, equipping modern enterprises with the proactive visibility required to identify, trace, and preempt cyber adversary campaigns.
+
+\chapter*{Bibliography and Netography}
+\addcontentsline{toc}{chapter}{Bibliography and Netography}
+\section*{Academic References}
+\begin{enumerate}[label={[\arabic*]}]
+    \item Chwan-Hwa John Wu, J. David Irwin, ``Introduction to Computer Networks and Cybersecurity'', CRC Press, 2013.
+    \item E. Al-Shaer, S. Springer, ``Structured Threat Information Expression (STIX) Version 2.1'', OASIS Committee Specification, 2021.
+    \item Sun Tzu, ``The Art of War'', translated by Lionel Giles, 1910.
+\end{enumerate}
+
+\section*{Webography}
+\begin{enumerate}[label={[\arabic*]}]
+    \item Predictra Cyber Threat Intelligence: \url{https://predictra.io/}
+    \item React Three Fiber Documentation: \url{https://docs.pmnd.rs/react-three-fiber/}
+    \item AlienVault Open Threat Exchange: \url{https://otx.alienvault.com/}
+    \item URLhaus Database (abuse.ch): \url{https://urlhaus.abuse.ch/}
+    \item ThreatFox IOC Sharing (abuse.ch): \url{https://threatfox.abuse.ch/}
+    \item Ransomwatch Extortion Monitor: \url{https://github.com/joshisa/ransomwatch}
+\end{enumerate}
+
+\end{document}

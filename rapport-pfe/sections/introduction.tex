@@ -1,0 +1,46 @@
+\chapter*{General Introduction}
+\addcontentsline{toc}{chapter}{General Introduction}
+
+\section*{Context of the Global Cybersecurity Landscape}
+In the modern digital era, the hyper-connectivity of corporate networks, cloud platforms, and critical infrastructures has created an unprecedented and highly volatile attack surface. Modern organizations rely entirely on software and network availability to operate, which has made them highly attractive targets for malicious actors. The threat landscape has evolved from simple, opportunistic scripts and virus files into highly coordinated, structured, and persistent adversary campaigns. 
+
+These campaigns are led by a diverse array of threat actors, including state-sponsored Advanced Persistent Threats (APTs) conducting digital espionage, transnational RaaS (Ransomware-as-a-Service) cartels seeking massive financial extortion, and politically motivated hacktivists launching disruptive operations. Adversaries routinely exploit zero-day vulnerabilities, stage extensive command-and-control (C2) servers across multiple cloud hosting layers, and leak stolen corporate documents on dedicated dark web extortion sites. In this hostile landscape, static boundary defenses (such as firewalls and signature-based antivirus software) are no longer sufficient to protect sensitive enterprise assets.
+
+\section*{The Critical Problematic: Blindness to the Adversary}
+A foundational axiom of strategic warfare, articulated by the legendary Chinese military strategist Sun Tzu in \emph{The Art of War}, states:
+\begin{quote}
+    \emph{"If you know the enemy and know yourself, you need not fear the result of a hundred battles. If you know yourself but not the enemy, for every victory gained you will also suffer a defeat. If you know neither the enemy nor yourself, you will succumb in every battle."}
+\end{quote}
+
+When applied to modern cybersecurity, the vast majority of enterprise security programs focus exclusively on the second clause of Sun Tzu's axiom: \textbf{"knowing themselves"}. Organizations allocate immense capital to internal defense mechanisms. They install Endpoint Detection and Response (EDR) agents on every laptop, aggregate internal system logs inside massive Security Information and Event Management (SIEM) systems, and configure rigorous Identity and Access Management (IAM) controls. 
+
+While these tools are essential for monitoring internal system states, they leave the organization completely blind to \textbf{"the enemy"}. Enterprise defenders have no external visibility or contextual awareness. They do not know who is actively staging attacks against their specific industrial sector, which C2 IPs are currently active across global networks, what vulnerability scans are targeting their country, or if their corporate credentials and leaked assets are currently being traded on black-market forums. Operating in this state of external blindness leaves security teams entirely reactive, forced to wait until a breach has already occurred before initiating a response.
+
+\section*{The Solution: Proactive Threat Intelligence (CTI)}
+To resolve this systemic imbalance, the field of \textbf{Cyber Threat Intelligence (CTI)} has emerged as a critical component of modern security programs. CTI is the collection, classification, enrichment, and analysis of data regarding active cyber adversaries. It bridges the visibility gap by providing defenders with \textbf{external contextual awareness}, answering critical operational questions:
+\begin{itemize}
+    \item \textbf{Who is the adversary?} (Identifying threat actor profiles, suspected state sponsorship, geopolitical motivations, and historical campaign records).
+    \item \textbf{What are their tactics and methods?} (Mapping adversary techniques and procedures using standardized frameworks like the MITRE ATT\&CK matrix, which outlines 12 strategic phases of an attack lifecycle).
+    \item \textbf{What infrastructure are they utilizing?} (Tracking active botnet command-and-control nodes, phishing domain names, malware payload distribution URLs, and extortion listings).
+\end{itemize}
+
+By integrating structured CTI, enterprise defenders transition from a reactive posture to a proactive defense, identifying and blocking incoming threats before they execute within the internal network.
+
+\section*{The Metric of Failure: Compromise Dwell Time}
+The severe operational cost of defending a network without external threat visibility is illustrated by global security metrics. According to the annual \emph{IBM Cost of a Data Breach Report} and Mandiant \emph{M-Trends} analytics, the global average **dwell time** -- the duration between an initial network compromise and its eventual detection by the victim organization -- consistently exceeds **200 days** (approximately 6 to 7 months). 
+
+During this long window of blindness, threat actors move laterally across internal networks, elevate privileges to domain controllers, exfiltrate intellectual property, and eventually stage and deploy destructive ransomware payloads. The principal driver of this long dwell time is that enterprise defenders only detect compromises after an internal anomaly triggers a high-severity alert. By aggregating, geocoding, and streaming external threat intelligence in real-time, organizations can identify active attack indicators immediately, reducing compromise dwell time from months to seconds.
+
+\section*{Objective of the Graduation Project}
+The primary objective of this graduation project (Projet de Fin d'Études) is to design and implement the **Predictra Threat Map**, an enterprise-grade Cyber Threat Intelligence platform. The system is engineered to aggregate live cyber threat indicators from 9+ diverse external feeds (covering malware sites, command-and-control servers, active exploits, and ransomware leaks), geocode coordinate vectors, classify target organizational business sectors, and stream these threats in real-time via Server-Sent Events (SSE). 
+
+On the frontend, these threat flows are rendered on an interactive, high-performance 3D WebGL Earth globe using React Three Fiber and custom atmospheric shaders, allowing SOC teams to instantly visualize threat vectors. Furthermore, the platform integrates a client-side STIX 2.1 JSON uploader, a MITRE ATT\&CK Kill Chain mapping matrix, and an interactive force-directed graph to allow in-depth campaign analysis.
+
+\section*{Structure of the Graduation Report}
+To detail the research, modeling, and realization of the Predictra Threat Map, this report is structured into four distinct chapters:
+\begin{itemize}
+    \item \textbf{Chapter 1: General Project Framework and Methodology} introduces our host company Predictra, reviews the commercial and open-source state of the art in CTI platforms, critiques existing options, and details our Agile Scrum and UML development methodologies.
+    \item \textbf{Chapter 2: Project Specification, Planning, and Architecture} documents our captured functional and non-functional requirements, defines system actors, breaks down the Scrum backlog, and maps out our multi-tier deployment and logical application architectures.
+    \item \textbf{Chapter 3: First Release - Core Ingestion and 3D Visualization} details the design and implementation of Sprint 1 (our 9 parallel backend scrapers and 5-layer classification engine) and Sprint 2 (our real-time SSE stream and 3D procedural WebGL globe visualizer).
+    \item \textbf{Chapter 4: Second Release - STIX Analytics and Performance Guardrails} presents the realization of Sprint 3 (our STIX 2.1 parser, MITRE matrix, and D3 force-directed network graph) and Sprint 4 (our searchable logs browser, "Target My IP" geolocator, circular memory buffers, and adaptive FPS event sampling engine).
+\end{itemize}

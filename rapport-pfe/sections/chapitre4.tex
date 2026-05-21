@@ -1,0 +1,760 @@
+\chapter{Second Release - STIX Analytics and Performance Guardrails}
+
+\section{Introduction}
+This chapter presents the design, Unified Modeling Language (UML) modeling, and advanced technical implementation of the second functional release of the platform, matching the \textbf{Release 2} specifications of the Predictra CTI system. This release covers \textbf{Sprint 3 (STIX 2.1 Threat Analysis Dashboard)} and \textbf{Sprint 4 (Analytics, History, and Performance Polishing)}. 
+
+For each sprint, we deeply analyze the backlog objectives, describe functional system boundaries via UML Use Case modeling, detail the structural class layouts and transactional sequences, provide the mathematical foundations of graph physics and memory buffer allocations, walk through the actual React/TypeScript code logic, and illustrate the realized interfaces. This chapter represents the high-performance and analytical layer of the Predictra Threat Map, ensuring that visual alerts are paired with standard-compliant cyber threat intelligence.
+
+---
+
+\section{Sprint 3: STIX 2.1 Threat Analysis Dashboard}
+
+\subsection{Sprint Backlog and Objectives}
+The primary objective of Sprint 3 was to equip the platform with deep, standardized analytical capabilities. While a real-time visual map is excellent for immediate situational awareness, security investigators require structured frameworks to trace complex campaigns. To fulfill this need, we implemented support for the \textbf{Structured Threat Information Expression (STIX) Version 2.1} standard, which is an XML/JSON-based serialization format developed by OASIS to represent cyber threat intelligence.
+
+The Sprint 3 backlog focused on three key deliverables:
+\begin{itemize}
+    \item \textbf{STIX 2.1 JSON Ingestion Service:} A client-side file upload and validation component to parse large, multi-megabyte intelligence bundles without overloading browser processes.
+    \item \textbf{MITRE ATT\&CK Cyber Kill Chain Mapping Grid:} An automated taxonomy engine that maps ingested adversary behaviors directly to the 12 classic phases of the MITRE enterprise attack grid.
+    \item \textbf{Force-Directed Relationship Graph:} An interactive HTML5 canvas network visualizer that compiles STIX relationships (\texttt{source\_ref} and \texttt{target\_ref}) into nodes and links, animating threat flows via real-time particle simulations.
+\end{itemize}
+
+\subsection{Sprint Analysis: Use Case Modeling}
+The analyst's interactions with the STIX workspace are captured in Figure~\ref{fig:s3_usecase} using a native LaTeX TikZ Use Case diagram, illustrating actor boundaries and system triggers.
+
+\begin{figure}[h!]
+\centering
+\begin{tikzpicture}[node distance=2cm, scale=0.85, every node/.style={transform shape}]
+    % Boundary
+    \draw[draw=charcoal, fill=charcoal!2, thick, rounded corners] (0,-3) rectangle (8.5,3.5);
+    \node at (4.25,3.1) {\textbf{Sprint 3: STIX Workspace Boundary}};
+
+    % Actors
+    \node[draw=charcoal, fill=cyberblue!10, thick, minimum width=2.2cm, minimum height=1cm, align=center] (analyst) at (-2.5, 0) {\textbf{Security}\\\textbf{Analyst}};
+
+    % Use Cases
+    \node[draw, ellipse, fill=white, minimum width=3.8cm, minimum height=0.8cm] (uc1) at (4.25, 2) {Upload STIX 2.1 Bundle};
+    \node[draw, ellipse, fill=white, minimum width=3.8cm, minimum height=0.8cm] (uc2) at (4.25, 0.7) {Analyze MITRE Kill Chain};
+    \node[draw, ellipse, fill=white, minimum width=3.8cm, minimum height=0.8cm] (uc3) at (4.25, -0.6) {Navigate Relationship Graph};
+    \node[draw, ellipse, fill=white, minimum width=3.8cm, minimum height=0.8cm] (uc4) at (4.25, -1.9) {Filter Indicator IOCs};
+
+    % Links
+    \draw[thick, -] (analyst) -- (uc1);
+    \draw[thick, -] (analyst) -- (uc2);
+    \draw[thick, -] (analyst) -- (uc3);
+    \draw[thick, -] (analyst) -- (uc4);
+\end{tikzpicture}
+\caption{Sprint 3: Use Case diagram for the STIX 2.1 dashboard.}
+\label{fig:s3_usecase}
+\end{figure}
+
+The functional workflows and validation rules for each use case are documented in Table~\ref{tab:s3_uc_desc_expanded}.
+
+\begin{table}[h!]
+\centering
+\small
+\begin{tabular}{>{\raggedright\arraybackslash}p{2.6cm}>{\raggedright\arraybackslash}p{4.4cm}>{\raggedright\arraybackslash}p{6.8cm}}
+\toprule
+\textbf{Use Case} & \textbf{Actor/Trigger} & \textbf{Main Workflow \& Validation Rules} \\
+\midrule
+Upload STIX 2.1 & Security Analyst / Uploads JSON File & 1. Analyst uploads a STIX JSON file. \\
+& & 2. The parser validates the existence of the `type: "bundle"` attribute and reads the JSON structures. \\
+& & 3. If validation fails, an error toast is displayed. \\
+\midrule
+Analyze Kill Chain & Security Analyst / Selects Tab & 1. The engine scans the list of parsed attack patterns. \\
+& & 2. It parses the `kill\_chain\_phases` tags of all attack patterns. \\
+& & 3. It groups and counts patterns into the 12 MITRE phases. \\
+\midrule
+Navigate Graph & Security Analyst / Mounts Canvas & 1. The visualizer compiles the nodes and link structures. \\
+& & 2. It initiates the D3 physics engine and mounts the HTML5 canvas. \\
+& & 3. Triggers flow animations mapping particles along active links. \\
+\midrule
+Filter IOCs & Security Analyst / Types in Search & 1. Analyst filters by search text or select box (IP, Hash, URL). \\
+& & 2. The system executes client-side regex matching and pagination. \\
+\bottomrule
+\end{tabular}
+\caption{Sprint 3: Detailed Use Case descriptions.}
+\label{tab:s3_uc_desc_expanded}
+\end{table}
+
+\subsection{Sprint Conception: Parser Interfaces and Graph Sequences}
+
+\subsubsection{STIX 2.1 Schema and Core Objects}
+Standard STIX 2.1 bundles represent complex threat profiles using objects and relationships. To understand our ingestion logic, we must catalog the core STIX domain objects (SDOs) parsed by our engine, detailing their internal JSON attributes, architectural roles, and security use-cases:
+\begin{itemize}
+    \item \textbf{Threat Actor SDO:} Represents individuals or groups operating with malicious intent (e.g. APT29, LockBit). In the STIX 2.1 schema, this object maintains critical properties including:
+    \begin{itemize}
+        \item \texttt{name}, \texttt{description}, and \texttt{aliases}.
+        \item \texttt{threat\_actor\_types} (e.g. \texttt{nation-state}, \texttt{spy}, or \texttt{cyber-criminal}).
+        \item \texttt{roles} (e.g. \texttt{infrastructure-operator} or \texttt{malware-author}).
+        \item \texttt{goals} (e.g. \texttt{financial-gain} or \texttt{espionage}).
+        \item \texttt{sophistication} (ranking from \texttt{aspirant} to \texttt{innovator}).
+        \item \texttt{resource\_level} (defining backing, such as \texttt{government} or \texttt{individual}).
+    \end{itemize}
+    In our system, this SDO forms the central root of threat intelligence investigation.
+    \item \textbf{Campaign SDO:} Represents an organized grouping of adversarial behaviors, active intrusions, and operations targeting specific industries, geographic areas, or corporate assets over a defined timeline. Key attributes include \texttt{first\_seen}, \texttt{last\_seen}, \texttt{objective}, and \texttt{aliases}. Our parser resolves these attributes to build temporal threat timelines, tracking how adversaries alter their focus during seasonal cycles.
+    \item \textbf{Intrusion Set SDO:} Represents a collection of malicious behaviors, patterns of activity, resources, and campaigns sharing distinct properties, attributable to a common adversary. Unlike campaigns, which are bounded by specific start and end dates and focused objectives, intrusion sets represent long-term threat profiles. Key parameters include \texttt{first\_seen}, \texttt{last\_seen}, \texttt{goals}, \texttt{secondary\_adversaries}, and standard STIX identifiers.
+    \item \textbf{Malware SDO:} Programmatic malicious code designed to compromise system integrity, execute unauthorized commands, or exfiltrate private data. Key properties are:
+    \begin{itemize}
+        \item \texttt{malware\_types} (e.g. \texttt{trojan}, \texttt{ransomware}, \texttt{wiper}, \texttt{keylogger}).
+        \item \texttt{capabilities} (e.g. \texttt{anti-debug}, \texttt{sandbox-aware}, \texttt{data-exfil}).
+        \item Operating system compatibility parameters.
+    \end{itemize}
+    \item \textbf{Tool SDO:} Legitimate software leveraged by threat actors to perform unauthorized or malicious actions (e.g. PowerShell, Mimikatz, Cobalt Strike, Nmap). It is crucial to distinguish this from the Malware SDO, as Tools are dual-use software that standard security configurations might otherwise whitelist.
+    \item \textbf{Attack Pattern SDO:} Detailed descriptions of adversary techniques, mapped to the MITRE ATT\&CK Kill Chain taxonomy. Key fields include \texttt{kill\_chain\_phases} (identifying the active stage, such as \texttt{initial-access} or \texttt{credential-access}) and \texttt{external\_references} containing MITRE ID tags (e.g., \texttt{T1190} for exploit public-facing applications).
+    \item \textbf{Identity SDO:} Represents actual target victims, organizations, sectors, or individuals. Key properties are:
+    \begin{itemize}
+        \item \texttt{identity\_class} (e.g. \texttt{organization}, \texttt{individual}, \texttt{class}).
+        \item \texttt{sectors} (\texttt{healthcare}, \texttt{finance}, \texttt{defense}).
+        \item \texttt{contact\_information}.
+    \end{itemize}
+    \item \textbf{Indicator SDO:} Technical patterns matching observable indicators of compromise (IOCs) such as SHA-256 hashes, IP addresses, or domain links. The core attribute is \texttt{pattern}, expressed in STIX Patterning Language (e.g., \texttt{[file:hashes.'SHA-256' = '...']}), combined with \texttt{valid\_from} and \texttt{valid\_until} temporal bounds.
+    \item \textbf{Relationship SRO:} Standard STIX Relationship Objects linking two SDOs via defined verbs (e.g., \texttt{threat-actor} ``uses'' \texttt{malware}, \texttt{indicator} ``indicates'' \texttt{campaign}, \texttt{malware} ``targets'' \texttt{sector}).
+\end{itemize}
+
+To illustrate the input of our ingestion engine and demonstrate a complete, realistic intelligence structure, a highly complex STIX 2.1 JSON bundle representing a nation-state cyber espionage campaign targeting regional infrastructure is detailed below:
+\begin{verbatim}
+{
+  "type": "bundle",
+  "id": "bundle--9d48721c-a3f1-4df2-8e10",
+  "spec_version": "2.1",
+  "objects": [
+    {
+      "type": "threat-actor",
+      "id": "threat-actor--8e0f66e0",
+      "created": "2026-05-21T12:00:00.000Z",
+      "modified": "2026-05-21T12:00:00.000Z",
+      "name": "Apex Spyder",
+      "description": "Nation-state cyber espionage active since 2018.",
+      "threat_actor_types": ["spy", "nation-state"],
+      "aliases": ["APT99", "RedHorizon"],
+      "roles": ["infrastructure-operator", "malware-author"],
+      "goals": ["espionage", "intellectual-property-theft"],
+      "sophistication": "innovator",
+      "resource_level": "government"
+    },
+    {
+      "type": "campaign",
+      "id": "campaign--4f32890b",
+      "created": "2026-05-21T12:00:00.000Z",
+      "modified": "2026-05-21T12:00:00.000Z",
+      "name": "Operation Silent Breach",
+      "description": "Targeted infiltration of telco networks.",
+      "first_seen": "2026-01-15T08:00:00Z",
+      "objective": "Establish persistence and tap fiber links."
+    },
+    {
+      "type": "malware",
+      "id": "malware--3b5f928e",
+      "created": "2026-05-21T12:00:00.000Z",
+      "modified": "2026-05-21T12:00:00.000Z",
+      "name": "SpectreShell",
+      "description": "Modular remote access trojan via encrypted DNS.",
+      "is_family": true,
+      "malware_types": ["remote-access-trojan", "exfiltration"],
+      "architecture_execution_envs": ["x86", "x64"],
+      "capabilities": ["anti-sandbox", "dns-exfil", "registry-persist"]
+    },
+    {
+      "type": "tool",
+      "id": "tool--e912b48a",
+      "created": "2026-05-21T12:00:00.000Z",
+      "modified": "2026-05-21T12:00:00.000Z",
+      "name": "SharpDump",
+      "description": "A C# tool to dump LSASS memory partitions.",
+      "tool_types": ["credential-exploitation"],
+      "aliases": ["LsassDumper"]
+    },
+    {
+      "type": "attack-pattern",
+      "id": "attack-pattern--7d29bc3b",
+      "created": "2026-05-21T12:00:00.000Z",
+      "modified": "2026-05-21T12:00:00.000Z",
+      "name": "LSASS Memory Dumping",
+      "description": "LSASS memory dumping for domain credentials.",
+      "kill_chain_phases": [
+        {
+          "kill_chain_name": "mitre-attack",
+          "phase_name": "credential-access"
+        }
+      ]
+    },
+    {
+      "type": "identity",
+      "id": "identity--8a39dfa2",
+      "created": "2026-05-21T12:00:00.000Z",
+      "modified": "2026-05-21T12:00:00.000Z",
+      "name": "TelcoGlobal Inc.",
+      "description": "International telco provider in EMEA.",
+      "identity_class": "organization",
+      "sectors": ["telecommunications", "technology"]
+    },
+    {
+      "type": "indicator",
+      "id": "indicator--bc3f829e",
+      "created": "2026-05-21T12:00:00.000Z",
+      "modified": "2026-05-21T12:00:00.000Z",
+      "name": "SpectreShell C2 Server Beacon",
+      "description": "Detects SpectreShell outbound DNS beaconing.",
+      "pattern": "[domain-name:value = 'c2.corp-updates.net']",
+      "pattern_type": "stix",
+      "valid_from": "2026-01-15T00:00:00Z"
+    },
+    {
+      "type": "relationship",
+      "id": "relationship--c112a9e8",
+      "created": "2026-05-21T12:00:00.000Z",
+      "modified": "2026-05-21T12:00:00.000Z",
+      "relationship_type": "attributed-to",
+      "source_ref": "campaign--4f32890b",
+      "target_ref": "threat-actor--8e0f66e0"
+    },
+    {
+      "type": "relationship",
+      "id": "relationship--a918bde2",
+      "created": "2026-05-21T12:00:00.000Z",
+      "modified": "2026-05-21T12:00:00.000Z",
+      "relationship_type": "uses",
+      "source_ref": "threat-actor--8e0f66e0",
+      "target_ref": "malware--3b5f928e"
+    },
+    {
+      "type": "relationship",
+      "id": "relationship--e018a1bc",
+      "created": "2026-05-21T12:00:00.000Z",
+      "modified": "2026-05-21T12:00:00.000Z",
+      "relationship_type": "uses",
+      "source_ref": "malware--3b5f928e",
+      "target_ref": "tool--e912b48a"
+    },
+    {
+      "type": "relationship",
+      "id": "relationship--103cdef1",
+      "created": "2026-05-21T12:00:00.000Z",
+      "modified": "2026-05-21T12:00:00.000Z",
+      "relationship_type": "targets",
+      "source_ref": "malware--3b5f928e",
+      "target_ref": "identity--8a39dfa2"
+    },
+    {
+      "type": "relationship",
+      "id": "relationship--d028e1bc",
+      "created": "2026-05-21T12:00:00.000Z",
+      "modified": "2026-05-21T12:00:00.000Z",
+      "relationship_type": "targets",
+      "source_ref": "campaign--4f32890b",
+      "target_ref": "identity--8a39dfa2"
+    },
+    {
+      "type": "relationship",
+      "id": "relationship--a03bf19a",
+      "created": "2026-05-21T12:00:00.000Z",
+      "modified": "2026-05-21T12:00:00.000Z",
+      "relationship_type": "indicates",
+      "source_ref": "indicator--bc3f829e",
+      "target_ref": "malware--3b5f928e"
+    }
+  ]
+}
+\end{verbatim}
+
+
+\subsubsection{UML Class Diagram}
+The structural layout of our client-side parser services, data models, and visualization pages is illustrated in Figure~\ref{fig:s3_class}.
+
+\begin{figure}[h!]
+\centering
+\begin{tikzpicture}[scale=0.85, every node/.style={transform shape}]
+    % StixDashboard Page
+    \node[draw, rectangle, fill=cyberblue!5, text width=6.5cm, align=left] (stixDash) at (0,0) {
+        \textbf{StixDashboard (UI)} \\
+        \hrulefill \\
+        + bundleData : STIXBundle | null \\
+        + activeTab : String \\
+        + selectedObject : STIXObject | null \\
+        + indicatorsList : STIXIndicator[] \\
+        \hrulefill \\
+        + parseBundle(jsonText : String) : void \\
+        + extractIndicators(objects) : List \\
+        + mapToKillChain(objects) : Map \\
+        + exportIOCsToCSV() : void
+    };
+    
+    % StixVisualizerPage
+    \node[draw, rectangle, fill=cyberblue!5, text width=6.2cm, align=left] (stixVis) at (9,0) {
+        \textbf{StixVisualizerPage} \\
+        \hrulefill \\
+        + graphNodes : GraphNode[] \\
+        + graphLinks : GraphLink[] \\
+        + hoverNode : GraphNode | null \\
+        - d3Simulation : Object \\
+        \hrulefill \\
+        + buildGraphData(objects) : void \\
+        + renderCustomNode(node, ctx) : void \\
+        + applyD3ForceLaws() : void
+    };
+
+    \draw[thick, -latex] (stixDash) -- node[above, scale=0.8] {passes objects} (stixVis);
+\end{tikzpicture}
+\caption{Sprint 3: Conception Class diagram.}
+\label{fig:s3_class}
+\end{figure}
+
+\subsubsection{UML Sequence Diagram}
+The asynchronous parsing and graph building lifecycle triggered when an investigator uploads a threat bundle is traced in Figure~\ref{fig:s3_sequence}.
+
+\begin{figure}[h!]
+\centering
+\begin{tikzpicture}[scale=0.85, every node/.style={transform shape}]
+    % Lifelines
+    \draw[dashed, thick] (0,0) -- (0,-6.5) node[below] {Security Analyst};
+    \draw[dashed, thick] (3.8,0) -- (3.8,-6.5) node[below] {StixDashboard};
+    \draw[dashed, thick] (7.5,0) -- (7.5,-6.5) node[below] {parseBundle()};
+    \draw[dashed, thick] (11.2,0) -- (11.2,-6.5) node[below] {ForceGraph Canvas};
+
+    % Headers
+    \node[draw, fill=cyberblue!10, minimum width=2.2cm, minimum height=0.6cm] at (0,0.3) {Analyst};
+    \node[draw, fill=cyberblue!10, minimum width=2.2cm, minimum height=0.6cm] at (3.8,0.3) {Dashboard};
+    \node[draw, fill=cyberblue!10, minimum width=2.2cm, minimum height=0.6cm] at (7.5,0.3) {Parser Service};
+    \node[draw, fill=cyberblue!10, minimum width=2.2cm, minimum height=0.6cm] at (11.2,0.3) {D3 Canvas};
+
+    % Sequence Messages
+    \draw[-latex, thick] (0,-1) -- node[above, scale=0.8] {Upload JSON Bundle File} (3.8,-1);
+    \draw[-latex, thick] (3.8,-1.8) -- node[above, scale=0.8] {Trigger: parseBundle(json)} (7.5,-1.8);
+    
+    \draw[-latex, thick] (7.5,-2.6) -- node[above, xshift=1.2cm, scale=0.8] {Map Kill Chain \& Extract IOCs} (7.5,-3.1);
+    \draw[dashed] (7.5,-3.1) -- (7.5,-3.3);
+
+    \draw[-latex, thick] (7.5,-3.8) -- node[above, scale=0.8] {Compile Nodes \& Links Array} (11.2,-3.8);
+    \draw[-latex, thick] (11.2,-4.5) -- node[above, scale=0.8] {Draw Force Graph (particle physics)} (11.2,-5);
+    \draw[dashed, -latex] (11.2,-5.5) -- node[above, scale=0.8] {Render Completed} (3.8,-5.5);
+\end{tikzpicture}
+\caption{Sprint 3: Sequence diagram of STIX bundle parsing and graph rendering.}
+\label{fig:s3_sequence}
+\end{figure}
+
+\subsection{Conceptual Foundations of Graph Physics}
+To render a stable, highly readable representation of complex STIX relationships (where nodes representing threat actors, malwares, indicators, and tools do not overlap, related nodes cluster together harmoniously, and the global network remains centered on the canvas), we engineered a customized \textbf{D3 Force-Directed Simulation} utilizing Verlet integration. The coordinate updates on the HTML5 canvas at each animation frame are driven by a simulated physical environment, where nodes behave like charged particles connected by elastic springs.
+
+\subsubsection{1. Repulsive Force (Coulomb-like Charge)}
+To prevent nodes from overlapping and ensure clean spatial separation, a repulsive charge force is applied between all pairs of nodes in the simulation graph, analogous to Coulomb's Law in electrostatics. For any two nodes on the 2D canvas, the system evaluates their spatial separation by calculating the horizontal and vertical distance components along the coordinate axes.
+
+The Euclidean distance between the two nodes is computed from the sum of the squared coordinate differences. To prevent divide-by-zero errors when two nodes are placed at the exact same coordinate, a microscopic software softening constraint (epsilon value, set to 0.1 pixels) is introduced to establish a safe minimum distance.
+
+The repulsive force scalar is inversely proportional to the square of this safe distance, scaled by a negative charge constant representing the repulsion strength (empirically tuned in our platform to a value of -150 for optimal spacing). To apply this force to the respective node coordinate velocities, the force vector is split into its spatial horizontal and vertical components. This is achieved by multiplying the force scalar by the ratio of the horizontal or vertical distance component to the total safe distance. These components are added directly to the overall acceleration vector of the nodes, continuously pushing them apart.
+
+\subsubsection{2. Attractive Link Force (Hooke's Law Spring)}
+Nodes that share an active STIX relationship (such as a \texttt{threat-actor} that ``uses'' a specific \texttt{malware} SDO, or an \texttt{indicator} that ``indicates'' a particular \texttt{campaign} SDO) are pulled together using spring-like attractive forces, modeled on Hooke's Law.
+
+For any connected pair of nodes, the system evaluates the distance between them. The attractive force scalar along the link is calculated by multiplying a spring elasticity constant coefficient (which is dynamically adjusted based on the node's degree to distribute graph density evenly) by the displacement of the nodes from their natural rest length (fixed in our workspace to 45 pixels).
+
+The attractive force is then split into coordinate axes components by multiplying the force scalar by the ratio of the distance component to the safe distance. These forces act to pull connected threat indicators close to their actor nodes, forming visually logical clusters.
+
+\subsubsection{3. Centering Gravity Force}
+To prevent the entire graph from drifting off the boundaries of the canvas under the cumulative pressure of repulsive forces, a global centering gravity force is applied to all active nodes.
+
+For each node, the centering force along the horizontal and vertical axes is defined by multiplying a gravity scaling coefficient (set to 0.05) by the distance between the node's current coordinate and the central coordinates of the viewport (which are half of the canvas width and height, respectively). The negative sign ensures that this force acts as an attractive pull, drawing floating clusters gently back toward the center of the screen.
+
+\subsubsection{4. Alpha Cooling and Verlet Integration}
+At each animation frame interval, the accumulated force vectors on each node are integrated to update node velocity and coordinates. Rather than using standard Euler integration (which is prone to numerical instability and coordinate divergence under high force spikes), we implement Verlet integration.
+
+The net acceleration vector for each node is derived from the sum of all repulsive, attractive, and centering forces divided by the node's simulated mass. The node positions are updated by adding the product of the velocity and the frame duration to the product of half of the acceleration and the squared frame duration. The velocities are then updated by adding the product of the acceleration and the frame duration, and are subsequently scaled by a friction damping factor to simulate kinetic drag and prevent infinite oscillation.
+
+To ensure that the graph eventually converges to a completely static, stable layout rather than shaking indefinitely, the D3 simulation applies a dynamic \textbf{Alpha Cooling Scheduler}. The simulation maintains a heat level parameter (alpha), initialized to a maximum value of 1.0 upon startup or whenever the user interacts with the canvas (such as dragging a node). At each tick of the physics engine, this alpha parameter decays exponentially by multiplying its current value by a decay coefficient (set to a decay rate of 0.0228 per frame).
+
+The physical coordinate displacements applied to the node velocities are scaled directly by the current alpha coefficient. As the heat parameter approaches a minimum threshold (set to 0.001), the coordinate velocities decay to zero. This causes the interactive STIX relationship graph to settle into an aesthetically perfect, static equilibrium layout.
+
+\subsection{Sprint Realization: STIX Parsers and Interactive Graph}
+
+\subsubsection{STIX 2.1 Parser Code Walkthrough}
+The parser located in `ui/StixDashboard.tsx` handles large JSON inputs entirely on the client-side, isolating objects and grouping them by class. A code walk showing how we process indicators, extract victim sectors, and handle MITRE ATT\&CK kill chains is detailed below:
+\begin{itemize}
+    \item \textbf{Object Separation Logic:}
+    The parser maps through the STIX objects array, sorting each element by its \texttt{type} tag into dedicated buckets:
+    \begin{verbatim}
+    const objects = stixData.objects || [];
+    const actors = objects.filter(o => o.type === 'threat-actor');
+    const malwares = objects.filter(o => o.type === 'malware');
+    const tools = objects.filter(o => o.type === 'tool');
+    const indicators = objects.filter(o => o.type === 'indicator');
+    const relationships =
+      objects.filter(o => o.type === 'relationship');
+    \end{verbatim}
+    \item \textbf{MITRE ATT\&CK Kill Chain Compiler:}
+    Adversary techniques are cataloged using their defined \texttt{kill\_chain\_phases} list. The parser iterates through these phases, verifying the standard \texttt{kill\_chain\_name: "mitre-attack"} tag and mapping the technique to the corresponding phase index:
+    \begin{verbatim}
+    const phasesMap = new Map();
+    attackPatterns.forEach(ap => {
+      (ap.kill_chain_phases || []).forEach(phase => {
+        if (phase.kill_chain_name === 'mitre-attack') {
+          const phaseName = phase.phase_name.replace(/-/g, ' ');
+          if (!phasesMap.has(phaseName)) {
+            phasesMap.set(phaseName, []);
+          }
+          phasesMap.get(phaseName).push(ap);
+        }
+      });
+    });
+    \end{verbatim}
+    \item \textbf{Indicator Classifier Helper:}
+    To build search filters, indicators are classified by performing regex evaluations on their \texttt{pattern} fields (e.g. matching IPv4 octet structures, SHA-256 hashes, domains, and malicious URLs):
+    \begin{verbatim}
+    export function classifyIndicator(pattern: string): string {
+      if (/ipv4-addr:value/.test(pattern)) return 'IPv4 Address';
+      if (/file:hashes\.'SHA-256'/.test(pattern))
+        return 'SHA-256 Hash';
+      if (/domain-name:value/.test(pattern)) return 'Domain Name';
+      if (/url:value/.test(pattern)) return 'URL Endpoint';
+      return 'File/Mutex Pattern';
+    }
+    \end{verbatim}
+\end{itemize}
+
+\subsubsection{D3 Force Graph Canvas Realization}
+Our visualizer `ui/StixVisualizerPage.tsx` takes the parsed STIX nodes and relationships and draws them on an interactive HTML5 2D canvas:
+\begin{itemize}
+    \item \textbf{Custom Particle Flow Rendering:}
+    Rather than drawing simple static lines, we implement live particle animations flowing along relationship links. The system calculates vector coordinates along each link, rendering moving neon circles from the threat actor toward the target, indicating intelligence-directed data flows:
+    \begin{verbatim}
+    ctx.beginPath();
+    ctx.strokeStyle = 'rgba(59, 130, 246, 0.15)';
+    ctx.moveTo(link.source.x, link.source.y);
+    ctx.lineTo(link.target.x, link.target.y);
+    ctx.stroke();
+
+    // Particle flow animation
+    const time = Date.now() * 0.003;
+    const progress = (time + (link.index * 0.1)) % 1.0;
+    const dx = link.target.x - link.source.x;
+    const dy = link.target.y - link.source.y;
+    const px = link.source.x + dx * progress;
+    const py = link.source.y + dy * progress;
+    ctx.beginPath();
+    ctx.arc(px, py, 2.5, 0, 2 * Math.PI);
+    ctx.fillStyle = '#3B82F6';
+    ctx.fill();
+    \end{verbatim}
+    \item \textbf{Color-Coded Threat Nodes:}
+    Nodes are rendered with distinct neon-tinted outlines and center labels to establish visual structure (e.g. threat actors are colored crimson, malwares are amber, indicators are cobalt blue, and victim organizations are emerald green).
+\end{itemize}
+
+---
+
+\section{Sprint 4: Analytics, History, and Performance Polishing}
+
+\subsection{Sprint Backlog and Objectives}
+The final sprint focused on performance stabilization, database query optimizations, and historical threat telemetry analytics. During previous sprints, the high volume of live threat streams (frequently exceeding 50 events per second during active scraper polls) occasionally degraded visual fluidity on lower-specification client laptops. Furthermore, analysts required tools to query historical databases, search specific indicators, and geolocate their local networks.
+
+The Sprint 4 backlog focused on four critical objectives:
+\begin{itemize}
+    \item \textbf{Paginated Database Query Browser:} An optimized Express route querying Mongoose backend collections with search tags, regex filters, and strict page limit clamps to prevent server memory exhaustion.
+    \item \textbf{"Target My IP" Geolocator:} A utility on the history page that queries public IP APIs, geolocates the client coordinate points, and automatically filters threat history to logs targeting the analyst's network.
+    \item \textbf{Circular Memory Buffers (RingBuffer):} A client-side memory controller that caps active threat log buffers, avoiding JavaScript garbage collection performance overhead.
+    \item \textbf{Adaptive FPS Sampling Engine:} An automated quality manager that tracks browser rendering frame rates and drops incoming events dynamically to preserve UI responsiveness.
+\end{itemize}
+
+\subsection{Sprint Analysis: Use Case Modeling}
+The investigator's search and performance diagnostics use cases are captured in Figure~\ref{fig:s4_usecase}.
+
+\begin{figure}[h!]
+\centering
+\begin{tikzpicture}[node distance=2cm, scale=0.85, every node/.style={transform shape}]
+    % Boundary
+    \draw[draw=charcoal, fill=charcoal!2, thick, rounded corners] (0,-3) rectangle (8.5,3);
+    \node at (4.25,2.6) {\textbf{Sprint 4: Search \& Performance Boundary}};
+
+    % Actors
+    \node[draw=charcoal, fill=cyberblue!10, thick, minimum width=2.2cm, minimum height=1cm, align=center] (analyst) at (-2.5, 0) {\textbf{Security}\\\textbf{Analyst}};
+
+    % Use Cases
+    \node[draw, ellipse, fill=white, minimum width=3.8cm, minimum height=0.8cm] (uc1) at (4.25, 1.5) {Search History Logs};
+    \node[draw, ellipse, fill=white, minimum width=3.8cm, minimum height=0.8cm] (uc2) at (4.25, 0) {Trigger Target My IP};
+    \node[draw, ellipse, fill=white, minimum width=3.8cm, minimum height=0.8cm] (uc3) at (4.25, -1.5) {Monitor Performance HUD};
+
+    % Links
+    \draw[thick, -] (analyst) -- (uc1);
+    \draw[thick, -] (analyst) -- (uc2);
+    \draw[thick, -] (analyst) -- (uc3);
+\end{tikzpicture}
+\caption{Sprint 4: Use Case diagram for database browsing and performance monitoring.}
+\label{fig:s4_usecase}
+\end{figure}
+
+The functional steps are detailed in Table~\ref{tab:s4_uc_desc}.
+
+\begin{table}[h!]
+\centering
+\small
+\begin{tabular}{>{\raggedright\arraybackslash}p{2.6cm}>{\raggedright\arraybackslash}p{4.4cm}>{\raggedright\arraybackslash}p{6.8cm}}
+\toprule
+\textbf{Use Case} & \textbf{Actor/Trigger} & \textbf{Main Workflow} \\
+\midrule
+Search History Logs & Security Analyst / Enters Query & The analyst submits a search. The system issues a paginated HTTP GET request to `/api/history` with query parameters. \\
+Trigger Target My IP & Security Analyst / Clicks Button & Queries a public IP API (`jsonip`), geolocates the address, and immediately filters threat history to logs targeting the analyst's network. \\
+Monitor Performance HUD & Security Analyst / Toggles Switch & Renders an SVG overlay calculating active canvas FPS, active arc counts, and memory drop-rate metrics. \\
+\bottomrule
+\end{tabular}
+\caption{Sprint 4: Use Case descriptions.}
+\label{tab:s4_uc_desc}
+\end{table}
+
+\subsection{Sprint Conception: Search and Performance Buffers}
+
+\subsubsection{UML Class Diagram}
+The structural layout of our historical logs queries, circular memory buffers, and adaptive sampling stores is illustrated in Figure~\ref{fig:s4_class}.
+
+\begin{figure}[h!]
+\centering
+\begin{tikzpicture}[scale=0.85, every node/.style={transform shape}]
+    % HistoryPage Page
+    \node[draw, rectangle, fill=cyberblue!5, text width=6.8cm, align=left] (history) at (0,0) {
+        \textbf{HistoryPage (UI)} \\
+        \hrulefill \\
+        + filterQuery : String \\
+        + threatLogs : ThreatLog[] \\
+        + isTargetingMe : Boolean \\
+        + totalPages : Number \\
+        \hrulefill \\
+        + fetchHistory(page, size, query) : void \\
+        + exportToExcelFile() : void \\
+        + executeTargetMyIP() : void
+    };
+    
+    % RingBuffer Class
+    \node[draw, rectangle, fill=cyberblue!5, text width=5.5cm, align=left] (ring) at (8.5,0) {
+        \textbf{RingBuffer<T> (perf.ts)} \\
+        \hrulefill \\
+        - capacity : Number \\
+        - buffer : T[] \\
+        - pointer : Number \\
+        \hrulefill \\
+        + push(item : T) : void \\
+        + getAll() : T[] \\
+        + clear() : void \\
+        + getLength() : Number
+    };
+
+    \draw[thick, -latex] (history) -- node[above, scale=0.8] {queries} (ring);
+\end{tikzpicture}
+\caption{Sprint 4: Conception Class diagram.}
+\label{fig:s4_class}
+\end{figure}
+
+\subsubsection{UML Sequence Diagram}
+The paginated network round-trip tracing query submissions, backend mongoose filters, and frontend table rendering is illustrated in Figure~\ref{fig:s4_sequence}.
+
+\begin{figure}[h!]
+\centering
+\begin{tikzpicture}[scale=0.85, every node/.style={transform shape}]
+    % Lifelines
+    \draw[dashed, thick] (0,0) -- (0,-5.5) node[below] {Security Analyst};
+    \draw[dashed, thick] (3.8,0) -- (3.8,-5.5) node[below] {HistoryPage UI};
+    \draw[dashed, thick] (7.5,0) -- (7.5,-5.5) node[below] {Express Server};
+    \draw[dashed, thick] (11.2,0) -- (11.2,-5.5) node[below] {MongoDB Atlas};
+
+    % Headers
+    \node[draw, fill=cyberblue!10, minimum width=2.2cm, minimum height=0.6cm] at (0,0.3) {Analyst};
+    \node[draw, fill=cyberblue!10, minimum width=2.2cm, minimum height=0.6cm] at (3.8,0.3) {History UI};
+    \node[draw, fill=cyberblue!10, minimum width=2.2cm, minimum height=0.6cm] at (7.5,0.3) {Express Server};
+    \node[draw, fill=cyberblue!10, minimum width=2.2cm, minimum height=0.6cm] at (11.2,0.3) {MongoDB};
+
+    % Messages
+    \draw[-latex, thick] (0,-1) -- node[above, scale=0.8] {Click "Target My IP"} (3.8,-1);
+    \draw[-latex, thick] (3.8,-1.8) -- node[above, scale=0.8] {GET /api/history?ip=...} (7.5,-1.8);
+    \draw[-latex, thick] (7.5,-2.6) -- node[above, scale=0.8] {Mongoose: find(\{s\_ip: ...\})} (11.2,-2.6);
+    \draw[dashed, -latex] (11.2,-3.5) -- node[above, scale=0.8] {Return filtered documents} (7.5,-3.5);
+    \draw[dashed, -latex] (7.5,-4.3) -- node[above, scale=0.8] {Return JSON threat logs array} (3.8,-4.3);
+    \draw[-latex, thick] (3.8,-5) -- node[above, xshift=-1cm, scale=0.8] {Render custom threat rows} (0,-5);
+\end{tikzpicture}
+\caption{Sprint 4: Sequence diagram of paginated historical threat search.}
+\label{fig:s4_sequence}
+\end{figure}
+
+\subsection{Performance Stabilization Mathematics}
+
+\subsubsection{Garbage Collection and Memory Allocation Pressures}
+In high-velocity Javascript applications (such as a 3D Earth canvas receiving up to 100 events per second over HTTP streams), standard array manipulations cause major performance bottlenecks. Pushing dynamic objects into standard arrays forces the JavaScript engine (V8) to continuously reallocate heap memory segments. When the array is periodically cleared or pruned, these discarded objects are marked as garbage. 
+
+Eventually, the engine triggers a Garbage Collection (GC) sweep. Because GC sweeps are blocking actions, they freeze the main execution thread, resulting in visible frame drops (``stuttering'') and breaking the 60fps orbital rotation fluid target. To bypass this, we implemented a static circular RingBuffer.
+
+\subsubsection{Circular RingBuffer Logic}
+To persist threat events without creating and allocating new memory cells, we built a static circular array buffer. The buffer is initialized with a fixed maximum capacity (pre-allocated to 10,000 slots). The system maintains a global integer write pointer that increases with every newly arrived event.
+
+To determine the physical index where the new threat event should be stored, the write pointer is evaluated using modulo arithmetic against the maximum buffer capacity. Once the threat event is written to that designated index, the write pointer is incremented by one. This mechanism guarantees that when the pointer exceeds the capacity limit, the oldest existing threat event in the buffer is overwritten in-place. This maintains a completely constant memory footprint, guarantees constant-time write operations, and entirely bypasses standard JavaScript garbage collection sweeps.
+
+\subsubsection{Adaptive Event Sampling Controller}
+The system monitors browser frame rates using an active window delta timer. The instantaneous frame rate (expressed in frames per second) is calculated by dividing 1,000 milliseconds by the elapsed time in milliseconds between the current and previous animation frame.
+
+The Zustand store tracks the moving average of this frame rate. If this average drops below operational thresholds, the ingestion engine triggers dynamic dropping rules to protect the main rendering thread from performance spikes. The drop mapping is defined in Table~\ref{tab:perf_drop_rules}.
+
+\begin{table}[h!]
+\centering
+\small
+\begin{tabular}{>{\raggedright\arraybackslash}p{4.2cm}>{\raggedright\arraybackslash}p{4.2cm}>{\raggedright\arraybackslash}p{5.6cm}}
+\toprule
+\textbf{Render Quality Mode} & \textbf{Instant FPS Range} & \textbf{Event Drop Ingestion Rate} \\
+\midrule
+\textbf{High-Fluidity Mode} & Greater than or equal to 55 & 0\% (Processes all incoming visual events) \\
+\textbf{Medium-Load Mode} & Between 30 and 55 & 50\% (Drops half of incoming visual events) \\
+\textbf{Stress-Mitigation Mode} & Less than or equal to 30 & 75\% (Drops three-quarters of visual events) \\
+\bottomrule
+\end{tabular}
+\caption{Adaptive Event Sampling Engine control parameters.}
+\label{tab:perf_drop_rules}
+\end{table}
+
+\subsection{Sprint Realization: Performance Guardrails and Buffers}
+
+\subsubsection{Circular Memory Buffer Implementation}
+The circular buffer is coded inside `utils/perf.ts`. The complete class structure, showing its memory pre-allocation, circular writing logic, and constant-time extraction is detailed below:
+\begin{verbatim}
+export class RingBuffer<T> {
+  private capacity: number;
+  private buffer: T[];
+  private pointer: number = 0;
+  private size: number = 0;
+
+  constructor(capacity: number) {
+    this.capacity = capacity;
+    this.buffer = new Array<T>(capacity);
+  }
+
+  public push(item: T): void {
+    this.buffer[this.pointer] = item;
+    this.pointer = (this.pointer + 1) % this.capacity;
+    if (this.size < this.capacity) {
+      this.size++;
+    }
+  }
+
+  public getAll(): T[] {
+    const result: T[] = [];
+    const start = this.size === this.capacity ? this.pointer : 0;
+    for (let i = 0; i < this.size; i++) {
+      const idx = (start + i) % this.capacity;
+      result.push(this.buffer[idx]);
+    }
+    return result;
+  }
+
+  public getLength(): number {
+    return this.size;
+  }
+}
+\end{verbatim}
+
+\subsubsection{Adaptive Event Sampling Integration}
+Inside `stream/useStreamStore.ts`, the Zustand store utilizes the adaptive sampling rules. Incoming threat SSE payloads are evaluated against the current FPS telemetry value before being converted into 3D vectors or arc lines:
+\begin{verbatim}
+const currentFps = get().fps;
+let dropRate = 0;
+
+if (currentFps < 30) {
+  dropRate = 0.75; // Stress Mode
+} else if (currentFps < 45) {
+  dropRate = 0.50; // Medium Mode
+}
+
+// Evaluate random drop coefficient
+const shouldProcess = Math.random() >= dropRate;
+if (!shouldProcess) {
+  return; // Silently drop event animations
+}
+\end{verbatim}
+By dropping only the visual vector creation and three.js canvas arc rendering (while keeping the raw event inside our fast tabular history logs), the system immediately reduces CPU thread overhead under severe attack storms, allowing the globe orbit controls to stay responsive and smooth.
+
+\subsubsection{Browser-Side FPS Telemetry Collection Loop}
+To feed the Adaptive Sampling Controller with real-time frame rates, the presentation tier registers a high-precision telemetry loop using the browser's native \texttt{request\-Animation\-Frame} API. This loop runs continuously, tracking the duration between sequential paint calls to compute precise, non-blocking frame intervals. The duration of the current frame is calculated as the difference between the high-precision timestamp of the current frame and the timestamp of the preceding frame.
+
+To prevent instantaneous micro-stutters from triggering false-positive sampling adjustments, the engine applies an Exponential Moving Average (EMA) filter with a smoothing factor set to 0.1 to the calculated frame rate. The filtered frame rate is calculated recursively as the sum of two weighted terms: first, the product of the smoothing factor and the instantaneous frame rate (derived by dividing 1,000 milliseconds by the current frame's duration); and second, the product of the remaining weight (one minus the smoothing factor) and the previously filtered frame rate average.
+
+By utilizing a recursive low-pass filter, the telemetry stream remains exceptionally stable, filtering out single-frame garbage collection pauses while responding smoothly to sustained rendering degradation caused by attack storm payloads. The client-side implementation of this high-precision frame rate telemetry collector hook is detailed below:
+\begin{verbatim}
+import { useEffect, useRef } from 'react';
+import { useStreamStore } from '../stream/useStreamStore';
+
+export function useFpsTelemetry() {
+  const setFps = useStreamStore((s) => s.setFps);
+  const frameCountRef = useRef(0);
+  const lastTimeRef = useRef(performance.now());
+  const requestRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    const loop = () => {
+      frameCountRef.current++;
+      const now = performance.now();
+      const delta = now - lastTimeRef.current;
+
+      // Update telemetry average every 1 second
+      if (delta >= 1000) {
+        const calculatedFps = (frameCountRef.current * 1000) / delta;
+        setFps(Math.round(calculatedFps));
+        
+        // Reset counters
+        frameCountRef.current = 0;
+        lastTimeRef.current = now;
+      }
+      
+      requestRef.current = requestAnimationFrame(loop);
+    };
+
+    requestRef.current = requestAnimationFrame(loop);
+    return () => {
+      if (requestRef.current) {
+        cancelAnimationFrame(requestRef.current);
+      }
+    };
+  }, [setFps]);
+}
+\end{verbatim}
+By decoupling the telemetry collector hook from the main 3D rendering component and updating the Zustand state only once per second, the telemetry loop inflicts zero rendering overhead on the main JavaScript execution stack.
+
+---
+
+\section{System Project Retrospective}
+With all 4 development sprints completed, we conducted a rigorous project retrospective to evaluate the Agile Scrum execution, analyze our technical achievements, and identify how key challenges were resolved.
+
+\subsection{Scrum Development Analytics}
+The project execution was highly structured, maintaining steady progress across the 12-week schedule. By keeping our Sprint Planning sessions focused, committing to realistic backlogs, and conducting daily standups, we succeeded in delivering all committed features on schedule:
+\begin{itemize}
+    \item \textbf{Velocity Consistency:} We estimated user stories using standard Planning Poker. The developer team maintained a stable velocity of approximately 25-30 story points per sprint, indicating highly predictable progress.
+    \item \textbf{Increment Readiness:} Each sprint review concluded with a fully demonstrable software build. The Product Owner was able to interact with the scrapers in Sprint 1, rotate the 3D globe in Sprint 2, upload STIX files in Sprint 3, and test performance HUDs in Sprint 4.
+\end{itemize}
+
+\subsection{Overcoming Critical Technical Challenges}
+During realization, our engineering team resolved three major technical bottlenecks:
+
+\subsubsection{1. High-Velocity WebGL Frame Rate Drop}
+During early testing, active scraper polls from Fortinet and Checkpoint flooded the SSE feed with hundreds of events in brief bursts. Drawing each event as a new Three.js arc caused the render loop to freeze, dropping frame rates to 15 FPS. 
+\begin{itemize}
+    \item \textbf{Resolution:} We implemented the Server SSE 300ms flush queue to batch events, introduced Zustand throttles to delay state updates, and capped active canvas arcs to a maximum of 150. Combined with our adaptive FPS sampling engine, these adjustments restored a solid 60 FPS performance.
+\end{itemize}
+
+\subsubsection{2. Cloud Database Storage Bounds}
+Ingesting threats continuously rapidly populated our MongoDB Atlas collection, threatening to exceed the 512 MB free cluster tier within a single week.
+\begin{itemize}
+    \item \textbf{Resolution:} We restructured our database model to use compact BSON field names, reducing document footprints by over $50\%$. We also configured a 30-day MongoDB TTL (Time-To-Live) index to automatically prune historical records, and implemented a backend quota monitor that disables database writes if storage reaches 500 MB.
+\end{itemize}
+
+\subsubsection{3. Cross-Origin Resource Sharing (CORS) Blocks}
+Deploying our React single-page application on Vercel CDN while running our Express API backend on a separate cloud instance initially resulted in browser CORS blocking blocks during STIX uploads and history searches.
+\begin{itemize}
+    \item \textbf{Resolution:} We resolved this by writing a proxy routing rule inside the Vercel configurations file `vercel.json`, routing all client-side calls to `/api/*` through internal proxy channels, completely bypassing CORS constraints.
+\end{itemize}
+
+\subsection{Architectural Scalability and Future Improvements}
+To transition the Predictra Threat Map from an academic prototype into a production-grade enterprise platform, the system architecture must be designed to scale horizontally. In this subsection, we detail three planned high-volume scalability blueprints:
+
+\subsubsection{1. Kafka Distributed Message Broker Ingestion}
+The current memory-based event queue inside our Express backend is susceptible to data loss if the Node.js process crashes under extreme ingestion spikes. To resolve this, we propose replacing the direct in-memory array queue with an Apache Kafka distributed message broker. Scrapers will act as Kafka producers, publishing raw threat payloads to partitioned threat-feed topics. The Express SSE broadcast controller will act as a consumer group, reading messages from partitions and streaming them to connected clients. This establishes a highly durable, replayable, and fault-tolerant ingestion tier capable of handling millions of threat events per second.
+
+\subsubsection{2. Predictive Machine Learning Extensions}
+While the current platform provides excellent real-time visibility, it operates purely on reactive historical data. A key future extension is the integration of a predictive AI model to anticipate threat trends. By training a Long Short-Term Memory (LSTM) recurrent neural network on historical threat distributions stored in MongoDB, the system can analyze temporal patterns to forecast attack velocity spikes and target sectors. The predictions will be rendered on the 3D globe as predictive threat heatmaps (volumetric glowing grids), enabling security analysts to proactively harden infrastructure before campaigns occur.
+
+\subsubsection{3. Sharded Geographical Database Clustering}
+As historical records accumulate over years, a single MongoDB database instance will eventually face indexing and read bottlenecks. We propose a sharded cluster database configuration, sharding the threat event collection based on geographic country codes. This guarantees that queries for specific regions are routed only to their corresponding database shards, minimizing index lookup latencies and providing horizontal storage expansion.
+
+---
+
+\section{Conclusion}
+This chapter detailed the completion of our second main release. By parsing STIX 2.1 JSON files client-side, mapping threat actions to MITRE ATT\&CK matrices, rendering animated force-directed canvas networks, setting up paginated history browsers, geolocating public network IPs, and establishing performance stabilizers (including circular RingBuffers and adaptive event sampling drop rates), we have realized a highly performant, standard-compliant, and operationally reliable Cyber Threat Intelligence platform. We proceed to the General Conclusion to summarize our academic achievements, review our project goals, and suggest future avenues for research.

@@ -1,0 +1,239 @@
+\chapter[General Project Framework and Methodology]{General Project Framework \\ and Methodology}
+
+\section{Introduction}
+To establish a clear, academically rigorous roadmap for the design, development, and realization of the \textbf{Predictra Threat Map}, it is essential to first understand the organizational environment, project context, and state of the art in the threat intelligence domain. This chapter introduces our host company, details the commercial and open-source landscape of Cyber Threat Intelligence (CTI) platforms, critiques existing market solutions, and defines the Agile Scrum framework and UML standards adopted as our development and modeling methodologies.
+
+---
+
+\section{Host Organization: Predictra}
+
+\subsection{Company Profile and Mission}
+This graduation project was hosted by \textbf{Predictra}, a next-generation cybersecurity technology firm specializing in AI-driven Cyber Threat Intelligence (CTI). Predictra's core vision is to democratize threat intelligence, converting millions of raw, distributed cybersecurity data points into highly structured, real-time, and visually actionable insights. 
+
+Predictra provides enterprise security teams, Security Operations Centers (SOCs), and threat researchers with advanced reconnaissance capabilities, brand monitoring, ransomware leak tracking, and infrastructure threat analysis. The host company represents a modern threat-focused corporate environment, providing access to massive telemetry datasets and industrial expertise in cyber adversary tracking.
+
+Predictra's platforms leverage advanced machine learning models to ingest unstructured data from public channels, dark web marketplaces, chat platforms, and open-source repositories. The goal of the organization is to equip modern security departments with proactive defenses, shifting the security paradigm from reactive incident response to predictive threat preemption. By offering real-time visibility into adversary activities, Predictra empowers companies to actively block threats before they breach internal network perimeters.
+
+\subsection{Organizational Structure}
+To support its mission of providing real-time global intelligence, Predictra is structured into three highly specialized departments, as modeled in Figure~\ref{fig:predictra_org}.
+
+\begin{figure}[h!]
+\centering
+\begin{tikzpicture}[
+    sibling distance=4.5cm,
+    level distance=1.8cm,
+    every node/.style={draw=charcoal, fill=cyberblue!10, thick, rounded corners, align=center, minimum width=3.8cm, minimum height=1cm, font=\small}
+]
+    \node[fill=cyberblue!20] {Predictra Board}
+        child { node {Threat Research\\Department} }
+        child { node {Security Engineering\\Department} }
+        child { node {Sales \& Operations\\Department} };
+\end{tikzpicture}
+\caption{Organizational structure of Predictra.}
+\label{fig:predictra_org}
+\end{figure}
+
+The specific responsibilities of these departments are detailed below:
+\begin{itemize}
+    \item \textbf{Threat Research Department:} Composed of malware analysts, threat hunters, and reverse engineers. This department focuses on analyzing APT campaigns, monitoring dark web extortion sites, crawling black-market forums, and maintaining global intelligence databases (such as MISP Galaxies). They validate Indicators of Compromise (IOCs) and create custom threat signatures. Their daily operations involve reverse-engineering malware samples to extract cryptographic signatures, tracking botnet controller command networks, and cataloging threat actor tactics. Their key output is verified technical threat intelligence that is fed directly into ingestion platforms.
+    \item \textbf{Security Engineering Department:} Composed of backend developers, frontend designers, database administrators, and DevOps engineers. This department is responsible for building high-throughput ingestion pipelines, real-time data streaming layers, and high-performance visual interfaces (the department where our project was hosted). They focus on database performance tuning, horizontal scaling of ingestion services, UI/UX optimization for security analysts, and secure cloud deployments. They coordinate closely with researchers to ensure that newly discovered threat signatures are seamlessly supported by the parsing engines.
+    \item \textbf{Sales and Operations Department:} Manages client relations, enterprise deployments, marketing campaigns, and commercial threat briefing dissemination, ensuring the platform's features align with commercial market requirements. They gather user feedback from enterprise customers, identify market gaps, and coordinate training and technical support services.
+\end{itemize}
+
+\subsection{Inter-Departmental Workflows}
+To maintain a high velocity of threat detection and update dissemination, these three departments coordinate via highly structured workflows. When the Threat Research team identifies a new ransomware leak site or an active botnet command-and-control server cluster, they compile the technical signatures and pass them to the Security Engineering team. 
+
+The engineers design new scrapers or update the existing classification databases to support these indicators. Once validated, the engineering team deploys the updates to production environments. Finally, the Sales and Operations team briefs enterprise clients on the newly integrated monitoring capabilities, gathering immediate operational feedback to guide future development iterations.
+
+---
+
+\section{Project Context and Problem Definition}
+Modern organizations operate in an extremely hostile digital environment. Corporate IT infrastructures are continuously scanned, targeted, and compromised by sophisticated cyber threats, ranging from state-sponsored Advanced Persistent Threats (APTs) to highly organized Ransomware-as-a-Service (RaaS) cartels. 
+
+To defend their assets, security teams deploy extensive internal security controls (e.g., Endpoint Detection and Response - EDR, firewalls, and SIEM platforms). However, these controls only provide internal visibility. Organizations remain completely blind to the external threat landscape. They lack situational awareness regarding:
+\begin{itemize}
+    \item What active adversary infrastructures (Command and Control - C2 nodes) are currently being staged globally or targeting their specific industrial sector.
+    \item What credentials, internal assets, or confidential documents have been leaked on dark web forums or extortion blogs.
+    \item What global threat trends and geographic attack corridors are emerging.
+\end{itemize}
+
+Historically, analyzing external threat feeds was a slow, manual process. Threat intelligence teams had to poll separate tabular feeds, manually normalize indicators, and compile static briefings. This tabular approach creates a high **compromise dwell time** -- often exceeding 200 days -- during which adversaries move laterally undetected. Furthermore, Security Operations Center (SOC) analysts suffer from visual fatigue when looking at thousands of static text logs in spreadsheets or simple dashboards. They lack an intuitive, real-time spatial visual interface that provides immediate, global threat situational awareness at a glance.
+
+The \textbf{Predictra Threat Map} was conceived to bridge this critical operational gap, transforming high-velocity, multi-source external cyber threat data into a live, interactive, 3D visual intelligence map and structured analysis dashboard.
+
+---
+
+\section{State of the Art: Comparative Analysis of CTI Solutions}
+To design a robust CTI platform, we conducted a rigorous comparative analysis of existing open-source and commercial threat intelligence solutions, evaluating their data models, stream latencies, spatial visualization support, and hardware footprints.
+
+\subsection{Open-Source Solutions}
+
+\subsubsection{MISP (Malware Information Sharing Platform)}
+MISP is the de facto open-source standard for indicator of compromise (IOC) sharing. It supports highly structured schemas for storing, tagging, and sharing IP addresses, hashes, and domains across trust communities. Its MISP Galaxies and Taxonomies provide outstanding threat classification. It allows communities to build "circles of trust" to share threat data anonymously via automated server synchronization.
+
+From a technical perspective, MISP is built as a database-driven LAMP stack (Linux, Apache, MySQL, PHP). It relies on relational structures to represent threat events and attributes. While it is highly capable at storing massive tabular datasets of historical IOCs, it struggles under real-time streaming constraints. Analysts must poll the REST APIs periodically, which introduces latency. Furthermore, the user interface consists primarily of dense, tabular tables and text-based relationship structures. It lacks any high-performance, real-time 3D visual spatial mapping optimized for SOC situational monitoring.
+
+Administrative costs for maintaining a MISP instance are relatively low in terms of software licensing (as it is open source), but high in terms of specialized human labor. Security teams must allocate engineering resources to regularly monitor system states, manage database partitions, and refine taxonomy rules. Additionally, because the UI is highly complex and lacks visual animations, security teams must invest extensive hours in analyst training before the tool can be effectively integrated into active incident response pipelines.
+
+\subsubsection{OpenCTI (Open Cyber Threat Intelligence)}
+OpenCTI is an advanced, highly modular platform modeled strictly on the STIX 2.1 standard. It represents cyber threat intelligence as a complex knowledge graph, linking threat actors, intrusion sets, campaigns, malwares, vulnerabilities, and targeted sectors. The graph is stored in Neo4j (graph database) and indexed using Elasticsearch for fast searching. It features a robust Python connector framework that allows analysts to import public, private, and commercial threat feeds easily.
+
+However, the architecture of OpenCTI is extremely heavy. Running a minimal production cluster requires orchestrating multiple service layers: a web application, Neo4j, Elasticsearch, Redis, RabbitMQ, and multiple background Python workers. This infrastructure footprint demands high-specification cloud servers, resulting in prohibitive operational and maintenance costs. Furthermore, OpenCTI's user interface is optimized for long-term analytical investigations and relationship navigation rather than real-time spatial attack streams. It provides no high-performance 3D WebGL geocoded tracking.
+
+From a hosting perspective, the hardware overhead of running Neo4j and Elasticsearch concurrently means that organizations must allocate premium cloud compute resources (typically requiring at least 16GB-32GB of RAM on staging instances). For smaller security teams, start-ups, or regional public entities, this makes the cost of hosting OpenCTI comparable to commercial software suites, effectively undermining the economic benefit of selecting an open-source solution.
+
+\subsection{Commercial Solutions}
+
+\subsubsection{Recorded Future}
+Recorded Future is a leading commercial threat intelligence platform that utilizes extensive automated web scraping and natural language processing (NLP) to index threat indicators from public, dark web, and social media channels. It translates these unstructured pages into standardized "intelligence cards," offering threat scoring, actor profiles, and technical indicators. It provides polished integrations with major Enterprise SIEM, SOAR, and EDR systems.
+
+Despite its outstanding collection and enrichment capabilities, Recorded Future is commercial and highly expensive. The licensing costs are prohibitive, making it completely inaccessible to small-to-medium enterprises (SMEs) or regional public institutions. Furthermore, the dashboard is heavily geared toward analytical text widgets and tabular intelligence reports. Its spatial visualization is limited to simple static 2D maps, lacking any high-performance, live-streaming spatial animation optimized for continuous SOC display screens.
+
+Because it operates as a proprietary SaaS system, organizations must rely completely on the vendor's closed scoring algorithms and data enrichment paths. If a security team requires custom data sources (such as localized regional forums or internal telemetry datasets) that are not natively crawled by Recorded Future's harvesters, integrating them into the core intelligence engine is highly complex, often requiring expensive custom service contracts.
+
+\subsubsection{Cyble}
+Cyble is a rapidly growing AI-powered commercial CTI provider focusing on dark web monitoring, brand protection, and attack surface management. It crawls dark web forums, deep web marketplaces, and encrypted chat channels to detect leaked credentials, compromised corporate assets, and exposed source codes. It provides security teams with automated threat alerts and risk indicators.
+
+Like Recorded Future, Cyble operates on a closed-source, high-fee commercial subscription model. It lacks an open developer ecosystem, preventing custom integrations or direct access to raw streaming engines. Its visual interfaces are designed as static executive reporting panels, omitting the live, high-frame-rate geocoded animations needed for real-time threat tracing. This static approach limits the utility of the platform for active SOC display environments where real-time, animated, and geocoded visual feedback is essential for maintaining analyst alertness and immediate threat identification.
+
+\subsection{Comparative Summary Table}
+To clarify the distinctions, a comparative matrix of key platform parameters is detailed in Table~\ref{tab:cti_comparison}.
+
+\begin{table}[h!]
+\centering
+\small
+\begin{tabular}{>{\raggedright\arraybackslash}p{2.8cm}>{\raggedright\arraybackslash}p{2.4cm}>{\raggedright\arraybackslash}p{2.4cm}>{\raggedright\arraybackslash}p{2.4cm}>{\raggedright\arraybackslash}p{2.8cm}}
+\toprule
+\textbf{Feature / Metric} & \textbf{MISP} & \textbf{OpenCTI} & \textbf{Recorded Future} & \textbf{Predictra Threat Map} \\
+\midrule
+Data Model & Attributes / Events & STIX 2.1 Graph & Proprietary Graph & Hybrid (SSE + STIX 2.1) \\
+Real-Time Streaming & Low (Sync APIs) & Medium (API Poll) & Medium & High (300ms SSE Flush) \\
+Visual Spatial Mapping & None & None & Limited 2D Maps & 3D WebGL Globe \& 2D \\
+System Resource Footprint & Medium & Very High & N/A (SaaS) & Low (Optimized Node/React) \\
+Target Audience & Incident Responders & Intel Analysts & Enterprise SOCs & Modern SOCs \& SMEs \\
+Financial Accessibility & Free / Open Source & Free / Open Source & Highly Prohibitive & Open and Accessible \\
+\bottomrule
+\end{tabular}
+\caption{Academic comparative analysis of global CTI solutions.}
+\label{tab:cti_comparison}
+\end{table}
+
+---
+
+\section{Critique of Existing Systems and Proposed Solution}
+The evaluation of the state of the art highlights a clear market gap: \textbf{existing CTI platforms are either highly analytical but visually static and resource-heavy (like OpenCTI and MISP), or visually polished but commercially restrictive (like Recorded Future)}. 
+
+To resolve this gap, we proposed the \textbf{Predictra Threat Map}. Our solution is engineered as a high-performance, real-time threat visualizer and structured STIX analyst workspace:
+\begin{itemize}
+    \item It uses a parallel scraper architecture fetching data from 9+ diverse feeds, bypassing heavy broker infrastructures. This ensures that the ingestion layer remains highly resilient, as the failure of one external feed does not affect other scraper operations.
+    \item It utilizes Server-Sent Events (SSE) to stream events instantly with a 300ms flush queue, keeping browser CPU load low. SSE provides a unidirectional, low-overhead HTTP connection that is simpler to configure and maintain through enterprise firewalls than complex WebSockets.
+    \item It renders an interactive 3D procedural Earth at 60fps utilizing React Three Fiber and WebGL shaders, visualising geolocated threat vectors as dynamic great-circle bezier curves. The use of hardware acceleration offloads mathematical calculations to the GPU, preserving browser responsiveness.
+    \item It integrates a dedicated, client-side STIX 2.1 bundle parser and force-directed relationship graph, providing the analytical depth of complex graph platforms in an accessible, zero-config workspace. This client-side approach eliminates the need for expensive Neo4j or Elasticsearch server clusters.
+\end{itemize}
+
+By decoupling the high-throughput ingestion backend from the rich 3D visualization frontend and using client-side WebGL math, the platform provides exceptional visual quality and deep intelligence analysis without requiring high-spec, expensive backend server clusters.
+
+---
+
+\section{Work Methodology and Modeling Standards}
+To ensure the rigorous and efficient delivery of this software platform, the project adopted standard industry methodologies for development and system modeling.
+
+\subsection{Agile Scrum Framework}
+We implemented the \textbf{Agile Scrum framework} to pilot the development process. This methodology split the project lifecycle into iterative, fully functional increments called \textbf{Sprints}.
+
+\begin{figure}[h!]
+\centering
+\begin{tikzpicture}[
+    node distance=1.2cm,
+    box/.style={draw=charcoal, fill=cyberblue!5, thick, rounded corners, minimum width=3.8cm, minimum height=0.8cm, align=center, font=\small},
+    arrow/.style={-latex, thick, color=cyberblue}
+]
+    \node (product) [box] {Product Backlog};
+    \node (planning) [box, below=of product] {Sprint Planning};
+    \node (sprint) [box, below=of planning] {Sprint Execution\\(2-3 Weeks Sprints)};
+    \node (scrum) [box, right=2.5cm of sprint] {Daily Scrum\\(15 Min Standup)};
+    \node (review) [box, below=of sprint] {Sprint Review\\(Working Demo)};
+    \node (retro) [box, below=of review] {Sprint Retrospective};
+    \node (increment) [box, below=of retro, fill=cyberblue!20] {Shippable Increment};
+
+    \draw [arrow] (product) -- (planning);
+    \draw [arrow] (planning) -- (sprint);
+    \draw [arrow] (sprint) -- (review);
+    \draw [arrow] (review) -- (retro);
+    \draw [arrow] (retro) -- (increment);
+    
+    \draw [arrow] (sprint) -- (scrum);
+    \draw [arrow] (scrum) -- (sprint);
+    \draw [arrow, bend left=45] (retro.west) to node[left, pos=0.5, color=charcoal] {Iterative Feed} (planning.west);
+\end{tikzpicture}
+\caption{Agile Scrum development lifecycle flowchart.}
+\label{fig:scrum_lifecycle}
+\end{figure}
+
+The Scrum lifecycle details are structured as follows:
+\begin{itemize}
+    \item \textbf{Roles:} Brahim Jaballi and Chiheb Amri shared the developer role, with Chiheb coordinating scrum master tasks (sprint planning, daily standups, backlog refinement) and industrial mentors acting as the Product Owner.
+    \item \textbf{Sprint Planning (Duration: 2 Hours):} Held at the start of each sprint. The team analyzed the Product Backlog, estimated task complexities using Planning Poker (Fibonacci scale), and committed to a Sprint Backlog. This ritual ensured that the team maintained a clear, realistic set of deliverables for each iteration, avoiding scope creep. Task complexity was evaluated relative to standard reference cards, helping to identify potential design bottlenecks early.
+    \item \textbf{Sprint Execution (Duration: 2-3 Weeks):} Active coding, database design, visual design, and integration testing of the committed backlog items. The work was divided using git branch collaborations. The team used continuous integration strategies to ensure that the code on the main branch compiled flawlessly at the end of each day.
+    \item \textbf{Daily Scrum (Duration: 15 Minutes):} A daily morning meeting where both team members aligned by answering: What was done yesterday? What will be done today? What are the blockers? This ceremony kept the development highly coordinated and immediately resolved technical bottlenecks, such as library version conflicts or database access permissions.
+    \item \textbf{Twice-Weekly Coordination and Review Meetings:} Extended coordination sessions held specifically on Thursdays and Sundays to handle deep code integration, performance profiling, and strategic sprint planning (detailed in Subsection~\ref{subsec:biweekly_meetings}).
+    \item \textbf{Sprint Review (Duration: 1.5 Hours):} Conducted at the end of each sprint. The developers demonstrated a working system increment (e.g., the Scraper Pipeline in Sprint 1, the WebGL Globe in Sprint 2) to obtain Product Owner feedback and validate user stories. Any feedback or modification requests were immediately converted into new backlog items.
+    \item \textbf{Sprint Retrospective (Duration: 1 Hour):} Held immediately after the review, where the team identified engineering process bottlenecks (e.g. testing bottlenecks, git merge conflicts) and defined continuous improvement action items. This ceremony ensured that team performance improved incrementally with each sprint.
+\end{itemize}
+
+\subsection{Twice-Weekly Scrum Coordination and Technical Review Rituals}
+\label{subsec:biweekly_meetings}
+Because the development of the \textbf{Predictra Threat Map} involved both high-throughput distributed database ingestion systems (scrapers, BSON caches, geocoding) and complex browser-side WebGL canvas renderers, standard 15-minute Daily Scrum meetings were insufficient to resolve dense architectural alignment and integration bottlenecks. To address this, the development team (Brahim Jaballi and Chiheb Amri) instituted an additional twice-weekly extended coordination and technical review cadence, occurring without fail every Thursday and Sunday over the entire six-month project lifecycle (representing over 48 intensive sessions in total).
+
+These bi-weekly sessions acted as the technical anchors of the project. They ensured that both developer branches remained continuously integrated and that any performance bottlenecks (such as garbage collection spikes or memory leaks in the Three.js render loop) were diagnosed and resolved immediately.
+
+\subsubsection{Thursday Technical Alignment Sessions}
+The Thursday meetings, typically lasting 3 hours, were positioned at the mid-point of each sprint. Their core purpose was to ensure technical alignment, verify code compilation, and perform peer code reviews. The agenda and operational details are structured below:
+\begin{itemize}
+    \item \textbf{Code Review and Pull Request Merging:} The developers conducted line-by-line peer reviews of newly written features (e.g., a new scraper module or a UI widget). Branch merges into the local \texttt{develop} environment were executed during this session.
+    \item \textbf{API Schema Verification:} External threat intelligence feeds (such as AlienVault OTX or URLhaus) frequently update their JSON fields without notice. Thursdays were used to audit incoming API payloads against our local Mongoose database schemas, resolving any mapping errors or missing geocoding fields.
+    \item \textbf{Performance Profiling Sandbox:} Developers ran Chrome DevTools profiling sessions on the rendering thread, checking that the addition of new visual elements (like animated great-circle arcs) did not degrade the rendering framerate below 60fps.
+\end{itemize}
+
+\subsubsection{Sunday Strategic Integration and Planning Sessions}
+The Sunday meetings, typically lasting 4 hours, were conducted at the end of each weekly cycle. These sessions focused on architectural consolidation, long-term technical planning, and product owner briefings. Their core agenda included:
+\begin{itemize}
+    \item \textbf{End-of-Week Architectural Refactoring:} Over the course of weekly active coding, developers often introduced minor technical debt. Sundays were dedicated to refactoring complex components, consolidating Zustand store states, cleaning CSS variables, and auditing TypeScript type safety.
+    \item \textbf{Academic Documentation Consolidation:} To maintain a high-quality graduation thesis, the team spent the last hour of every Sunday session documenting the technical achievements, designing UML diagrams, and updating the LaTeX report to reflect the current sprint's results.
+    \item \textbf{Next-Sprint Planning and Backlog Commitment:} In alignment with upcoming milestones, developers refined the backlog, estimated task sizing using Planning Poker, and committed to the deliverables for the subsequent weekly cycle.
+\end{itemize}
+
+To summarize, the operational structure of these twice-weekly coordination sessions is detailed in Table~\ref{tab:biweekly_meetings}.
+
+\begin{table}[h!]
+\centering
+\small
+\begin{tabular}{>{\raggedright\arraybackslash}p{2.3cm}>{\raggedright\arraybackslash}p{5.8cm}>{\raggedright\arraybackslash}p{5.8cm}}
+\toprule
+\textbf{Parameter} & \textbf{Thursday Technical Alignment} & \textbf{Sunday Strategic Integration} \\
+\midrule
+\textbf{Session Focus} & Technical Integration, Code Auditing, Bug Diagnostics & Architectural Consolidation, Documentation, Sprint Planning \\
+\textbf{Typical Duration} & 3.0 Hours & 4.0 Hours \\
+\textbf{Key Inputs} & Local Feature Branches, Scraper Output Logs, Performance Metrics & Consolidated \texttt{develop} Branch, Open Backlog, Academic Guide \\
+\textbf{Key Activities} & Peer reviews, API schema validation, WebGL frame profiling, branch merging & Code refactoring, Zustand state pruning, LaTeX documentation, backlog sizing \\
+\textbf{Primary Output} & Integrated, stable mid-sprint code build & Cleaned production build, updated UML blueprints, next sprint backlog \\
+\textbf{Lifespan Coverage} & Every week over 6-month duration (48+ sessions) & Every week over 6-month duration (48+ sessions) \\
+\bottomrule
+\end{tabular}
+\caption{Operational breakdown of bi-weekly coordination meetings held over 6 months.}
+\label{tab:biweekly_meetings}
+\end{table}
+
+\subsection{UML Modeling Standards}
+To guarantee a solid architectural design, the system requirements, conception, and structure were modeled utilizing the \textbf{Unified Modeling Language (UML)}.
+\begin{itemize}
+    \item \textbf{Use Case Diagrams:} Captured functional system boundaries and actor-system boundaries. They helped define what services the system must deliver and which human or external actors trigger them, providing a clear map of system responsibilities.
+    \item \textbf{Class Diagrams:} Modeled Mongoose database schemas, backend services, and Zustands stores, laying out the structural blueprints of our classes, variables, and methods. These diagrams were crucial in establishing a type-safe structure during TypeScript integrations.
+    \item \textbf{Sequence Diagrams:} Traced asynchronous communication timelines between analysts, backend event streams, and front-end render loops, verifying transaction safety and identifying potential race conditions or connection deadlocks.
+    \item \textbf{Component Diagrams:} Illustrated modular package boundaries and code dependencies, ensuring a decoupled physical architecture that facilitates scaling.
+\end{itemize}
+
+---
+
+\section{Conclusion}
+This chapter established the academic, professional, and methodological foundations of our project. Having analyzed the CTI domain, compared existing market solutions, and set up our Scrum and UML modeling structures, we proceed to Chapter 2 to detail the requirements, project preparation, sprint planning, and the global architecture of the Predictra CTI platform.
