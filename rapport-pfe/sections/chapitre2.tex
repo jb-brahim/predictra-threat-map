@@ -148,18 +148,20 @@ The global interactions are illustrated in the UML Use Case diagram in Figure~\r
     \node at (4.75,5.1) {\textbf{Predictra Threat Map System Boundary}};
 
     % Actors
-    \node[draw=charcoal, fill=cyberblue!10, thick, minimum width=2.2cm, minimum height=1cm, align=center] (api) at (-3, 2) {\textbf{External Threat}\\\textbf{APIs \& Feeds}};
-    \node[draw=charcoal, fill=cyberblue!10, thick, minimum width=2.2cm, minimum height=1cm, align=center] (analyst) at (-3, -2) {\textbf{Security}\\\textbf{Analyst}};
-    \node[draw=charcoal, fill=cyberblue!10, thick, minimum width=2.2cm, minimum height=1cm, align=center] (db) at (12.5, 0) {\textbf{MongoDB}\\\textbf{Database}};
+    \node[draw=charcoal, top color=white, bottom color=gray!15, drop shadow, thick, rounded corners, minimum width=2.2cm, minimum height=1cm, align=center] (api) at (-3, 2) {\textbf{External Threat}\\\textbf{APIs \& Feeds}};
+    \coordinate (analyst) at (-3, -2);
+    \pic at (analyst) {actor};
+    \node[align=center, below=0.7cm of analyst, font=\small\bfseries] {Security\\Analyst};
+    \node[draw=charcoal, top color=white, bottom color=gray!15, drop shadow, thick, rounded corners, minimum width=2.2cm, minimum height=1cm, align=center] (db) at (12.5, 0) {\textbf{MongoDB}\\\textbf{Database}};
 
     % Use Cases inside Boundary
-    \node[draw, ellipse, fill=white, minimum width=4cm, minimum height=0.9cm, align=center] (uc1) at (4.75, 4) {Stream Live Threat Events};
-    \node[draw, ellipse, fill=white, minimum width=4cm, minimum height=0.9cm, align=center] (uc2) at (4.75, 2.5) {Enrich \& Geocode Log};
-    \node[draw, ellipse, fill=white, minimum width=4cm, minimum height=0.9cm, align=center] (uc3) at (4.75, 1) {Render 3D Interactive Map};
-    \node[draw, ellipse, fill=white, minimum width=4cm, minimum height=0.9cm, align=center] (uc4) at (4.75, -0.5) {Query Historical Log};
-    \node[draw, ellipse, fill=white, minimum width=4cm, minimum height=0.9cm, align=center] (uc5) at (4.75, -2) {Export to Excel / CSV};
-    \node[draw, ellipse, fill=white, minimum width=4cm, minimum height=0.9cm, align=center] (uc6) at (4.75, -3.5) {Upload STIX 2.1 Bundle};
-    \node[draw, ellipse, fill=white, minimum width=4cm, minimum height=0.9cm, align=center] (uc7) at (4.75, -5) {Explore Threat Network Graph};
+    \node[draw, ellipse, top color=white, bottom color=cyberblue!15, drop shadow, minimum width=4cm, minimum height=0.9cm, align=center] (uc1) at (4.75, 4) {Stream Live Threat Events};
+    \node[draw, ellipse, top color=white, bottom color=cyberblue!15, drop shadow, minimum width=4cm, minimum height=0.9cm, align=center] (uc2) at (4.75, 2.5) {Enrich \& Geocode Log};
+    \node[draw, ellipse, top color=white, bottom color=cyberblue!15, drop shadow, minimum width=4cm, minimum height=0.9cm, align=center] (uc3) at (4.75, 1) {Render 3D Interactive Map};
+    \node[draw, ellipse, top color=white, bottom color=cyberblue!15, drop shadow, minimum width=4cm, minimum height=0.9cm, align=center] (uc4) at (4.75, -0.5) {Query Historical Log};
+    \node[draw, ellipse, top color=white, bottom color=cyberblue!15, drop shadow, minimum width=4cm, minimum height=0.9cm, align=center] (uc5) at (4.75, -2) {Export to Excel / CSV};
+    \node[draw, ellipse, top color=white, bottom color=cyberblue!15, drop shadow, minimum width=4cm, minimum height=0.9cm, align=center] (uc6) at (4.75, -3.5) {Upload STIX 2.1 Bundle};
+    \node[draw, ellipse, top color=white, bottom color=cyberblue!15, drop shadow, minimum width=4cm, minimum height=0.9cm, align=center] (uc7) at (4.75, -5) {Explore Threat Network Graph};
 
     % Connections
     \draw[thick, -] (api) -- (uc1);
@@ -361,7 +363,7 @@ To ensure clean separation of concerns, our physical system is organized into de
 \centering
 \begin{tikzpicture}[
     node distance=1.8cm and 1.2cm,
-    component/.style={draw=charcoal, fill=cyberblue!5, thick, rectangle, minimum width=3.8cm, minimum height=1cm, align=center, font=\small},
+    component/.style={draw=charcoal, top color=white, bottom color=cyberblue!15, drop shadow, thick, rectangle, minimum width=3.8cm, minimum height=1cm, align=center, font=\small},
     dependency/.style={-latex, dashed, thick, color=cyberblue}
 ]
     % Component nodes
@@ -392,7 +394,7 @@ The Predictra Threat Map's internal logic is partitioned into 4 distinct tiers, 
 \centering
 \begin{tikzpicture}[
     node distance=1.5cm,
-    layer/.style={rectangle, draw=charcoal, fill=charcoal!5, thick, rounded corners, minimum width=12.2cm, text width=11.8cm, minimum height=1.2cm, align=center},
+    layer/.style={rectangle, draw=charcoal, top color=white, bottom color=gray!15, drop shadow, thick, rounded corners, minimum width=12.2cm, text width=11.8cm, minimum height=1.2cm, align=center},
     arrow/.style={-latex, thick, color=cyberblue}
 ]
     % Layers

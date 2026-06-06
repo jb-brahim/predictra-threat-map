@@ -23,12 +23,12 @@ The ingestion use cases are captured in Figure~\ref{fig:s1_usecase}, illustratin
     \node at (4.25,2.1) {\textbf{Sprint 1: Harvester Boundary}};
     
     % Actors
-    \node[draw=charcoal, fill=cyberblue!10, thick, minimum width=2cm, minimum height=1cm, align=center] (feed) at (-2.5, 0) {\textbf{External API}\\\textbf{Feed}};
-    \node[draw=charcoal, fill=cyberblue!10, thick, minimum width=2cm, minimum height=1cm, align=center] (server) at (11, 0) {\textbf{Express}\\\textbf{Server}};
+    \node[draw=charcoal, top color=white, bottom color=gray!15, thick, drop shadow, rounded corners, minimum width=2cm, minimum height=1cm, align=center] (feed) at (-2.5, 0) {\textbf{External API}\\\textbf{Feed}};
+    \node[draw=charcoal, top color=white, bottom color=gray!15, thick, drop shadow, rounded corners, minimum width=2cm, minimum height=1cm, align=center] (server) at (11, 0) {\textbf{Express}\\\textbf{Server}};
 
     % Use Cases
-    \node[draw, ellipse, fill=white, minimum width=3.5cm, minimum height=0.9cm] (uc1) at (4.25, 1) {Fetch Threat Feed};
-    \node[draw, ellipse, fill=white, minimum width=3.5cm, minimum height=0.9cm] (uc2) at (4.25, -1) {Enrich \& Store Payload};
+    \node[draw, ellipse, top color=white, bottom color=cyberblue!15, drop shadow, minimum width=3.5cm, minimum height=0.9cm] (uc1) at (4.25, 1) {Fetch Threat Feed};
+    \node[draw, ellipse, top color=white, bottom color=cyberblue!15, drop shadow, minimum width=3.5cm, minimum height=0.9cm] (uc2) at (4.25, -1) {Enrich \& Store Payload};
 
     % Links
     \draw[thick, -] (feed) -- (uc1);
@@ -64,36 +64,31 @@ The structural interfaces created in Sprint 1 are illustrated in Figure~\ref{fig
 \begin{figure}[h!]
 \centering
 \begin{tikzpicture}[scale=0.85, every node/.style={transform shape}]
-    % ThreatEvent Class
-    \node[draw, rectangle, fill=cyberblue!5, text width=6.5cm, align=left] (threatModel) at (0,0) {
-        \textbf{ThreatEvent (Model)} \\
+    % Express Server
+    \node[draw, rectangle, top color=white, bottom color=cyberblue!5, drop shadow, rounded corners=2pt, text width=6.5cm, align=left] (express) at (0,0) {
+        \textbf{Express Server (/api/feed)} \\
         \hrulefill \\
-        + a\_c : Number (count) \\
-        + a\_n : String (name) \\
-        + a\_t : String (type: exploit or malware) \\
-        + s\_co / d\_co : String (ISO country) \\
-        + s\_la / s\_lo / d\_la / d\_lo : Number \\
-        + s\_ip / d\_ip : String \\
-        + source\_api : String \\
-        + timestamp : Date (Expires in 30 days) \\
+        + clients : Response[] \\
+        + pendingBatch : ThreatEvent[] \\
         \hrulefill \\
-        + insertMany() : Promise
+        + addClient(req, res) : void \\
+        + broadcast(events) : void \\
+        - flushBatch() : void (every 300ms)
     };
     
-    % EnrichmentService Class
-    \node[draw, rectangle, fill=cyberblue!5, text width=6.5cm, align=left] (enrichment) at (8,0) {
-        \textbf{EnrichmentService} \\
+    % Zustand Store
+    \node[draw, rectangle, top color=white, bottom color=cyberblue!5, drop shadow, rounded corners=2pt, text width=6.5cm, align=left] (zustand) at (8,0) {
+        \textbf{Zustand Store (streamStore)} \\
         \hrulefill \\
-        - sectorKeywords : Map \\
-        - ipCache : Map \\
-        - rdapCache : Map \\
+        + activeArcs : ArcData[] \\
+        + eventsBuffer : RingBuffer \\
         \hrulefill \\
-        + getEnrichedSector(ip, details) : String \\
-        + getIpOrganization(ip) : String \\
-        + calculateSeverity(details) : String
+        + initStream() : void \\
+        + addEvents(payload) : void \\
+        + tick(now) : void (60fps)
     };
 
-    \draw[thick, latex-] (threatModel) -- node[above, scale=0.8] {calls} (enrichment);
+    \draw[thick, latex-] (express) -- node[above, scale=0.8] {sync} (zustand);
 \end{tikzpicture}
 \caption{Sprint 1: Conception Class diagram.}
 \label{fig:s1_class}
@@ -132,28 +127,35 @@ The transactional messaging timeline tracing threat log polling, geocoding, targ
 \begin{tikzpicture}[scale=0.85, every node/.style={transform shape}]
     % Lifelines
     \draw[dashed, thick] (0,0) -- (0,-6) node[below] {Scraper Service};
-    \draw[dashed, thick] (3.5,0) -- (3.5,-6) node[below] {Enrichment.js};
-    \draw[dashed, thick] (7,0) -- (7,-6) node[below] {Server.js Queue};
-    \draw[dashed, thick] (10.5,0) -- (10.5,-6) node[below] {MongoDB Atlas};
+    \draw[dashed, thick] (3.8,0) -- (3.8,-6) node[below] {Enrichment.js};
+    \draw[dashed, thick] (7.5,0) -- (7.5,-6) node[below] {Server.js Queue};
+    \draw[dashed, thick] (11.2,0) -- (11.2,-6) node[below] {MongoDB Atlas};
 
-    % Headers
-    \node[draw, fill=cyberblue!10, minimum width=2cm, minimum height=0.6cm] at (0,0.3) {Scrapers};
-    \node[draw, fill=cyberblue!10, minimum width=2cm, minimum height=0.6cm] at (3.5,0.3) {Enrichment};
-    \node[draw, fill=cyberblue!10, minimum width=2cm, minimum height=0.6cm] at (7,0.3) {Server};
-    \node[draw, fill=cyberblue!10, minimum width=2cm, minimum height=0.6cm] at (10.5,0.3) {MongoDB};
+    % Actors
+    \coordinate (feed) at (0,0);
+    \node[draw=charcoal, top color=white, bottom color=gray!15, thick, drop shadow, rounded corners, align=center, minimum width=2cm, minimum height=0.6cm] at (0,0.3) {External API};
+
+    \coordinate (scraper) at (3.8,0);
+    \node[draw=charcoal, top color=white, bottom color=cyberblue!15, thick, drop shadow, rounded corners, align=center, minimum width=2cm, minimum height=0.6cm] at (3.8,0.3) {Scraper.js};
+
+    \coordinate (enrich) at (7.5,0);
+    \node[draw=charcoal, top color=white, bottom color=cyberblue!15, thick, drop shadow, rounded corners, align=center, minimum width=2cm, minimum height=0.6cm] at (7.5,0.3) {Enrichment};
+
+    \coordinate (db) at (11.2,0);
+    \node[draw=charcoal, top color=white, bottom color=cyberblue!15, thick, drop shadow, rounded corners, align=center, minimum width=2cm, minimum height=0.6cm] at (11.2,0.3) {MongoDB};
 
     % Sequence Messages
-    \draw[-latex, thick] (0,-1) -- node[above, scale=0.8] {Poll / Stream Raw Event} (3.5,-1);
+    \draw[-latex, thick] (0,-1) -- node[above, scale=0.8] {Poll / Stream Raw Event} (3.8,-1);
     
-    \draw[-latex, thick] (3.5,-1.8) -- node[above, xshift=1.2cm, scale=0.8] {Geolocate IP (geoip-lite)} (3.5,-2.3);
-    \draw[dashed] (3.5,-2.3) -- (3.5,-2.5);
+    \draw[-latex, thick] (3.8,-1.8) -- node[above, xshift=1.2cm, scale=0.8] {Geolocate IP (geoip-lite)} (3.8,-2.3);
+    \draw[dashed] (3.8,-2.3) -- (3.8,-2.5);
     
-    \draw[-latex, thick] (3.5,-2.8) -- node[above, xshift=1.3cm, scale=0.8] {Enrich Sector (5-Layer Heuristics)} (3.5,-3.3);
-    \draw[dashed] (3.5,-3.3) -- (3.5,-3.5);
+    \draw[-latex, thick] (3.8,-2.8) -- node[above, xshift=1.3cm, scale=0.8] {Enrich Sector (5-Layer Heuristics)} (3.8,-3.3);
+    \draw[dashed] (3.8,-3.3) -- (3.8,-3.5);
 
-    \draw[-latex, thick] (3.5,-3.8) -- node[above, scale=0.8] {broadcast("attack", enrichedData)} (7,-3.8);
-    \draw[-latex, thick] (7,-4.6) -- node[above, scale=0.8] {insertMany() (bulk $\ge 25$ events)} (10.5,-4.6);
-    \draw[dashed, -latex] (10.5,-5.3) -- node[above, scale=0.8] {Write Acknowledged} (7,-5.3);
+    \draw[-latex, thick] (3.8,-3.8) -- node[above, scale=0.8] {broadcast("attack", enrichedData)} (7.5,-3.8);
+    \draw[-latex, thick] (7.5,-4.6) -- node[above, scale=0.8] {insertMany() (bulk $\ge 25$ events)} (11.2,-4.6);
+    \draw[dashed, -latex] (11.2,-5.3) -- node[above, scale=0.8] {Write Acknowledged} (7.5,-5.3);
 \end{tikzpicture}
 \caption{Sprint 1: Sequence diagram of the harvesting and enrichment loop.}
 \label{fig:s1_sequence}
@@ -419,11 +421,13 @@ The visualizer use cases are captured in Figure~\ref{fig:s2_usecase}, illustrati
     \node at (4.25,1.6) {\textbf{Sprint 2: 3D Visualizer Boundary}};
 
     % Actors
-    \node[draw=charcoal, fill=cyberblue!10, thick, minimum width=2.2cm, minimum height=1cm, align=center] (analyst) at (-2.5, 0) {\textbf{Security}\\\textbf{Analyst}};
+    \coordinate (analyst) at (-2.5, 0.4);
+    \pic at (analyst) {actor};
+    \node[align=center, below=0.7cm of analyst, font=\small\bfseries] {Security\\Analyst};
 
     % Use Cases
-    \node[draw, ellipse, fill=white, minimum width=3.8cm, minimum height=0.9cm] (uc1) at (4.25, 0.7) {Monitor 3D Spatial Globe};
-    \node[draw, ellipse, fill=white, minimum width=3.8cm, minimum height=0.9cm] (uc2) at (4.25, -0.7) {Toggle 2D Projection};
+    \node[draw, ellipse, top color=white, bottom color=cyberblue!15, drop shadow, minimum width=3.8cm, minimum height=0.9cm] (uc1) at (4.25, 0.7) {Monitor 3D Spatial Globe};
+    \node[draw, ellipse, top color=white, bottom color=cyberblue!15, drop shadow, minimum width=3.8cm, minimum height=0.9cm] (uc2) at (4.25, -0.7) {Toggle 2D Projection};
 
     % Links
     \draw[thick, -] (analyst) -- (uc1);

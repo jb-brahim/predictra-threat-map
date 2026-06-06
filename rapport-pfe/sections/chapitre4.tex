@@ -30,13 +30,15 @@ The analyst's interactions with the STIX workspace are captured in Figure~\ref{f
     \node at (4.25,3.1) {\textbf{Sprint 3: STIX Workspace Boundary}};
 
     % Actors
-    \node[draw=charcoal, fill=cyberblue!10, thick, minimum width=2.2cm, minimum height=1cm, align=center] (analyst) at (-2.5, 0) {\textbf{Security}\\\textbf{Analyst}};
+    \coordinate (analyst) at (-2.5, 0.4);
+    \pic at (analyst) {actor};
+    \node[align=center, below=0.7cm of analyst, font=\small\bfseries] {Security\\Analyst};
 
     % Use Cases
-    \node[draw, ellipse, fill=white, minimum width=3.8cm, minimum height=0.8cm] (uc1) at (4.25, 2) {Upload STIX 2.1 Bundle};
-    \node[draw, ellipse, fill=white, minimum width=3.8cm, minimum height=0.8cm] (uc2) at (4.25, 0.7) {Analyze MITRE Kill Chain};
-    \node[draw, ellipse, fill=white, minimum width=3.8cm, minimum height=0.8cm] (uc3) at (4.25, -0.6) {Navigate Relationship Graph};
-    \node[draw, ellipse, fill=white, minimum width=3.8cm, minimum height=0.8cm] (uc4) at (4.25, -1.9) {Filter Indicator IOCs};
+    \node[draw, ellipse, top color=white, bottom color=cyberblue!15, drop shadow, minimum width=3.8cm, minimum height=0.8cm] (uc1) at (4.25, 2) {Upload STIX 2.1 Bundle};
+    \node[draw, ellipse, top color=white, bottom color=cyberblue!15, drop shadow, minimum width=3.8cm, minimum height=0.8cm] (uc2) at (4.25, 0.7) {Analyze MITRE Kill Chain};
+    \node[draw, ellipse, top color=white, bottom color=cyberblue!15, drop shadow, minimum width=3.8cm, minimum height=0.8cm] (uc3) at (4.25, -0.6) {Navigate Relationship Graph};
+    \node[draw, ellipse, top color=white, bottom color=cyberblue!15, drop shadow, minimum width=3.8cm, minimum height=0.8cm] (uc4) at (4.25, -1.9) {Filter Indicator IOCs};
 
     % Links
     \draw[thick, -] (analyst) -- (uc1);
@@ -266,7 +268,7 @@ The structural layout of our client-side parser services, data models, and visua
 \centering
 \begin{tikzpicture}[scale=0.85, every node/.style={transform shape}]
     % StixDashboard Page
-    \node[draw, rectangle, fill=cyberblue!5, text width=6.5cm, align=left] (stixDash) at (0,0) {
+    \node[draw, rectangle, top color=white, bottom color=cyberblue!5, drop shadow, rounded corners=2pt, text width=6.5cm, align=left] (stixDash) at (0,0) {
         \textbf{StixDashboard (UI)} \\
         \hrulefill \\
         + bundleData : STIXBundle | null \\
@@ -281,7 +283,7 @@ The structural layout of our client-side parser services, data models, and visua
     };
     
     % StixVisualizerPage
-    \node[draw, rectangle, fill=cyberblue!5, text width=6.2cm, align=left] (stixVis) at (9,0) {
+    \node[draw, rectangle, top color=white, bottom color=cyberblue!5, drop shadow, rounded corners=2pt, text width=6.2cm, align=left] (stixVis) at (9,0) {
         \textbf{StixVisualizerPage} \\
         \hrulefill \\
         + graphNodes : GraphNode[] \\
@@ -313,10 +315,17 @@ The asynchronous parsing and graph building lifecycle triggered when an investig
     \draw[dashed, thick] (11.2,0) -- (11.2,-6.5) node[below] {ForceGraph Canvas};
 
     % Headers
-    \node[draw, fill=cyberblue!10, minimum width=2.2cm, minimum height=0.6cm] at (0,0.3) {Analyst};
-    \node[draw, fill=cyberblue!10, minimum width=2.2cm, minimum height=0.6cm] at (3.8,0.3) {Dashboard};
-    \node[draw, fill=cyberblue!10, minimum width=2.2cm, minimum height=0.6cm] at (7.5,0.3) {Parser Service};
-    \node[draw, fill=cyberblue!10, minimum width=2.2cm, minimum height=0.6cm] at (11.2,0.3) {D3 Canvas};
+    \coordinate (analyst) at (0,0);
+    \pic at (0,0.4) {actor};
+
+    \coordinate (dash) at (3.8,0);
+    \node[draw=charcoal, top color=white, bottom color=cyberblue!15, thick, drop shadow, rounded corners, align=center, minimum width=2.2cm, minimum height=0.6cm] at (3.8,0.3) {Dashboard};
+
+    \coordinate (parser) at (7.5,0);
+    \node[draw=charcoal, top color=white, bottom color=cyberblue!15, thick, drop shadow, rounded corners, align=center, minimum width=2.2cm, minimum height=0.6cm] at (7.5,0.3) {Parser Service};
+
+    \coordinate (d3) at (11.2,0);
+    \node[draw=charcoal, top color=white, bottom color=cyberblue!15, thick, drop shadow, rounded corners, align=center, minimum width=2.2cm, minimum height=0.6cm] at (11.2,0.3) {D3 Canvas};
 
     % Sequence Messages
     \draw[-latex, thick] (0,-1) -- node[above, scale=0.8] {Upload JSON Bundle File} (3.8,-1);
@@ -464,12 +473,14 @@ The investigator's search and performance diagnostics use cases are captured in 
     \node at (4.25,2.6) {\textbf{Sprint 4: Search \& Performance Boundary}};
 
     % Actors
-    \node[draw=charcoal, fill=cyberblue!10, thick, minimum width=2.2cm, minimum height=1cm, align=center] (analyst) at (-2.5, 0) {\textbf{Security}\\\textbf{Analyst}};
+    \coordinate (analyst) at (-2.5, 0.4);
+    \pic at (analyst) {actor};
+    \node[align=center, below=0.7cm of analyst, font=\small\bfseries] {Security\\Analyst};
 
     % Use Cases
-    \node[draw, ellipse, fill=white, minimum width=3.8cm, minimum height=0.8cm] (uc1) at (4.25, 1.5) {Search History Logs};
-    \node[draw, ellipse, fill=white, minimum width=3.8cm, minimum height=0.8cm] (uc2) at (4.25, 0) {Trigger Target My IP};
-    \node[draw, ellipse, fill=white, minimum width=3.8cm, minimum height=0.8cm] (uc3) at (4.25, -1.5) {Monitor Performance HUD};
+    \node[draw, ellipse, top color=white, bottom color=cyberblue!15, drop shadow, minimum width=3.8cm, minimum height=0.8cm] (uc1) at (4.25, 1.5) {Search History Logs};
+    \node[draw, ellipse, top color=white, bottom color=cyberblue!15, drop shadow, minimum width=3.8cm, minimum height=0.8cm] (uc2) at (4.25, 0) {Trigger Target My IP};
+    \node[draw, ellipse, top color=white, bottom color=cyberblue!15, drop shadow, minimum width=3.8cm, minimum height=0.8cm] (uc3) at (4.25, -1.5) {Monitor Performance HUD};
 
     % Links
     \draw[thick, -] (analyst) -- (uc1);
@@ -507,7 +518,7 @@ The structural layout of our historical logs queries, circular memory buffers, a
 \centering
 \begin{tikzpicture}[scale=0.85, every node/.style={transform shape}]
     % HistoryPage Page
-    \node[draw, rectangle, fill=cyberblue!5, text width=6.8cm, align=left] (history) at (0,0) {
+    \node[draw, rectangle, top color=white, bottom color=cyberblue!5, drop shadow, rounded corners=2pt, text width=6.8cm, align=left] (history) at (0,0) {
         \textbf{HistoryPage (UI)} \\
         \hrulefill \\
         + filterQuery : String \\
@@ -521,7 +532,7 @@ The structural layout of our historical logs queries, circular memory buffers, a
     };
     
     % RingBuffer Class
-    \node[draw, rectangle, fill=cyberblue!5, text width=5.5cm, align=left] (ring) at (8.5,0) {
+    \node[draw, rectangle, top color=white, bottom color=cyberblue!5, drop shadow, rounded corners=2pt, text width=5.5cm, align=left] (ring) at (8.5,0) {
         \textbf{RingBuffer<T> (perf.ts)} \\
         \hrulefill \\
         - capacity : Number \\
@@ -553,10 +564,17 @@ The paginated network round-trip tracing query submissions, backend mongoose fil
     \draw[dashed, thick] (11.2,0) -- (11.2,-5.5) node[below] {MongoDB Atlas};
 
     % Headers
-    \node[draw, fill=cyberblue!10, minimum width=2.2cm, minimum height=0.6cm] at (0,0.3) {Analyst};
-    \node[draw, fill=cyberblue!10, minimum width=2.2cm, minimum height=0.6cm] at (3.8,0.3) {History UI};
-    \node[draw, fill=cyberblue!10, minimum width=2.2cm, minimum height=0.6cm] at (7.5,0.3) {Express Server};
-    \node[draw, fill=cyberblue!10, minimum width=2.2cm, minimum height=0.6cm] at (11.2,0.3) {MongoDB};
+    \coordinate (analyst) at (0,0);
+    \pic at (0,0.4) {actor};
+
+    \coordinate (dash) at (3.8,0);
+    \node[draw=charcoal, top color=white, bottom color=cyberblue!15, thick, drop shadow, rounded corners, align=center, minimum width=2.2cm, minimum height=0.6cm] at (3.8,0.3) {History UI};
+
+    \coordinate (server) at (7.5,0);
+    \node[draw=charcoal, top color=white, bottom color=cyberblue!15, thick, drop shadow, rounded corners, align=center, minimum width=2.2cm, minimum height=0.6cm] at (7.5,0.3) {Express Server};
+
+    \coordinate (db) at (11.2,0);
+    \node[draw=charcoal, top color=white, bottom color=cyberblue!15, thick, drop shadow, rounded corners, align=center, minimum width=2.2cm, minimum height=0.6cm] at (11.2,0.3) {MongoDB};
 
     % Messages
     \draw[-latex, thick] (0,-1) -- node[above, scale=0.8] {Click "Target My IP"} (3.8,-1);

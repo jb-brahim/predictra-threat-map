@@ -1,57 +1,77 @@
 \begin{titlepage}
 \begin{center}
-    \vspace*{0.2cm}
+    \vspace*{-0.5cm}
     
-    % Republic and Institutional Headers in English
-    \textsc{\large Republic of Tunisia}\\[0.1cm]
-    \textsc{\large Ministry of Higher Education and Scientific Research}\\[0.1cm]
-    \textsc{\large General Directorate of Technological Studies}\\[0.1cm]
-    \textsc{\large Higher Institute of Technological Studies of Gafsa}\\[0.15cm]
+    % Republic and Institutional Headers with Logo Images Side-by-Side
+    \begin{minipage}[c]{0.20\textwidth}
+        \begin{flushleft}
+            \includegraphics[height=2.0cm]{assets/logos/republic_of_tunisia_logo.png}
+        \end{flushleft}
+    \end{minipage}%
+    \begin{minipage}[c]{0.60\textwidth}
+        \begin{center}
+            \textsc{\small Republic of Tunisia}\\[0.05cm]
+            \textsc{\scriptsize Ministry of Higher Education and Scientific Research}\\[0.05cm]
+            \textsc{\scriptsize General Directorate of Technological Studies}\\[0.05cm]
+            \textsc{\scriptsize Higher Institute of Technological Studies of Gafsa}\\[0.1cm]
+            \rule{3cm}{0.2mm}\\[0.1cm]
+            \textbf{\footnotesize Department of Information Technology}
+        \end{center}
+    \end{minipage}%
+    \begin{minipage}[c]{0.20\textwidth}
+        \begin{flushright}
+            \includegraphics[height=2.0cm]{assets/logos/iset_gafsa_logo.png}
+        \end{flushright}
+    \end{minipage}
     
-    \textbf{\large Department of Information Technology}\\[0.3cm]
-    
-    \begin{figure}[h!]
-        \centering
-        % If there's an image logo, it can be loaded. For LaTeX compiling compatibility, we use clean TikZ logo vectors to ensure 100% compiling safety without external files.
-        \begin{tikzpicture}
-            \draw[draw=cyberblue, fill=cyberblue!5, thick, rounded corners] (0,0) rectangle (2.8,1.4);
-            \node at (1.4,0.9) {\fontsize{9}{10}\selectfont\textbf{ISET GAFSA}};
-            \node at (1.4,0.4) {\fontsize{8}{9}\selectfont\textcolor{cyberblue}{\textbf{IT DEPARTMENT}}};
-        \end{tikzpicture}
-    \end{figure}
-    \vspace{0.3cm}
+    \vspace{1.2cm}
     
     \textsc{\Large GRADUATION PROJECT REPORT}\\[0.2cm]
     \textsc{\large Submitted in partial fulfillment of the requirements for the degree of}\\[0.2cm]
-    \textbf{\large Applied License in Computer Technologies}\\[0.4cm]
+    \textbf{\large Applied License in Computer Technologies}\\[0.8cm]
     
-    \rule{\linewidth}{0.5mm} \\[0.4cm]
-    { \huge \bfseries \color{cyberblue} PREDICTRA THREAT MAP \\[0.4cm] 
-      \large Real-Time Cyber Threat Intelligence Aggregation and \\ Spatial Analytics Platform } \\[0.4cm]
-    \rule{\linewidth}{0.5mm} \\[0.6cm]
+    % Framed Project Title
+    \begin{tikzpicture}
+        \node[draw=cyberblue, fill=cyberblue!3, line width=1.5pt, rounded corners=8pt, inner sep=18pt, text width=0.90\linewidth, align=center] {
+            {\Huge \bfseries \color{charcoal} PREDICTRA THREAT MAP}\\[0.4cm]
+            {\large \bfseries \color{cyberblue} Real-Time Cyber Threat Intelligence Aggregation and \\ Spatial Analytics Platform}
+        };
+    \end{tikzpicture}
     
-    \textbf{Host Company: Predictra}\\[0.1cm]
-    \textsc{\small AI-Powered Threat Intelligence Division}\\[0.6cm]
+    \vspace{0.8cm}
     
-    \begin{minipage}{0.48\textwidth}
+    % Host Company Badge
+    \begin{tikzpicture}
+        \node[draw=gray!30, fill=gray!3, rounded corners=6pt, inner sep=10pt, align=center, text width=0.6\linewidth] {
+            \textbf{\large Host Company: Predictra} \\
+            \textsc{\small AI-Powered Threat Intelligence Division}
+        };
+    \end{tikzpicture}
+    
+    \vspace{1.2cm}
+    
+    % Student & Supervisor Section
+    \begin{minipage}[t]{0.45\textwidth}
         \begin{flushleft} \large
-            \emph{Prepared by:}\\
-            \textbf{Brahim JABALLI} \\
+            \textcolor{charcoal!70}{\emph{Prepared by:}}\\[0.2cm]
+            \textbf{Brahim JABALLI} \\[0.1cm]
             \textbf{Chiheb AMRI}
         \end{flushleft}
     \end{minipage}
-    ~
-    \begin{minipage}{0.48\textwidth}
+    \hfill
+    \begin{minipage}[t]{0.45\textwidth}
         \begin{flushright} \large
-            \emph{Supervised by:} \\
-            \textbf{Academic Supervisor} \\
+            \textcolor{charcoal!70}{\emph{Supervised by:}}\\[0.2cm]
+            \textbf{Mr. Anis DHAHRI} \\[0.1cm]
             \textbf{Professional Mentor}
         \end{flushright}
     \end{minipage}
     
     \vfill
     
+    \rule{4cm}{0.2mm}\\[0.2cm]
     {\large Academic Year: 2025 -- 2026}
 \end{center}
 \end{titlepage}
 \newpage
+

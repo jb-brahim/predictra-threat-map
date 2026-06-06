@@ -16,7 +16,17 @@
 \usepackage{array}
 \usepackage{xcolor}
 \usepackage{tikz}
-\usetikzlibrary{shapes.geometric, arrows, positioning, fit, calc}
+\usetikzlibrary{shapes.geometric, arrows, positioning, fit, calc, shadows, shapes.symbols}
+
+% Define stickman actor for PFE diagrams
+\tikzset{
+    actor/.pic={
+        \draw[thick, draw=charcoal] (0,0.4) circle (0.15); % head
+        \draw[thick, draw=charcoal] (0,0.25) -- (0,-0.2); % body
+        \draw[thick, draw=charcoal] (-0.3,0.1) -- (0,0.2) -- (0.3,0.1); % arms
+        \draw[thick, draw=charcoal] (-0.2,-0.6) -- (0,-0.2) -- (0.2,-0.6); % legs
+    }
+}
 
 % Standard academic page geometry
 \geometry{
@@ -135,6 +145,7 @@
 \include{sections/chapitre2}
 \include{sections/chapitre3}
 \include{sections/chapitre4}
+\include{sections/interfaces}
 \include{sections/appendices}
 
 \backmatter
