@@ -7,6 +7,7 @@ import { useState, useMemo, useEffect, useRef, useCallback } from 'react';
 import type { ThreatEvent, TypeDistribution } from '../stream/types';
 import * as ExcelJS from 'exceljs';
 import { saveAs } from 'file-saver';
+import { WORLD_DOTS } from './world_dots';
 
 /* ─── helpers ─────────────────────────────────────────────────────────────── */
 
@@ -85,6 +86,40 @@ export function DashboardPage() {
   const [timeMode, setTimeMode] = useState<'live' | 5 | 15 | 60>('live');
   const [zoom, setZoom] = useState(1);
   const [pan, setPan] = useState({ x: 0, y: 0 });
+  const [mapStyle, setMapStyle] = useState<'hologram' | 'dots' | 'outlines'>('hologram');
+  const [layoutMode, setLayoutMode] = useState<'hud' | 'cinema'>('hud');
+  const [mapOpacity, setMapOpacity] = useState(0.45);
+  const [activeCountry, setActiveCountry] = useState<string | null>(null);
+  const [drillCountry, setDrillCountry] = useState<string | null>(null);
+  const [hoveredCountryCode, setHoveredCountryCode] = useState<string | null>(null);
+  const [hoveredCountry, setHoveredCountry] = useState<{
+    code: string;
+    name: string;
+    x: number;
+    y: number;
+  } | null>(null);
+
+  const handleCountryHover = useCallback((e: React.MouseEvent, country: CountryFeature | null) => {
+    if (country) {
+      setHoveredCountryCode(country.code);
+      setHoveredCountry({
+        code: country.code,
+        name: country.name,
+        x: e.clientX,
+        y: e.clientY,
+      });
+    } else {
+      setHoveredCountryCode(null);
+      setHoveredCountry(null);
+    }
+  }, []);
+
+  const handleCountryClick = useCallback((country: CountryFeature) => {
+    if (country.code !== '??') {
+      setActiveCountry(country.code === activeCountry ? null : country.code);
+      setDrillCountry(country.code);
+    }
+  }, [activeCountry]);
 
   const dvrData = useMemo(() => {
     if (timeMode === 'live') return null;
@@ -248,10 +283,8 @@ export function DashboardPage() {
   const [searchQuery, setSearchQuery]   = useState('');
   const [activeTypes, setActiveTypes]   = useState<Set<AttackType>>(new Set());
   const [activeSource, setActiveSource] = useState<string | null>(null);
-  const [activeCountry, setActiveCountry] = useState<string | null>(null);
   const [feedPaused, setFeedPaused]     = useState(false);
   const [expandedId, setExpandedId]     = useState<string | null>(null);
-  const [drillCountry, setDrillCountry] = useState<string | null>(null);
   const [sort]                         = useState<SortMode>('count');
 
   /* frozen feed when paused */
@@ -451,9 +484,54 @@ export function DashboardPage() {
       fontFamily: theme.fonts.mono,
     }}>
       {/* ── World Map SVG Background ────────────────────────────────── */}
-      <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: 0.45 }}>
-        <WorldMapSVG zoom={zoom} setZoom={setZoom} pan={pan} setPan={setPan} />
+      <div style={{ 
+        position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', 
+        opacity: mapOpacity, transition: 'opacity 0.3s ease'
+      }}>
+        <WorldMapSVG 
+          zoom={zoom} 
+          setZoom={setZoom} 
+          pan={pan} 
+          setPan={setPan} 
+          mapStyle={mapStyle} 
+          hoveredCountryCode={hoveredCountryCode}
+          onCountryHover={handleCountryHover}
+          onCountryClick={handleCountryClick}
+        />
       </div>
+
+      {/* Floating Cyber Tooltip */}
+      {hoveredCountry && (
+        <div style={{
+          position: 'fixed',
+          left: hoveredCountry.x + 15,
+          top: hoveredCountry.y + 15,
+          background: 'rgba(10, 17, 30, 0.95)',
+          backdropFilter: 'blur(8px)',
+          border: '1px solid rgba(0, 210, 255, 0.4)',
+          borderRadius: 4,
+          padding: '8px 12px',
+          pointerEvents: 'none',
+          zIndex: 1000,
+          fontFamily: theme.fonts.mono,
+          boxShadow: '0 0 15px rgba(0,210,255,0.25)',
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+            <span style={{ fontSize: 18 }}>{getFlag(hoveredCountry.code)}</span>
+            <span style={{ fontSize: 11, fontWeight: 'bold', color: '#fff', letterSpacing: 1 }}>{hoveredCountry.name} ({hoveredCountry.code})</span>
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 3, fontSize: 9 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', gap: 15 }}>
+              <span style={{ color: theme.colors.textDim }}>ORIGIN ATTACKS:</span>
+              <span style={{ color: theme.colors.exploit, fontWeight: 'bold' }}>{fmt(originDistribution[hoveredCountry.code] || 0)}</span>
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', gap: 15 }}>
+              <span style={{ color: theme.colors.textDim }}>TARGET ATTACKS:</span>
+              <span style={{ color: theme.colors.phishing, fontWeight: 'bold' }}>{fmt(targetDistribution[hoveredCountry.code] || 0)}</span>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ── Tactical Grid Overlay ───────────────────────────────────── */}
       <div className="hud-tactical-grid" style={{ position: 'absolute', inset: 0, zIndex: 1 }} />
@@ -554,7 +632,10 @@ export function DashboardPage() {
           position: 'absolute', top: 60, left: 16, bottom: 16, width: 280,
           display: 'flex', flexDirection: 'column', gap: 16, pointerEvents: 'none',
           zIndex: 10, overflowY: 'auto', paddingLeft: 4, paddingBottom: 16,
-          scrollbarWidth: 'none', msOverflowStyle: 'none'
+          scrollbarWidth: 'none', msOverflowStyle: 'none',
+          transition: 'transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.4s',
+          transform: layoutMode === 'cinema' ? 'translateX(-320px)' : 'translateX(0)',
+          opacity: layoutMode === 'cinema' ? 0 : 1,
         }}>
           {/* ═══ TOP-LEFT: System Status Panel ═══ */}
           <div className="hud-entrance-left" style={{ width: 260, pointerEvents: 'auto', flexShrink: 0 }}>
@@ -670,7 +751,10 @@ export function DashboardPage() {
           position: 'absolute', top: 60, right: 16, bottom: 16, width: 360,
           display: 'flex', flexDirection: 'column', gap: 16, alignItems: 'flex-end',
           pointerEvents: 'none', zIndex: 10, overflowY: 'auto', paddingRight: 4, paddingBottom: 16,
-          scrollbarWidth: 'none', msOverflowStyle: 'none'
+          scrollbarWidth: 'none', msOverflowStyle: 'none',
+          transition: 'transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.4s',
+          transform: layoutMode === 'cinema' ? 'translateX(400px)' : 'translateX(0)',
+          opacity: layoutMode === 'cinema' ? 0 : 1,
         }}>
           {/* ═══ TOP-RIGHT: Attack Trend ═══ */}
           <div className="hud-entrance-right" style={{ width: 300, pointerEvents: 'auto', flexShrink: 0 }}>
@@ -805,43 +889,20 @@ export function DashboardPage() {
           </HudPanel>
         </div>
 
-        {/* ═══ MAP ZOOM CONTROLS ═══ */}
+        {/* ═══ MAP CONTROLS (ZOOM + STYLE + OPACITY + LAYOUT) ═══ */}
         <div style={{
-          position: 'absolute', bottom: 16, left: 312,
-          display: 'flex', alignItems: 'center', gap: 8, pointerEvents: 'auto',
+          position: 'absolute', bottom: 16, 
+          left: layoutMode === 'cinema' ? 16 : 312,
+          transition: 'left 0.4s cubic-bezier(0.16, 1, 0.3, 1)',
+          display: 'flex', alignItems: 'center', gap: 10, pointerEvents: 'auto',
           background: 'rgba(15, 23, 42, 0.85)', backdropFilter: 'blur(8px)',
           border: '1px solid rgba(255, 255, 255, 0.08)', borderRadius: 4,
-          padding: '4px 10px', zIndex: 30, boxShadow: '0 0 15px rgba(0,0,0,0.5)',
+          padding: '4px 12px', zIndex: 30, boxShadow: '0 0 15px rgba(0,0,0,0.5)',
         }}>
-          <button className="hud-zoom-btn" onClick={() => {
-            const newZoom = Math.max(0.4, zoom / 1.3);
-            if (newZoom < 1) {
-              const newX = (1200 * (1 - newZoom)) / 2;
-              const newY = (600 * (1 - newZoom)) / 2;
-              setPan({ x: newX, y: newY });
-            } else {
-              const center = { x: 600, y: 300 };
-              const dx = center.x - pan.x;
-              const dy = center.y - pan.y;
-              let newX = center.x - dx * (newZoom / zoom);
-              let newY = center.y - dy * (newZoom / zoom);
-              const maxPanX = 1200 * (newZoom - 1);
-              const maxPanY = 600 * (newZoom - 1);
-              newX = Math.max(-maxPanX, Math.min(0, newX));
-              newY = Math.max(-maxPanY, Math.min(0, newY));
-              setPan({ x: newX, y: newY });
-            }
-            setZoom(newZoom);
-          }} style={zoomBtnStyle} title="Zoom Out">-</button>
-
-          <input
-            type="range"
-            min="0.4"
-            max="6.0"
-            step="0.1"
-            value={zoom}
-            onChange={(e) => {
-              const newZoom = parseFloat(e.target.value);
+          {/* Zoom controls */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <button className="hud-zoom-btn" onClick={() => {
+              const newZoom = Math.max(0.4, zoom / 1.3);
               if (newZoom < 1) {
                 const newX = (1200 * (1 - newZoom)) / 2;
                 const newY = (600 * (1 - newZoom)) / 2;
@@ -859,43 +920,150 @@ export function DashboardPage() {
                 setPan({ x: newX, y: newY });
               }
               setZoom(newZoom);
-            }}
-            className="hud-zoom-slider"
-            title="Adjust Map Size"
-          />
+            }} style={zoomBtnStyle} title="Zoom Out">-</button>
 
-          <button className="hud-zoom-btn" onClick={() => {
-            const newZoom = Math.min(zoom * 1.3, 8);
-            if (newZoom < 1) {
-              const newX = (1200 * (1 - newZoom)) / 2;
-              const newY = (600 * (1 - newZoom)) / 2;
-              setPan({ x: newX, y: newY });
-            } else {
-              const center = { x: 600, y: 300 };
-              const dx = center.x - pan.x;
-              const dy = center.y - pan.y;
-              let newX = center.x - dx * (newZoom / zoom);
-              let newY = center.y - dy * (newZoom / zoom);
-              const maxPanX = 1200 * (newZoom - 1);
-              const maxPanY = 600 * (newZoom - 1);
-              newX = Math.max(-maxPanX, Math.min(0, newX));
-              newY = Math.max(-maxPanY, Math.min(0, newY));
-              setPan({ x: newX, y: newY });
-            }
-            setZoom(newZoom);
-          }} style={zoomBtnStyle} title="Zoom In">+</button>
+            <input
+              type="range"
+              min="0.4"
+              max="6.0"
+              step="0.1"
+              value={zoom}
+              onChange={(e) => {
+                const newZoom = parseFloat(e.target.value);
+                if (newZoom < 1) {
+                  const newX = (1200 * (1 - newZoom)) / 2;
+                  const newY = (600 * (1 - newZoom)) / 2;
+                  setPan({ x: newX, y: newY });
+                } else {
+                  const center = { x: 600, y: 300 };
+                  const dx = center.x - pan.x;
+                  const dy = center.y - pan.y;
+                  let newX = center.x - dx * (newZoom / zoom);
+                  let newY = center.y - dy * (newZoom / zoom);
+                  const maxPanX = 1200 * (newZoom - 1);
+                  const maxPanY = 600 * (newZoom - 1);
+                  newX = Math.max(-maxPanX, Math.min(0, newX));
+                  newY = Math.max(-maxPanY, Math.min(0, newY));
+                  setPan({ x: newX, y: newY });
+                }
+                setZoom(newZoom);
+              }}
+              className="hud-zoom-slider"
+              title="Adjust Map Size"
+            />
 
-          <button className="hud-zoom-btn" onClick={() => {
-            setZoom(1);
-            setPan({ x: 0, y: 0 });
-          }} style={zoomBtnStyle} title="Reset Map Size">⟲</button>
+            <button className="hud-zoom-btn" onClick={() => {
+              const newZoom = Math.min(zoom * 1.3, 8);
+              if (newZoom < 1) {
+                const newX = (1200 * (1 - newZoom)) / 2;
+                const newY = (600 * (1 - newZoom)) / 2;
+                setPan({ x: newX, y: newY });
+              } else {
+                const center = { x: 600, y: 300 };
+                const dx = center.x - pan.x;
+                const dy = center.y - pan.y;
+                let newX = center.x - dx * (newZoom / zoom);
+                let newY = center.y - dy * (newZoom / zoom);
+                const maxPanX = 1200 * (newZoom - 1);
+                const maxPanY = 600 * (newZoom - 1);
+                newX = Math.max(-maxPanX, Math.min(0, newX));
+                newY = Math.max(-maxPanY, Math.min(0, newY));
+                setPan({ x: newX, y: newY });
+              }
+              setZoom(newZoom);
+            }} style={zoomBtnStyle} title="Zoom In">+</button>
 
-          <span style={{
-            fontSize: 8, color: theme.colors.textPrimary, fontFamily: theme.fonts.mono,
-            width: 28, textAlign: 'right', display: 'inline-block'
-          }}>
-            {zoom.toFixed(1)}x
-          </span>
+            <button className="hud-zoom-btn" onClick={() => {
+              setZoom(1);
+              setPan({ x: 0, y: 0 });
+            }} style={zoomBtnStyle} title="Reset Map Size">⟲</button>
+
+            <span style={{
+              fontSize: 8, color: theme.colors.textPrimary, fontFamily: theme.fonts.mono,
+              width: 28, textAlign: 'right', display: 'inline-block'
+            }}>
+              {zoom.toFixed(1)}x
+            </span>
+          </div>
+
+          <div style={{ width: 1, height: 18, background: 'rgba(255,255,255,0.1)' }} />
+
+          {/* Style selector */}
+          <div style={{ display: 'flex', gap: 3 }}>
+            {(['hologram', 'dots', 'outlines'] as const).map(styleKey => (
+              <button
+                key={styleKey}
+                onClick={() => setMapStyle(styleKey)}
+                style={{
+                  padding: '3px 8px',
+                  background: mapStyle === styleKey ? 'rgba(59, 130, 246, 0.25)' : 'rgba(255,255,255,0.03)',
+                  border: mapStyle === styleKey ? '1px solid rgba(59, 130, 246, 0.5)' : '1px solid rgba(255,255,255,0.08)',
+                  borderRadius: 2,
+                  color: mapStyle === styleKey ? '#fff' : theme.colors.textDim,
+                  fontSize: 8,
+                  fontFamily: theme.fonts.mono,
+                  cursor: 'pointer',
+                  textTransform: 'uppercase',
+                  fontWeight: 'bold',
+                  transition: 'all 0.15s',
+                }}
+              >
+                {styleKey === 'hologram' ? 'Holo' : styleKey === 'dots' ? 'Dots' : 'Vector'}
+              </button>
+            ))}
+          </div>
+
+          <div style={{ width: 1, height: 18, background: 'rgba(255,255,255,0.1)' }} />
+
+          {/* Layout switcher */}
+          <div style={{ display: 'flex', gap: 3 }}>
+            {(['hud', 'cinema'] as const).map(lKey => (
+              <button
+                key={lKey}
+                onClick={() => setLayoutMode(lKey)}
+                style={{
+                  padding: '3px 8px',
+                  background: layoutMode === lKey ? 'rgba(239, 68, 68, 0.25)' : 'rgba(255,255,255,0.03)',
+                  border: layoutMode === lKey ? '1px solid rgba(239, 68, 68, 0.5)' : '1px solid rgba(255,255,255,0.08)',
+                  borderRadius: 2,
+                  color: layoutMode === lKey ? '#fff' : theme.colors.textDim,
+                  fontSize: 8,
+                  fontFamily: theme.fonts.mono,
+                  cursor: 'pointer',
+                  textTransform: 'uppercase',
+                  fontWeight: 'bold',
+                  transition: 'all 0.15s',
+                }}
+              >
+                {lKey === 'hud' ? 'HUD' : 'Cinema'}
+              </button>
+            ))}
+          </div>
+
+          <div style={{ width: 1, height: 18, background: 'rgba(255,255,255,0.1)' }} />
+
+          {/* Opacity slider */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <span style={{ fontSize: 8, color: theme.colors.textDim, textTransform: 'uppercase', fontFamily: theme.fonts.mono }}>Opacity</span>
+            <input
+              type="range"
+              min="0.15"
+              max="1.0"
+              step="0.05"
+              value={mapOpacity}
+              onChange={(e) => setMapOpacity(parseFloat(e.target.value))}
+              style={{
+                width: 60,
+                height: 4,
+                accentColor: '#EF4444',
+                cursor: 'pointer',
+              }}
+              title="Adjust Map Opacity"
+            />
+            <span style={{ fontSize: 8, color: theme.colors.textPrimary, width: 22, textAlign: 'right', fontFamily: theme.fonts.mono }}>
+              {Math.round(mapOpacity * 100)}%
+            </span>
+          </div>
         </div>
         
         {/* ═══ CENTER: Map Legend / Crosshair ═══ */}
@@ -912,6 +1080,54 @@ export function DashboardPage() {
         </div>
 
       </div>
+
+      {/* Cinema Mode Floating Live Feed */}
+      {layoutMode === 'cinema' && (
+        <div className="hud-entrance-right" style={{
+          position: 'absolute', bottom: 16, right: 16, width: 320,
+          pointerEvents: 'auto', zIndex: 30, animation: 'fadeUp 0.5s ease-out'
+        }}>
+          <HudPanel accent="red" title="LIVE INTERCEPTS">
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 4, maxHeight: 180, overflowY: 'auto' }}>
+              {filteredFeed.slice(0, 3).map((event, i) => {
+                const evColor = getAttackColor(event.a_t);
+                return (
+                  <div
+                    key={event.id || i}
+                    onClick={() => setExpandedId(prev => prev === (event.id || String(i)) ? null : (event.id || String(i)))}
+                    style={{
+                      padding: '5px 7px', borderRadius: 2,
+                      background: 'rgba(255,255,255,0.02)',
+                      borderLeft: `2px solid ${evColor}`,
+                      cursor: 'pointer', transition: 'background 0.15s',
+                      fontSize: 9,
+                    }}
+                    onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'}
+                    onMouseLeave={e => e.currentTarget.style.background = 'rgba(255,255,255,0.02)'}
+                  >
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 6 }}>
+                      <span style={{ fontSize: 7, fontWeight: 700, color: evColor, letterSpacing: 1, textTransform: 'uppercase', padding: '1px 3px', background: `${evColor}15`, borderRadius: 2 }}>
+                        {event.a_t}
+                      </span>
+                      <span style={{ fontSize: 9, color: theme.colors.textPrimary, flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {event.a_n}
+                      </span>
+                      <span style={{ fontSize: 7, color: theme.colors.textDim }}>{relativeTime(event.timestamp || event.ts)}</span>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 3, fontSize: 8 }}>
+                      <span>{getFlag(event.s_co)}</span>
+                      <span style={{ color: theme.colors.textDim }}>{event.s_ip || event.s_co}</span>
+                      <span style={{ color: theme.colors.textDim }}>→</span>
+                      <span>{getFlag(event.d_co)}</span>
+                      <span style={{ color: theme.colors.textDim }}>{event.d_ip || event.d_co}</span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </HudPanel>
+        </div>
+      )}
 
       {/* ── Country Drill-Down Slide-Over ──────────────────────────────── */}
       {drillCountry && drillData && (
@@ -1399,53 +1615,135 @@ function resolveArcs(arcIndices: number[], decodedArcs: number[][][]): number[][
   return coords;
 }
 
-let cachedPolygons: number[][][] | null = null;
+const NUMERIC_TO_ALPHA2: Record<string, string> = {
+  "840": "US", "156": "CN", "643": "RU", "826": "GB", "250": "FR", "276": "DE", "392": "JP", "356": "IN",
+  "076": "BR", "124": "CA", "036": "AU", "410": "KR", "376": "IL", "364": "IR", "408": "KP", "804": "UA",
+  "792": "TR", "682": "SA", "784": "AE", "818": "EG", "710": "ZA", "704": "VN", "764": "TH", "360": "ID",
+  "586": "PK", "484": "MX", "380": "IT", "724": "ES", "528": "NL", "752": "SE", "756": "CH", "702": "SG",
+  "032": "AR", "170": "CO", "604": "PE", "858": "UY", "152": "CL", "862": "VE", "554": "NZ", "578": "NO",
+  "208": "DK", "246": "FI", "372": "IE", "056": "BE", "616": "PL", "203": "CZ", "300": "GR", "642": "RO",
+  "703": "SK", "348": "HU", "040": "AT", "566": "NG", "404": "KE", "504": "MA", "788": "TN", "012": "DZ",
+  "634": "QA", "414": "KW", "512": "OM", "480": "MU", "458": "MY", "608": "PH", "050": "BD", "524": "NP",
+  "496": "MN", "705": "SI", "191": "HR", "070": "BA", "807": "MK", "008": "AL", "100": "BG", "428": "LV",
+  "440": "LT", "233": "EE", "620": "PT", "384": "CI", "288": "GH", "686": "SN", "024": "AO", "231": "ET",
+  "728": "SS", "729": "SD", "706": "SO", "434": "LY", "508": "MZ", "894": "ZM", "090": "SB", "548": "VU",
+  "328": "GY", "740": "SR", "218": "EC", "068": "BO", "600": "PY", "320": "GT", "340": "HN", "558": "NI",
+  "188": "CR", "591": "PA", "084": "BZ", "688": "RS", "499": "ME", "051": "AM", "031": "AZ", "268": "GE",
+  "760": "SY", "626": "TL", "417": "KG", "762": "TJ", "860": "UZ", "795": "TM", "398": "KZ", "004": "AF",
+  "104": "MM", "418": "LA", "116": "KH", "144": "LK", "887": "YE",
+  "400": "JO", "422": "LB", "120": "CM", "140": "CF", "180": "CD", "262": "DJ", "266": "GA", "324": "GN",
+  "430": "LR", "478": "MR", "516": "NA", "562": "NE", "646": "RW", "690": "SZ",
+  "716": "ZW", "800": "UG", "834": "TZ", "854": "BF"
+};
 
-/* ─── World Map SVG ──────────────────────────────────────────────────────── */
+const COUNTRY_NAMES: Record<string, string> = {
+  US: 'United States', CN: 'China', RU: 'Russia', DE: 'Germany', GB: 'United Kingdom', BR: 'Brazil',
+  IN: 'India', JP: 'Japan', AU: 'Australia', FR: 'France', KR: 'South Korea', IL: 'Israel',
+  NL: 'Netherlands', SE: 'Sweden', CA: 'Canada', SG: 'Singapore', ZA: 'South Africa', MX: 'Mexico',
+  TR: 'Turkey', UA: 'Ukraine', IT: 'Italy', ES: 'Spain', PL: 'Poland', ID: 'Indonesia',
+  EG: 'Egypt', NG: 'Nigeria', AR: 'Argentina', TH: 'Thailand', VN: 'Vietnam', PK: 'Pakistan',
+  IR: 'Iran', CZ: 'Czech Republic', GR: 'Greece', FI: 'Finland', NZ: 'New Zealand', IE: 'Ireland',
+  AT: 'Austria', EE: 'Estonia', QA: 'Qatar', MN: 'Mongolia', PA: 'Panama', GT: 'Guatemala',
+  NP: 'Nepal', KE: 'Kenya', TN: 'Tunisia', MA: 'Morocco', SA: 'Saudi Arabia', AE: 'United Arab Emirates',
+  KP: 'North Korea', SY: 'Syria', IQ: 'Iraq', AF: 'Afghanistan', CL: 'Chile', CO: 'Colombia',
+  PE: 'Peru', VE: 'Venezuela', NO: 'Norway', DK: 'Denmark', CH: 'Switzerland', PT: 'Portugal',
+  MY: 'Malaysia', PH: 'Philippines', BD: 'Bangladesh', KZ: 'Kazakhstan', UZ: 'Uzbekistan',
+  DZ: 'Algeria', LY: 'Libya', YE: 'Yemen', JO: 'Jordan', LB: 'Lebanon', TW: 'Taiwan',
+  RO: 'Romania', HU: 'Hungary', BG: 'Bulgaria', HR: 'Croatia', RS: 'Serbia', SK: 'Slovakia',
+  SI: 'Slovenia', BY: 'Belarus', AZ: 'Azerbaijan', AM: 'Armenia', GE: 'Georgia',
+};
+
+interface CountryFeature {
+  id: string;
+  code: string;
+  name: string;
+  paths: string[];
+}
+
+let cachedFeatures: CountryFeature[] | null = null;
+
+interface WorldMapSVGProps {
+  zoom: number;
+  setZoom: React.Dispatch<React.SetStateAction<number>>;
+  pan: { x: number; y: number };
+  setPan: React.Dispatch<React.SetStateAction<{ x: number; y: number }>>;
+  mapStyle: 'hologram' | 'dots' | 'outlines';
+  hoveredCountryCode: string | null;
+  onCountryHover: (e: React.MouseEvent, country: CountryFeature | null) => void;
+  onCountryClick: (country: CountryFeature) => void;
+}
 
 function WorldMapSVG({
   zoom,
   setZoom,
   pan,
   setPan,
-}: {
-  zoom: number;
-  setZoom: React.Dispatch<React.SetStateAction<number>>;
-  pan: { x: number; y: number };
-  setPan: React.Dispatch<React.SetStateAction<{ x: number; y: number }>>;
-}) {
-  const [polygons, setPolygons] = useState<number[][][]>(cachedPolygons || []);
+  mapStyle,
+  hoveredCountryCode,
+  onCountryHover,
+  onCountryClick,
+}: WorldMapSVGProps) {
+  const [features, setFeatures] = useState<CountryFeature[]>(cachedFeatures || []);
   const [isDragging, setIsDragging] = useState(false);
   const dragStart = useRef({ x: 0, y: 0 });
   const mapRef = useRef<SVGSVGElement>(null);
 
+  const arcs = useStreamStore(s => s.arcs);
+  const markers = useStreamStore(s => s.markers);
+
   useEffect(() => {
-    if (polygons.length > 0) return;
+    if (features.length > 0) return;
     
     fetch('https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json')
       .then(res => res.json())
       .then(topology => {
         const decodedArcs = decodeTopology(topology);
         const geometries = topology.objects.countries?.geometries || [];
-        const extracted: number[][][] = [];
+        const extracted: CountryFeature[] = [];
+
         for (const geo of geometries) {
+          const numericId = String(geo.id);
+          const alpha2 = NUMERIC_TO_ALPHA2[numericId] || '??';
+          const name = COUNTRY_NAMES[alpha2] || geo.properties?.name || `Region ${numericId}`;
+          const countryPaths: string[] = [];
+
+          const processRing = (ring: number[]) => {
+            const coords = resolveArcs(ring, decodedArcs);
+            if (coords.length < 3) return;
+            const dPoints = coords.map(([lon, lat]) => {
+              const x = ((lon + 180) / 360) * 1200;
+              const y = ((90 - lat) / 180) * 600;
+              return `${x.toFixed(1)},${y.toFixed(1)}`;
+            });
+            countryPaths.push(`M${dPoints.join(' L')} Z`);
+          };
+
           if (geo.type === 'Polygon') {
             for (const ring of geo.arcs) {
-              extracted.push(resolveArcs(ring, decodedArcs));
+              processRing(ring);
             }
           } else if (geo.type === 'MultiPolygon') {
             for (const polygon of geo.arcs) {
               for (const ring of polygon) {
-                extracted.push(resolveArcs(ring, decodedArcs));
+                processRing(ring);
               }
             }
           }
+
+          if (countryPaths.length > 0) {
+            extracted.push({
+              id: numericId,
+              code: alpha2,
+              name,
+              paths: countryPaths,
+            });
+          }
         }
-        cachedPolygons = extracted;
-        setPolygons(extracted);
+        cachedFeatures = extracted;
+        setFeatures(extracted);
       })
       .catch(err => console.warn('Failed to load SVG background map:', err));
-  }, [polygons.length]);
+  }, [features.length]);
 
   // Prevent default scroll during wheel zoom
   useEffect(() => {
@@ -1516,18 +1814,6 @@ function WorldMapSVG({
     setIsDragging(false);
   };
 
-  const paths = useMemo(() => {
-    return polygons.map(ring => {
-      if (ring.length < 3) return '';
-      const dPoints = ring.map(([lon, lat]) => {
-        const x = ((lon + 180) / 360) * 1200;
-        const y = ((90 - lat) / 180) * 600;
-        return `${x.toFixed(1)},${y.toFixed(1)}`;
-      });
-      return `M${dPoints.join(' L')} Z`;
-    }).filter(Boolean);
-  }, [polygons]);
-
   const MAP_HOTSPOTS = [
     { label: 'US', lat: 37.09, lon: -95.71 },
     { label: 'EU', lat: 51.17, lon: 10.45 },
@@ -1558,11 +1844,21 @@ function WorldMapSVG({
       onMouseUp={handleMouseUpOrLeave}
       onMouseLeave={handleMouseUpOrLeave}
     >
-      {/* Grid lines */}
+      {/* Grid lines & Holographic Patterns */}
       <defs>
         <pattern id="grid" width="60" height="60" patternUnits="userSpaceOnUse">
           <path d="M 60 0 L 0 0 0 60" fill="none" stroke="rgba(255,255,255,0.05)" strokeWidth="0.5" />
         </pattern>
+        <pattern id="hologram-stripes" width="12" height="12" patternTransform="rotate(45 0 0)" patternUnits="userSpaceOnUse">
+          <line x1="0" y1="0" x2="0" y2="12" stroke="rgba(0, 210, 255, 0.2)" strokeWidth="1.2" />
+        </pattern>
+        <filter id="glow-neon" x="-50%" y="-50%" width="200%" height="200%">
+          <feGaussianBlur stdDeviation="3" result="blur" />
+          <feMerge>
+            <feMergeNode in="blur" />
+            <feMergeNode in="SourceGraphic" />
+          </feMerge>
+        </filter>
       </defs>
       <rect width="1200" height="600" fill="url(#grid)" />
 
@@ -1577,12 +1873,85 @@ function WorldMapSVG({
           <line key={`lon-${x}`} x1={x} y1="0" x2={x} y2="600" stroke="rgba(255,255,255,0.07)" strokeWidth="0.5" strokeDasharray="4,8" />
         ))}
 
-        {/* Real world map - continents as path shapes */}
-        <g fill="rgba(15, 23, 42, 0.6)" stroke="rgba(0, 210, 255, 0.8)" strokeWidth={1.2 / Math.sqrt(zoom)} style={{ transition: 'opacity 0.5s ease', opacity: polygons.length > 0 ? 1 : 0 }}>
-          {paths.map((d, idx) => (
-            <path key={idx} d={d} />
-          ))}
-        </g>
+        {/* Render styles conditionally */}
+        {mapStyle === 'hologram' && (
+          <g style={{ transition: 'opacity 0.5s ease', opacity: features.length > 0 ? 1 : 0 }}>
+            {features.map(country => {
+              const isHovered = hoveredCountryCode === country.code;
+              return country.paths.map((d, idx) => (
+                <path
+                  key={`${country.id}-${idx}`}
+                  d={d}
+                  fill={isHovered ? 'rgba(0, 210, 255, 0.18)' : 'url(#hologram-stripes)'}
+                  stroke={isHovered ? 'rgba(0, 210, 255, 1)' : 'rgba(0, 210, 255, 0.65)'}
+                  strokeWidth={isHovered ? 1.5 / Math.sqrt(zoom) : 0.8 / Math.sqrt(zoom)}
+                  onMouseEnter={e => onCountryHover(e, country)}
+                  onMouseMove={e => onCountryHover(e, country)}
+                  onMouseLeave={e => onCountryHover(e, null)}
+                  onClick={() => onCountryClick(country)}
+                  style={{ cursor: 'pointer', transition: 'fill 0.15s, stroke 0.15s' }}
+                  pointerEvents="all"
+                />
+              ));
+            })}
+          </g>
+        )}
+
+        {mapStyle === 'outlines' && (
+          <g style={{ transition: 'opacity 0.5s ease', opacity: features.length > 0 ? 1 : 0 }}>
+            {features.map(country => {
+              const isHovered = hoveredCountryCode === country.code;
+              return country.paths.map((d, idx) => (
+                <path
+                  key={`${country.id}-${idx}`}
+                  d={d}
+                  fill={isHovered ? 'rgba(0, 210, 255, 0.15)' : 'rgba(15, 23, 42, 0.6)'}
+                  stroke={isHovered ? 'rgba(0, 210, 255, 1)' : 'rgba(0, 210, 255, 0.8)'}
+                  strokeWidth={isHovered ? 1.6 / Math.sqrt(zoom) : 1.2 / Math.sqrt(zoom)}
+                  onMouseEnter={e => onCountryHover(e, country)}
+                  onMouseMove={e => onCountryHover(e, country)}
+                  onMouseLeave={e => onCountryHover(e, null)}
+                  onClick={() => onCountryClick(country)}
+                  style={{ cursor: 'pointer', transition: 'fill 0.15s, stroke 0.15s' }}
+                  pointerEvents="all"
+                />
+              ));
+            })}
+          </g>
+        )}
+
+        {mapStyle === 'dots' && (
+          <>
+            {/* Hover-clickable areas under the dots */}
+            <g style={{ opacity: features.length > 0 ? 1 : 0 }}>
+              {features.map(country => {
+                const isHovered = hoveredCountryCode === country.code;
+                return country.paths.map((d, idx) => (
+                  <path
+                    key={`${country.id}-${idx}`}
+                    d={d}
+                    fill={isHovered ? 'rgba(0, 210, 255, 0.15)' : 'rgba(15, 23, 42, 0.02)'}
+                    stroke={isHovered ? 'rgba(0, 210, 255, 0.8)' : 'rgba(0, 210, 255, 0.12)'}
+                    strokeWidth={isHovered ? 1.5 / Math.sqrt(zoom) : 0.6 / Math.sqrt(zoom)}
+                    onMouseEnter={e => onCountryHover(e, country)}
+                    onMouseMove={e => onCountryHover(e, country)}
+                    onMouseLeave={e => onCountryHover(e, null)}
+                    onClick={() => onCountryClick(country)}
+                    style={{ cursor: 'pointer', transition: 'fill 0.15s, stroke 0.15s' }}
+                    pointerEvents="all"
+                  />
+                ));
+              })}
+            </g>
+
+            {/* Dotted landmasses matrix */}
+            <g fill="rgba(0, 210, 255, 0.45)" pointerEvents="none">
+              {WORLD_DOTS.map(([x, y], idx) => (
+                <circle key={`dot-${idx}`} cx={x} cy={y} r={1.0 / Math.sqrt(zoom)} />
+              ))}
+            </g>
+          </>
+        )}
 
         {/* Equator */}
         <line x1="0" y1="300" x2="1200" y2="300" stroke="rgba(239, 68, 68, 0.22)" strokeWidth="0.5" strokeDasharray="8,4" />
@@ -1590,15 +1959,120 @@ function WorldMapSVG({
         <line x1="0" y1="200" x2="1200" y2="200" stroke="rgba(245, 158, 11, 0.18)" strokeWidth="0.5" strokeDasharray="4,12" />
         <line x1="0" y1="400" x2="1200" y2="400" stroke="rgba(245, 158, 11, 0.18)" strokeWidth="0.5" strokeDasharray="4,12" />
 
+        {/* Real-time Threat Active Arcs Layer */}
+        <g>
+          {arcs.map((arc) => {
+            const x1 = ((arc.sourceLon + 180) / 360) * 1200;
+            const y1 = ((90 - arc.sourceLat) / 180) * 600;
+            const x2 = ((arc.targetLon + 180) / 360) * 1200;
+            const y2 = ((90 - arc.targetLat) / 180) * 600;
+            
+            const dx = x2 - x1;
+            const dy = y2 - y1;
+            const dist = Math.sqrt(dx * dx + dy * dy);
+            if (dist < 1) return null;
+
+            // Draw curved quadratic Bezier path
+            const mx = (x1 + x2) / 2;
+            const my = (y1 + y2) / 2;
+            const px = -dy * 0.15;
+            const py = dx * 0.15;
+            const cx = mx + px;
+            const cy = my + py - dist * 0.12;
+
+            const pathD = `M ${x1} ${y1} Q ${cx} ${cy} ${x2} ${y2}`;
+            const color = getAttackColor(arc.attackType);
+
+            // Interpolate position along the path for tracer particle
+            const t = arc.progress;
+            const tx = (1 - t) * (1 - t) * x1 + 2 * (1 - t) * t * cx + t * t * x2;
+            const ty = (1 - t) * (1 - t) * y1 + 2 * (1 - t) * t * cy + t * t * y2;
+
+            return (
+              <g key={arc.id}>
+                {/* Arc stroke line */}
+                <path
+                  d={pathD}
+                  fill="none"
+                  stroke={color}
+                  strokeWidth={1.2 / Math.sqrt(zoom)}
+                  opacity="0.3"
+                  strokeDasharray="4,4"
+                />
+                
+                {/* Glowing tracer particle */}
+                <circle
+                  cx={tx}
+                  cy={ty}
+                  r={3.0 / Math.sqrt(zoom)}
+                  fill={color}
+                  filter="url(#glow-neon)"
+                />
+              </g>
+            );
+          })}
+        </g>
+
+        {/* Real-time Threat Impact Ripples Layer */}
+        <g pointerEvents="none">
+          {markers.map((marker) => {
+            const x = ((marker.lon + 180) / 360) * 1200;
+            const y = ((90 - marker.lat) / 180) * 600;
+            const color = getAttackColor(marker.attackType);
+
+            if (marker.isSource) {
+              // Bouncing source marker
+              return (
+                <circle
+                  key={marker.id}
+                  cx={x}
+                  cy={y}
+                  r={2.5 / Math.sqrt(zoom)}
+                  fill={color}
+                  opacity={0.8 * (1 - marker.progress)}
+                />
+              );
+            } else {
+              // Expanding impact target ripple
+              const r = (2 + marker.progress * 24) / Math.sqrt(zoom);
+              const opacity = 1 - marker.progress;
+
+              return (
+                <g key={marker.id}>
+                  {/* Central impact dot */}
+                  <circle
+                    cx={x}
+                    cy={y}
+                    r={3.5 / Math.sqrt(zoom)}
+                    fill={color}
+                    opacity={0.9 * opacity}
+                    filter="url(#glow-neon)"
+                  />
+                  {/* Expanding ring */}
+                  <circle
+                    cx={x}
+                    cy={y}
+                    r={r}
+                    fill="none"
+                    stroke={color}
+                    strokeWidth={1.5 / Math.sqrt(zoom)}
+                    opacity={opacity}
+                  />
+                </g>
+              );
+            }
+          })}
+        </g>
+
         {/* Marker dots for key cities/hotspots */}
         {MAP_HOTSPOTS.map(({ label, lat, lon }) => {
           const x = ((lon + 180) / 360) * 1200;
           const y = ((90 - lat) / 180) * 600;
           return (
             <g key={label}>
-              <circle cx={x} cy={y} r={3.5 / zoom} fill={theme.colors.exploit} opacity="0.75" />
-              <circle cx={x} cy={y} r={7 / zoom} fill="none" stroke={theme.colors.exploit} strokeWidth={0.75 / zoom} opacity="0.4" />
-              <text x={x + 10 / zoom} y={y + 3.5 / zoom} fill={theme.colors.textSecondary} fontSize={8 / zoom} fontWeight="600" opacity="0.7" fontFamily={theme.fonts.mono}>{label}</text>
+              <circle cx={x} cy={y} r={3.0 / zoom} fill={theme.colors.exploit} opacity="0.65" />
+              <circle cx={x} cy={y} r={6 / zoom} fill="none" stroke={theme.colors.exploit} strokeWidth={0.75 / zoom} opacity="0.3" />
+              <text x={x + 8 / zoom} y={y + 3.0 / zoom} fill={theme.colors.textSecondary} fontSize={7 / zoom} fontWeight="600" opacity="0.6" fontFamily={theme.fonts.mono}>{label}</text>
             </g>
           );
         })}
