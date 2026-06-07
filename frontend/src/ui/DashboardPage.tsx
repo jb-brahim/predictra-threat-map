@@ -83,6 +83,8 @@ export function DashboardPage() {
   const activeArcCount  = useStreamStore(s => s.activeArcCount);
 
   const [timeMode, setTimeMode] = useState<'live' | 5 | 15 | 60>('live');
+  const [zoom, setZoom] = useState(1);
+  const [pan, setPan] = useState({ x: 0, y: 0 });
 
   const dvrData = useMemo(() => {
     if (timeMode === 'live') return null;
@@ -450,7 +452,7 @@ export function DashboardPage() {
     }}>
       {/* ── World Map SVG Background ────────────────────────────────── */}
       <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: 0.45 }}>
-        <WorldMapSVG />
+        <WorldMapSVG zoom={zoom} setZoom={setZoom} pan={pan} setPan={setPan} />
       </div>
 
       {/* ── Tactical Grid Overlay ───────────────────────────────────── */}
@@ -803,6 +805,55 @@ export function DashboardPage() {
           </HudPanel>
         </div>
 
+        {/* ═══ MAP ZOOM CONTROLS ═══ */}
+        <div style={{
+          position: 'absolute', bottom: 16, left: 312,
+          display: 'flex', flexDirection: 'column', gap: 4, pointerEvents: 'auto',
+          background: 'rgba(15, 23, 42, 0.85)', backdropFilter: 'blur(8px)',
+          border: '1px solid rgba(255, 255, 255, 0.08)', borderRadius: 4,
+          padding: 4, zIndex: 30, boxShadow: '0 0 15px rgba(0,0,0,0.5)',
+        }}>
+          <button className="hud-zoom-btn" onClick={() => {
+            const newZoom = Math.min(zoom * 1.3, 8);
+            const center = { x: 600, y: 300 };
+            const dx = center.x - pan.x;
+            const dy = center.y - pan.y;
+            setPan({
+              x: center.x - dx * (newZoom / zoom),
+              y: center.y - dy * (newZoom / zoom),
+            });
+            setZoom(newZoom);
+          }} style={zoomBtnStyle} title="Zoom In">+</button>
+          
+          <button className="hud-zoom-btn" onClick={() => {
+            const newZoom = Math.max(1, zoom / 1.3);
+            const center = { x: 600, y: 300 };
+            const dx = center.x - pan.x;
+            const dy = center.y - pan.y;
+            let newX = center.x - dx * (newZoom / zoom);
+            let newY = center.y - dy * (newZoom / zoom);
+            const maxPanX = 1200 * (newZoom - 1);
+            const maxPanY = 600 * (newZoom - 1);
+            newX = Math.max(-maxPanX, Math.min(0, newX));
+            newY = Math.max(-maxPanY, Math.min(0, newY));
+            setPan({ x: newX, y: newY });
+            setZoom(newZoom);
+          }} style={zoomBtnStyle} title="Zoom Out">-</button>
+          
+          <button className="hud-zoom-btn" onClick={() => {
+            setZoom(1);
+            setPan({ x: 0, y: 0 });
+          }} style={zoomBtnStyle} title="Reset Map">⟲</button>
+          
+          <div style={{
+            fontSize: 7, color: theme.colors.textDim, fontFamily: theme.fonts.mono,
+            textAlign: 'center', marginTop: 2, padding: '2px 0 0 0',
+            borderTop: '1px solid rgba(255,255,255,0.06)'
+          }}>
+            {zoom.toFixed(1)}x
+          </div>
+        </div>
+        
         {/* ═══ CENTER: Map Legend / Crosshair ═══ */}
         <div style={{
           position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)',
@@ -828,6 +879,11 @@ export function DashboardPage() {
         @keyframes slideIn { from{transform:translateX(100%);opacity:0} to{transform:translateX(0);opacity:1} }
         @keyframes fadeUp { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
         input::placeholder { color: rgba(90,122,148,0.7); }
+        .hud-zoom-btn:hover {
+          background: rgba(59, 130, 246, 0.2) !important;
+          border-color: rgba(59, 130, 246, 0.5) !important;
+          color: #fff !important;
+        }
       `}</style>
     </div>
   );
@@ -1048,6 +1104,24 @@ function CountryDrillOver({ data, onClose }: { data: { co: string; asOrigin: num
 
 /* ─── HUD Button Style ───────────────────────────────────────────────────── */
 
+const zoomBtnStyle: React.CSSProperties = {
+  width: 22,
+  height: 22,
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  background: 'rgba(255, 255, 255, 0.04)',
+  border: '1px solid rgba(255, 255, 255, 0.08)',
+  borderRadius: 2,
+  color: theme.colors.textPrimary,
+  fontSize: 10,
+  fontFamily: theme.fonts.mono,
+  fontWeight: 'bold',
+  cursor: 'pointer',
+  transition: 'all 0.15s',
+  outline: 'none',
+};
+
 const hudBtnStyle: React.CSSProperties = {
   padding: '3px 10px',
   background: 'rgba(255,255,255,0.04)',
@@ -1243,8 +1317,21 @@ let cachedPolygons: number[][][] | null = null;
 
 /* ─── World Map SVG ──────────────────────────────────────────────────────── */
 
-function WorldMapSVG() {
+function WorldMapSVG({
+  zoom,
+  setZoom,
+  pan,
+  setPan,
+}: {
+  zoom: number;
+  setZoom: React.Dispatch<React.SetStateAction<number>>;
+  pan: { x: number; y: number };
+  setPan: React.Dispatch<React.SetStateAction<{ x: number; y: number }>>;
+}) {
   const [polygons, setPolygons] = useState<number[][][]>(cachedPolygons || []);
+  const [isDragging, setIsDragging] = useState(false);
+  const dragStart = useRef({ x: 0, y: 0 });
+  const mapRef = useRef<SVGSVGElement>(null);
 
   useEffect(() => {
     if (polygons.length > 0) return;
@@ -1274,6 +1361,69 @@ function WorldMapSVG() {
       .catch(err => console.warn('Failed to load SVG background map:', err));
   }, [polygons.length]);
 
+  // Prevent default scroll during wheel zoom
+  useEffect(() => {
+    const mapEl = mapRef.current;
+    if (!mapEl) return;
+
+    const handleDOMWheel = (e: WheelEvent) => {
+      e.preventDefault();
+      
+      const zoomFactor = 1.15;
+      let newZoom = e.deltaY < 0 ? zoom * zoomFactor : zoom / zoomFactor;
+      newZoom = Math.max(1, Math.min(newZoom, 8)); // clamp zoom between 1x and 8x
+      
+      const rect = mapEl.getBoundingClientRect();
+      const mouseX = e.clientX - rect.left;
+      const mouseY = e.clientY - rect.top;
+      
+      const svgX = (mouseX / rect.width) * 1200;
+      const svgY = (mouseY / rect.height) * 600;
+
+      const dx = svgX - pan.x;
+      const dy = svgY - pan.y;
+      
+      let newX = svgX - dx * (newZoom / zoom);
+      let newY = svgY - dy * (newZoom / zoom);
+      
+      const maxPanX = 1200 * (newZoom - 1);
+      const maxPanY = 600 * (newZoom - 1);
+      newX = Math.max(-maxPanX, Math.min(0, newX));
+      newY = Math.max(-maxPanY, Math.min(0, newY));
+
+      setPan({ x: newX, y: newY });
+      setZoom(newZoom);
+    };
+
+    mapEl.addEventListener('wheel', handleDOMWheel, { passive: false });
+    return () => {
+      mapEl.removeEventListener('wheel', handleDOMWheel);
+    };
+  }, [zoom, pan, setZoom, setPan]);
+
+  const handleMouseDown = (e: React.MouseEvent<SVGSVGElement>) => {
+    if (e.button !== 0) return;
+    setIsDragging(true);
+    dragStart.current = { x: e.clientX - pan.x, y: e.clientY - pan.y };
+  };
+
+  const handleMouseMove = (e: React.MouseEvent<SVGSVGElement>) => {
+    if (!isDragging) return;
+    let newX = e.clientX - dragStart.current.x;
+    let newY = e.clientY - dragStart.current.y;
+    
+    const maxPanX = 1200 * (zoom - 1);
+    const maxPanY = 600 * (zoom - 1);
+    newX = Math.max(-maxPanX, Math.min(0, newX));
+    newY = Math.max(-maxPanY, Math.min(0, newY));
+    
+    setPan({ x: newX, y: newY });
+  };
+
+  const handleMouseUpOrLeave = () => {
+    setIsDragging(false);
+  };
+
   const paths = useMemo(() => {
     return polygons.map(ring => {
       if (ring.length < 3) return '';
@@ -1300,9 +1450,21 @@ function WorldMapSVG() {
 
   return (
     <svg
+      ref={mapRef}
       viewBox="0 0 1200 600"
-      style={{ width: '100%', height: '100%', maxHeight: '100vh' }}
+      style={{
+        width: '100%',
+        height: '100%',
+        maxHeight: '100vh',
+        cursor: zoom > 1 ? (isDragging ? 'grabbing' : 'grab') : 'default',
+        userSelect: 'none',
+        pointerEvents: 'auto',
+      }}
       xmlns="http://www.w3.org/2000/svg"
+      onMouseDown={handleMouseDown}
+      onMouseMove={handleMouseMove}
+      onMouseUp={handleMouseUpOrLeave}
+      onMouseLeave={handleMouseUpOrLeave}
     >
       {/* Grid lines */}
       <defs>
@@ -1312,45 +1474,48 @@ function WorldMapSVG() {
       </defs>
       <rect width="1200" height="600" fill="url(#grid)" />
 
-      {/* Latitude lines */}
-      {[100, 200, 300, 400, 500].map(y => (
-        <line key={`lat-${y}`} x1="0" y1={y} x2="1200" y2={y} stroke="rgba(255,255,255,0.07)" strokeWidth="0.5" strokeDasharray="4,8" />
-      ))}
-      {/* Longitude lines */}
-      {[200, 400, 600, 800, 1000].map(x => (
-        <line key={`lon-${x}`} x1={x} y1="0" x2={x} y2="600" stroke="rgba(255,255,255,0.07)" strokeWidth="0.5" strokeDasharray="4,8" />
-      ))}
-
-      {/* Real world map - continents as path shapes */}
-      <g fill="rgba(15, 23, 42, 0.5)" stroke="rgba(59, 130, 246, 0.25)" strokeWidth="0.5" style={{ transition: 'opacity 0.5s ease', opacity: polygons.length > 0 ? 1 : 0 }}>
-        {paths.map((d, idx) => (
-          <path key={idx} d={d} />
+      {/* Scalable & Pannable Group */}
+      <g transform={`translate(${pan.x}, ${pan.y}) scale(${zoom})`}>
+        {/* Latitude lines */}
+        {[100, 200, 300, 400, 500].map(y => (
+          <line key={`lat-${y}`} x1="0" y1={y} x2="1200" y2={y} stroke="rgba(255,255,255,0.07)" strokeWidth="0.5" strokeDasharray="4,8" />
         ))}
+        {/* Longitude lines */}
+        {[200, 400, 600, 800, 1000].map(x => (
+          <line key={`lon-${x}`} x1={x} y1="0" x2={x} y2="600" stroke="rgba(255,255,255,0.07)" strokeWidth="0.5" strokeDasharray="4,8" />
+        ))}
+
+        {/* Real world map - continents as path shapes */}
+        <g fill="rgba(15, 23, 42, 0.6)" stroke="rgba(59, 130, 246, 0.55)" strokeWidth={0.8 / zoom} style={{ transition: 'opacity 0.5s ease', opacity: polygons.length > 0 ? 1 : 0 }}>
+          {paths.map((d, idx) => (
+            <path key={idx} d={d} />
+          ))}
+        </g>
+
+        {/* Equator */}
+        <line x1="0" y1="300" x2="1200" y2="300" stroke="rgba(239, 68, 68, 0.22)" strokeWidth="0.5" strokeDasharray="8,4" />
+        {/* Tropics */}
+        <line x1="0" y1="200" x2="1200" y2="200" stroke="rgba(245, 158, 11, 0.18)" strokeWidth="0.5" strokeDasharray="4,12" />
+        <line x1="0" y1="400" x2="1200" y2="400" stroke="rgba(245, 158, 11, 0.18)" strokeWidth="0.5" strokeDasharray="4,12" />
+
+        {/* Marker dots for key cities/hotspots */}
+        {MAP_HOTSPOTS.map(({ label, lat, lon }) => {
+          const x = ((lon + 180) / 360) * 1200;
+          const y = ((90 - lat) / 180) * 600;
+          return (
+            <g key={label}>
+              <circle cx={x} cy={y} r={3.5 / zoom} fill={theme.colors.exploit} opacity="0.75" />
+              <circle cx={x} cy={y} r={7 / zoom} fill="none" stroke={theme.colors.exploit} strokeWidth={0.75 / zoom} opacity="0.4" />
+              <text x={x + 10 / zoom} y={y + 3.5 / zoom} fill={theme.colors.textSecondary} fontSize={8 / zoom} fontWeight="600" opacity="0.7" fontFamily={theme.fonts.mono}>{label}</text>
+            </g>
+          );
+        })}
+
+        {/* Coordinate labels */}
+        <text x="1190" y="305" fill="rgba(255, 255, 255, 0.25)" fontSize="6" textAnchor="end" fontFamily="'JetBrains Mono', monospace">0°</text>
+        <text x="1190" y="205" fill="rgba(255, 255, 255, 0.18)" fontSize="6" textAnchor="end" fontFamily="'JetBrains Mono', monospace">23.4°N</text>
+        <text x="1190" y="405" fill="rgba(255, 255, 255, 0.18)" fontSize="6" textAnchor="end" fontFamily="'JetBrains Mono', monospace">23.4°S</text>
       </g>
-
-      {/* Equator */}
-      <line x1="0" y1="300" x2="1200" y2="300" stroke="rgba(239, 68, 68, 0.22)" strokeWidth="0.5" strokeDasharray="8,4" />
-      {/* Tropics */}
-      <line x1="0" y1="200" x2="1200" y2="200" stroke="rgba(245, 158, 11, 0.18)" strokeWidth="0.5" strokeDasharray="4,12" />
-      <line x1="0" y1="400" x2="1200" y2="400" stroke="rgba(245, 158, 11, 0.18)" strokeWidth="0.5" strokeDasharray="4,12" />
-
-      {/* Marker dots for key cities/hotspots */}
-      {MAP_HOTSPOTS.map(({ label, lat, lon }) => {
-        const x = ((lon + 180) / 360) * 1200;
-        const y = ((90 - lat) / 180) * 600;
-        return (
-          <g key={label}>
-            <circle cx={x} cy={y} r="3.5" fill={theme.colors.exploit} opacity="0.75" />
-            <circle cx={x} cy={y} r="7" fill="none" stroke={theme.colors.exploit} strokeWidth="0.75" opacity="0.4" />
-            <text x={x + 10} y={y + 3.5} fill={theme.colors.textSecondary} fontSize="8" fontWeight="600" opacity="0.7" fontFamily={theme.fonts.mono}>{label}</text>
-          </g>
-        );
-      })}
-
-      {/* Coordinate labels */}
-      <text x="1190" y="305" fill="rgba(255, 255, 255, 0.25)" fontSize="6" textAnchor="end" fontFamily="'JetBrains Mono', monospace">0°</text>
-      <text x="1190" y="205" fill="rgba(255, 255, 255, 0.18)" fontSize="6" textAnchor="end" fontFamily="'JetBrains Mono', monospace">23.4°N</text>
-      <text x="1190" y="405" fill="rgba(255, 255, 255, 0.18)" fontSize="6" textAnchor="end" fontFamily="'JetBrains Mono', monospace">23.4°S</text>
     </svg>
   );
 }
