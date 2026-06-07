@@ -547,146 +547,238 @@ export function DashboardPage() {
           </div>
         </div>
 
-        {/* ═══ TOP-LEFT: System Status Panel ═══ */}
-        <div className="hud-entrance-left" style={{ position: 'absolute', top: 60, left: 16, width: 260, pointerEvents: 'auto' }}>
-          <HudPanel accent="red" title="SYSTEM STATUS">
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
-              <div className="hud-beacon" style={{ width: 8, height: 8, borderRadius: '50%', background: threatLevel.color, boxShadow: `0 0 10px ${threatLevel.color}` }} />
-              <span style={{ fontSize: 14, fontWeight: 800, color: threatLevel.color, letterSpacing: 1.5, fontFamily: theme.fonts.display }}>{threatLevel.label}</span>
-            </div>
-            <div style={{ fontSize: 8, letterSpacing: 2, color: theme.colors.textDim, marginBottom: 2, textTransform: 'uppercase' }}>Total Attacks {timeMode === 'live' ? '(24H)' : `(${timeMode}M)`}</div>
-            <div style={{ fontSize: 28, fontWeight: 800, color: '#fff', fontFamily: theme.fonts.display, marginBottom: 10 }}>{fmt(total)}</div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: 8 }}>
-              <div>
-                <div style={{ fontSize: 7, letterSpacing: 1.5, color: theme.colors.textDim, textTransform: 'uppercase' }}>THREATS/MIN</div>
-                <div style={{ fontSize: 16, fontWeight: 700, color: theme.colors.warning, fontFamily: theme.fonts.display }}>{threatsPerMin}</div>
+        {/* ═══ LEFT COLUMN ═══ */}
+        <div style={{
+          position: 'absolute', top: 60, left: 16, bottom: 16, width: 280,
+          display: 'flex', flexDirection: 'column', gap: 16, pointerEvents: 'none',
+          zIndex: 10, overflowY: 'auto', paddingLeft: 4, paddingBottom: 16,
+          scrollbarWidth: 'none', msOverflowStyle: 'none'
+        }}>
+          {/* ═══ TOP-LEFT: System Status Panel ═══ */}
+          <div className="hud-entrance-left" style={{ width: 260, pointerEvents: 'auto', flexShrink: 0 }}>
+            <HudPanel accent="red" title="SYSTEM STATUS">
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
+                <div className="hud-beacon" style={{ width: 8, height: 8, borderRadius: '50%', background: threatLevel.color, boxShadow: `0 0 10px ${threatLevel.color}` }} />
+                <span style={{ fontSize: 14, fontWeight: 800, color: threatLevel.color, letterSpacing: 1.5, fontFamily: theme.fonts.display }}>{threatLevel.label}</span>
               </div>
-              <div style={{ textAlign: 'right' }}>
-                <div style={{ fontSize: 7, letterSpacing: 1.5, color: theme.colors.textDim, textTransform: 'uppercase' }}>ACTIVE ARCS</div>
-                <div style={{ fontSize: 16, fontWeight: 700, color: theme.colors.exploit, fontFamily: theme.fonts.display }}>{activeArcCount}</div>
-              </div>
-              <div style={{ textAlign: 'right' }}>
-                <div style={{ fontSize: 7, letterSpacing: 1.5, color: theme.colors.textDim, textTransform: 'uppercase' }}>TREND</div>
-                <div style={{ fontSize: 16, fontWeight: 700, color: trendUp ? theme.colors.danger : theme.colors.success, fontFamily: theme.fonts.display }}>
-                  {trendUp ? '▲ UP' : '▼ DOWN'}
+              <div style={{ fontSize: 8, letterSpacing: 2, color: theme.colors.textDim, marginBottom: 2, textTransform: 'uppercase' }}>Total Attacks {timeMode === 'live' ? '(24H)' : `(${timeMode}M)`}</div>
+              <div style={{ fontSize: 28, fontWeight: 800, color: '#fff', fontFamily: theme.fonts.display, marginBottom: 10 }}>{fmt(total)}</div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: 8 }}>
+                <div>
+                  <div style={{ fontSize: 7, letterSpacing: 1.5, color: theme.colors.textDim, textTransform: 'uppercase' }}>THREATS/MIN</div>
+                  <div style={{ fontSize: 16, fontWeight: 700, color: theme.colors.warning, fontFamily: theme.fonts.display }}>{threatsPerMin}</div>
                 </div>
-              </div>
-            </div>
-          </HudPanel>
-        </div>
-
-        {/* ═══ TOP-LEFT (Below Status): KPI Breakdown ═══ */}
-        <div className="hud-entrance-left" style={{ position: 'absolute', top: 270, left: 16, width: 260, pointerEvents: 'auto', animationDelay: '0.1s' }}>
-          <HudPanel accent="yellow" title="THREAT BREAKDOWN">
-            {(['exploit', 'malware', 'phishing'] as AttackType[]).map(type => {
-              const count = typeDistribution[type];
-              const pct = (count / distTotal) * 100;
-              const color = getAttackColor(type);
-              return (
-                <div
-                  key={type}
-                  onClick={() => setActiveTypes(new Set([type]))}
-                  style={{
-                    marginBottom: 8, cursor: 'pointer', padding: '4px 6px', borderRadius: 2,
-                    background: activeTypes.has(type) ? `${color}15` : 'transparent',
-                    border: activeTypes.has(type) ? `1px solid ${color}30` : '1px solid transparent',
-                    transition: 'all 0.2s',
-                  }}
-                >
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 9, marginBottom: 3 }}>
-                    <span style={{ color, letterSpacing: 1.5, textTransform: 'uppercase', fontWeight: 700 }}>
-                      ⚠ {type}
-                    </span>
-                    <span style={{ color: theme.colors.textDim }}>{fmt(count)} · {pct.toFixed(1)}%</span>
-                  </div>
-                  <div style={{ height: 3, background: 'rgba(255,255,255,0.05)', borderRadius: 1 }}>
-                    <div className="hud-bar-fill" style={{ width: `${pct}%`, height: '100%', background: `linear-gradient(90deg, ${color}80, ${color})`, borderRadius: 1 }} />
+                <div style={{ textAlign: 'right' }}>
+                  <div style={{ fontSize: 7, letterSpacing: 1.5, color: theme.colors.textDim, textTransform: 'uppercase' }}>ACTIVE ARCS</div>
+                  <div style={{ fontSize: 16, fontWeight: 700, color: theme.colors.exploit, fontFamily: theme.fonts.display }}>{activeArcCount}</div>
+                </div>
+                <div style={{ textAlign: 'right' }}>
+                  <div style={{ fontSize: 7, letterSpacing: 1.5, color: theme.colors.textDim, textTransform: 'uppercase' }}>TREND</div>
+                  <div style={{ fontSize: 16, fontWeight: 700, color: trendUp ? theme.colors.danger : theme.colors.success, fontFamily: theme.fonts.display }}>
+                    {trendUp ? '▲ UP' : '▼ DOWN'}
                   </div>
                 </div>
-              );
-            })}
-          </HudPanel>
-        </div>
+              </div>
+            </HudPanel>
+          </div>
 
-        {/* ═══ LEFT-MID: Intelligence Providers ═══ */}
-        <div className="hud-entrance-left" style={{ position: 'absolute', top: 450, left: 16, width: 260, pointerEvents: 'auto', animationDelay: '0.15s' }}>
-          <HudPanel accent="purple" title="INTEL SOURCES">
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 5, maxHeight: 180, overflowY: 'auto' }}>
-              {topApis.map(([api, count], idx) => {
+          {/* ═══ TOP-LEFT (Below Status): KPI Breakdown ═══ */}
+          <div className="hud-entrance-left" style={{ width: 260, pointerEvents: 'auto', animationDelay: '0.1s', flexShrink: 0 }}>
+            <HudPanel accent="yellow" title="THREAT BREAKDOWN">
+              {(['exploit', 'malware', 'phishing'] as AttackType[]).map(type => {
+                const count = typeDistribution[type];
                 const pct = (count / distTotal) * 100;
-                const color = `hsl(${idx * 40 + 180}, 80%, 55%)`;
-                const active = activeSource === api;
+                const color = getAttackColor(type);
                 return (
                   <div
-                    key={api}
-                    onClick={() => setActiveSource(active ? null : api)}
+                    key={type}
+                    onClick={() => setActiveTypes(new Set([type]))}
                     style={{
-                      cursor: 'pointer', padding: '4px 6px', borderRadius: 2,
-                      background: active ? `${color}15` : 'transparent',
-                      border: active ? `1px solid ${color}40` : '1px solid transparent',
+                      marginBottom: 8, cursor: 'pointer', padding: '4px 6px', borderRadius: 2,
+                      background: activeTypes.has(type) ? `${color}15` : 'transparent',
+                      border: activeTypes.has(type) ? `1px solid ${color}30` : '1px solid transparent',
                       transition: 'all 0.2s',
                     }}
                   >
-                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 9, marginBottom: 2 }}>
-                      <span style={{ textTransform: 'uppercase', color: active ? color : theme.colors.textPrimary, fontWeight: active ? 700 : 400, letterSpacing: 0.5 }}>{api}</span>
-                      <span style={{ color: theme.colors.textDim }}>{fmt(count)}</span>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 9, marginBottom: 3 }}>
+                      <span style={{ color, letterSpacing: 1.5, textTransform: 'uppercase', fontWeight: 700 }}>
+                        ⚠ {type}
+                      </span>
+                      <span style={{ color: theme.colors.textDim }}>{fmt(count)} · {pct.toFixed(1)}%</span>
                     </div>
-                    <div style={{ height: 2, background: 'rgba(255,255,255,0.04)', borderRadius: 1 }}>
-                      <div style={{ width: `${pct}%`, height: '100%', background: color, borderRadius: 1, transition: 'width 0.6s' }} />
+                    <div style={{ height: 3, background: 'rgba(255,255,255,0.05)', borderRadius: 1 }}>
+                      <div className="hud-bar-fill" style={{ width: `${pct}%`, height: '100%', background: `linear-gradient(90deg, ${color}80, ${color})`, borderRadius: 1 }} />
                     </div>
                   </div>
                 );
               })}
-            </div>
-          </HudPanel>
+            </HudPanel>
+          </div>
+
+          {/* ═══ LEFT-MID: Intelligence Providers ═══ */}
+          <div className="hud-entrance-left" style={{ width: 260, pointerEvents: 'auto', animationDelay: '0.15s', flexShrink: 0 }}>
+            <HudPanel accent="purple" title="INTEL SOURCES">
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 5, maxHeight: 180, overflowY: 'auto' }}>
+                {topApis.map(([api, count], idx) => {
+                  const pct = (count / distTotal) * 100;
+                  const color = `hsl(${idx * 40 + 180}, 80%, 55%)`;
+                  const active = activeSource === api;
+                  return (
+                    <div
+                      key={api}
+                      onClick={() => setActiveSource(active ? null : api)}
+                      style={{
+                        cursor: 'pointer', padding: '4px 6px', borderRadius: 2,
+                        background: active ? `${color}15` : 'transparent',
+                        border: active ? `1px solid ${color}40` : '1px solid transparent',
+                        transition: 'all 0.2s',
+                      }}
+                    >
+                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 9, marginBottom: 2 }}>
+                        <span style={{ textTransform: 'uppercase', color: active ? color : theme.colors.textPrimary, fontWeight: active ? 700 : 400, letterSpacing: 0.5 }}>{api}</span>
+                        <span style={{ color: theme.colors.textDim }}>{fmt(count)}</span>
+                      </div>
+                      <div style={{ height: 2, background: 'rgba(255,255,255,0.04)', borderRadius: 1 }}>
+                        <div style={{ width: `${pct}%`, height: '100%', background: color, borderRadius: 1, transition: 'width 0.6s' }} />
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </HudPanel>
+          </div>
+
+          {/* ═══ BOTTOM-LEFT: Major Origins ═══ */}
+          <div className="hud-entrance-left" style={{ width: 260, pointerEvents: 'auto', flexShrink: 0 }}>
+            <HudPanel accent="red" title="MAJOR ORIGINS">
+              <HudCompactTable
+                items={filteredOrigins.slice(0, 6)}
+                color={theme.colors.exploit}
+                total={distTotal}
+                isCountry
+                onRowClick={(co) => { setActiveCountry(co === activeCountry ? null : co); setDrillCountry(co); }}
+                activeRow={activeCountry}
+              />
+            </HudPanel>
+          </div>
         </div>
 
-        {/* ═══ TOP-RIGHT: Attack Trend ═══ */}
-        <div className="hud-entrance-right" style={{ position: 'absolute', top: 60, right: 16, width: 300, pointerEvents: 'auto' }}>
-          <HudPanel accent="red" title="ATTACK TREND · 10 MIN">
-            <TrendSparkline data={trendData} />
-          </HudPanel>
-        </div>
+        {/* ═══ RIGHT COLUMN ═══ */}
+        <div style={{
+          position: 'absolute', top: 60, right: 16, bottom: 16, width: 360,
+          display: 'flex', flexDirection: 'column', gap: 16, alignItems: 'flex-end',
+          pointerEvents: 'none', zIndex: 10, overflowY: 'auto', paddingRight: 4, paddingBottom: 16,
+          scrollbarWidth: 'none', msOverflowStyle: 'none'
+        }}>
+          {/* ═══ TOP-RIGHT: Attack Trend ═══ */}
+          <div className="hud-entrance-right" style={{ width: 300, pointerEvents: 'auto', flexShrink: 0 }}>
+            <HudPanel accent="red" title="ATTACK TREND · 10 MIN">
+              <TrendSparkline data={trendData} />
+            </HudPanel>
+          </div>
 
-        {/* ═══ RIGHT-MID: Top Threat Vectors ═══ */}
-        <div className="hud-entrance-right" style={{ position: 'absolute', top: 210, right: 16, width: 300, pointerEvents: 'auto', animationDelay: '0.1s' }}>
-          <HudPanel accent="yellow" title="THREAT VECTORS">
-            <HudCompactTable
-              items={filteredVectors}
-              color={theme.colors.warning}
-              total={distTotal}
-              onRowClick={(name) => setSearchQuery(name === searchQuery ? '' : name)}
-              activeRow={searchQuery}
-            />
-          </HudPanel>
-        </div>
+          {/* ═══ RIGHT-MID: Top Threat Vectors ═══ */}
+          <div className="hud-entrance-right" style={{ width: 300, pointerEvents: 'auto', animationDelay: '0.1s', flexShrink: 0 }}>
+            <HudPanel accent="yellow" title="THREAT VECTORS">
+              <HudCompactTable
+                items={filteredVectors}
+                color={theme.colors.warning}
+                total={distTotal}
+                onRowClick={(name) => setSearchQuery(name === searchQuery ? '' : name)}
+                activeRow={searchQuery}
+              />
+            </HudPanel>
+          </div>
 
-        {/* ═══ RIGHT-MID-LOWER: Primary Targets ═══ */}
-        <div className="hud-entrance-right" style={{ position: 'absolute', top: 420, right: 16, width: 300, pointerEvents: 'auto', animationDelay: '0.15s' }}>
-          <HudPanel accent="blue" title="PRIMARY TARGETS">
-            <HudCompactTable
-              items={filteredTargets}
-              color={theme.colors.phishing}
-              total={distTotal}
-              isCountry
-              onRowClick={(co) => { setActiveCountry(co === activeCountry ? null : co); setDrillCountry(co); }}
-              activeRow={activeCountry}
-            />
-          </HudPanel>
-        </div>
+          {/* ═══ RIGHT-MID-LOWER: Primary Targets ═══ */}
+          <div className="hud-entrance-right" style={{ width: 300, pointerEvents: 'auto', animationDelay: '0.15s', flexShrink: 0 }}>
+            <HudPanel accent="blue" title="PRIMARY TARGETS">
+              <HudCompactTable
+                items={filteredTargets}
+                color={theme.colors.phishing}
+                total={distTotal}
+                isCountry
+                onRowClick={(co) => { setActiveCountry(co === activeCountry ? null : co); setDrillCountry(co); }}
+                activeRow={activeCountry}
+              />
+            </HudPanel>
+          </div>
 
-        {/* ═══ BOTTOM-LEFT: Major Origins ═══ */}
-        <div className="hud-entrance-bottom" style={{ position: 'absolute', bottom: 16, left: 16, width: 260, pointerEvents: 'auto' }}>
-          <HudPanel accent="red" title="MAJOR ORIGINS">
-            <HudCompactTable
-              items={filteredOrigins.slice(0, 6)}
-              color={theme.colors.exploit}
-              total={distTotal}
-              isCountry
-              onRowClick={(co) => { setActiveCountry(co === activeCountry ? null : co); setDrillCountry(co); }}
-              activeRow={activeCountry}
-            />
-          </HudPanel>
+          {/* ═══ BOTTOM-RIGHT: Live Threat Feed ═══ */}
+          <div className="hud-entrance-right" style={{ width: 340, pointerEvents: 'auto', animationDelay: '0.1s', flexShrink: 0 }}>
+            <HudPanel accent="red" title={`LIVE INTERCEPTS · ${filteredFeed.length}/${recentFeed.length}`}>
+              <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 6 }}>
+                <button
+                  onClick={() => setFeedPaused(p => !p)}
+                  style={{
+                    padding: '2px 8px', fontSize: 8, fontFamily: theme.fonts.mono,
+                    background: feedPaused ? 'rgba(245,158,11,0.15)' : 'rgba(255,255,255,0.05)',
+                    border: `1px solid ${feedPaused ? 'rgba(245,158,11,0.4)' : 'rgba(255,255,255,0.08)'}`,
+                    borderRadius: 2, color: feedPaused ? theme.colors.warning : theme.colors.textDim,
+                    cursor: 'pointer', letterSpacing: 1, textTransform: 'uppercase',
+                  }}
+                >
+                  {feedPaused ? '▶ RESUME' : '⏸ PAUSE'}
+                </button>
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 4, maxHeight: 220, overflowY: 'auto' }}>
+                {filteredFeed.length === 0 ? (
+                  <div style={{ color: theme.colors.textDim, fontSize: 9, textAlign: 'center', padding: 12, letterSpacing: 1 }}>
+                    {hasFilters ? 'NO MATCHING EVENTS' : 'AWAITING DATA…'}
+                  </div>
+                ) : (
+                  filteredFeed.slice(0, 6).map((event, i) => {
+                    const evColor = getAttackColor(event.a_t);
+                    return (
+                      <div
+                        key={event.id || i}
+                        onClick={() => setExpandedId(prev => prev === (event.id || String(i)) ? null : (event.id || String(i)))}
+                        style={{
+                          padding: '6px 8px', borderRadius: 2,
+                          background: 'rgba(255,255,255,0.02)',
+                          borderLeft: `2px solid ${evColor}`,
+                          cursor: 'pointer', transition: 'background 0.15s',
+                        }}
+                        onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'}
+                        onMouseLeave={e => e.currentTarget.style.background = 'rgba(255,255,255,0.02)'}
+                      >
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 6 }}>
+                          <span style={{ fontSize: 8, fontWeight: 700, color: evColor, letterSpacing: 1, textTransform: 'uppercase', padding: '1px 4px', background: `${evColor}15`, borderRadius: 2 }}>
+                            {event.a_t}
+                          </span>
+                          <span style={{ fontSize: 9, color: theme.colors.textPrimary, flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                            {event.a_n}
+                          </span>
+                          <span style={{ fontSize: 8, color: theme.colors.textDim }}>{relativeTime(event.timestamp || event.ts)}</span>
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 3, fontSize: 9 }}>
+                          <span>{getFlag(event.s_co)}</span>
+                          <span style={{ color: theme.colors.textDim, fontFamily: theme.fonts.mono, fontSize: 8 }}>{event.s_ip || event.s_co}</span>
+                          <span style={{ color: theme.colors.textDim }}>→</span>
+                          <span>{getFlag(event.d_co)}</span>
+                          <span style={{ color: theme.colors.textDim, fontFamily: theme.fonts.mono, fontSize: 8 }}>{event.d_ip || event.d_co}</span>
+                          <span style={{ marginLeft: 'auto', fontSize: 7, color: theme.colors.textDim, letterSpacing: 0.5 }}>via {event.source_api || '?'}</span>
+                        </div>
+                        {/* Expanded meta */}
+                        {expandedId === (event.id || String(i)) && event.meta && (
+                          <div style={{ marginTop: 6, padding: '6px 8px', background: 'rgba(0,0,0,0.3)', borderRadius: 2, border: '1px solid rgba(255,255,255,0.05)' }}>
+                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
+                              {event.meta.malware_family && <MiniTag label="MAL" value={event.meta.malware_family} color="#CC33FF" />}
+                              {event.meta.port && <MiniTag label="PORT" value={String(event.meta.port)} color={theme.colors.textSecondary} />}
+                              {event.meta.threat_type && <MiniTag label="TYPE" value={event.meta.threat_type} color={theme.colors.warning} />}
+                              {event.meta.tags?.slice(0, 3).map((tag: string) => (
+                                <MiniTag key={tag} label="TAG" value={`#${tag}`} color={theme.colors.exploit} />
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+            </HudPanel>
+          </div>
         </div>
 
         {/* ═══ BOTTOM-CENTER: Attack Corridors ═══ */}
@@ -707,82 +799,6 @@ export function DashboardPage() {
                   </div>
                 );
               })}
-            </div>
-          </HudPanel>
-        </div>
-
-        {/* ═══ BOTTOM-RIGHT: Live Threat Feed ═══ */}
-        <div className="hud-entrance-right" style={{ position: 'absolute', bottom: 16, right: 16, width: 340, pointerEvents: 'auto', animationDelay: '0.1s' }}>
-          <HudPanel accent="red" title={`LIVE INTERCEPTS · ${filteredFeed.length}/${recentFeed.length}`}>
-            <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 6 }}>
-              <button
-                onClick={() => setFeedPaused(p => !p)}
-                style={{
-                  padding: '2px 8px', fontSize: 8, fontFamily: theme.fonts.mono,
-                  background: feedPaused ? 'rgba(245,158,11,0.15)' : 'rgba(255,255,255,0.05)',
-                  border: `1px solid ${feedPaused ? 'rgba(245,158,11,0.4)' : 'rgba(255,255,255,0.08)'}`,
-                  borderRadius: 2, color: feedPaused ? theme.colors.warning : theme.colors.textDim,
-                  cursor: 'pointer', letterSpacing: 1, textTransform: 'uppercase',
-                }}
-              >
-                {feedPaused ? '▶ RESUME' : '⏸ PAUSE'}
-              </button>
-            </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 4, maxHeight: 220, overflowY: 'auto' }}>
-              {filteredFeed.length === 0 ? (
-                <div style={{ color: theme.colors.textDim, fontSize: 9, textAlign: 'center', padding: 12, letterSpacing: 1 }}>
-                  {hasFilters ? 'NO MATCHING EVENTS' : 'AWAITING DATA…'}
-                </div>
-              ) : (
-                filteredFeed.slice(0, 6).map((event, i) => {
-                  const evColor = getAttackColor(event.a_t);
-                  return (
-                    <div
-                      key={event.id || i}
-                      onClick={() => setExpandedId(prev => prev === (event.id || String(i)) ? null : (event.id || String(i)))}
-                      style={{
-                        padding: '6px 8px', borderRadius: 2,
-                        background: 'rgba(255,255,255,0.02)',
-                        borderLeft: `2px solid ${evColor}`,
-                        cursor: 'pointer', transition: 'background 0.15s',
-                      }}
-                      onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'}
-                      onMouseLeave={e => e.currentTarget.style.background = 'rgba(255,255,255,0.02)'}
-                    >
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 6 }}>
-                        <span style={{ fontSize: 8, fontWeight: 700, color: evColor, letterSpacing: 1, textTransform: 'uppercase', padding: '1px 4px', background: `${evColor}15`, borderRadius: 2 }}>
-                          {event.a_t}
-                        </span>
-                        <span style={{ fontSize: 9, color: theme.colors.textPrimary, flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                          {event.a_n}
-                        </span>
-                        <span style={{ fontSize: 8, color: theme.colors.textDim }}>{relativeTime(event.timestamp || event.ts)}</span>
-                      </div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 3, fontSize: 9 }}>
-                        <span>{getFlag(event.s_co)}</span>
-                        <span style={{ color: theme.colors.textDim, fontFamily: theme.fonts.mono, fontSize: 8 }}>{event.s_ip || event.s_co}</span>
-                        <span style={{ color: theme.colors.textDim }}>→</span>
-                        <span>{getFlag(event.d_co)}</span>
-                        <span style={{ color: theme.colors.textDim, fontFamily: theme.fonts.mono, fontSize: 8 }}>{event.d_ip || event.d_co}</span>
-                        <span style={{ marginLeft: 'auto', fontSize: 7, color: theme.colors.textDim, letterSpacing: 0.5 }}>via {event.source_api || '?'}</span>
-                      </div>
-                      {/* Expanded meta */}
-                      {expandedId === (event.id || String(i)) && event.meta && (
-                        <div style={{ marginTop: 6, padding: '6px 8px', background: 'rgba(0,0,0,0.3)', borderRadius: 2, border: '1px solid rgba(255,255,255,0.05)' }}>
-                          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
-                            {event.meta.malware_family && <MiniTag label="MAL" value={event.meta.malware_family} color="#CC33FF" />}
-                            {event.meta.port && <MiniTag label="PORT" value={String(event.meta.port)} color={theme.colors.textSecondary} />}
-                            {event.meta.threat_type && <MiniTag label="TYPE" value={event.meta.threat_type} color={theme.colors.warning} />}
-                            {event.meta.tags?.slice(0, 3).map((tag: string) => (
-                              <MiniTag key={tag} label="TAG" value={`#${tag}`} color={theme.colors.exploit} />
-                            ))}
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  );
-                })
-              )}
             </div>
           </HudPanel>
         </div>
