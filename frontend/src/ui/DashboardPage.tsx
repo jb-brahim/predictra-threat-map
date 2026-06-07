@@ -808,50 +808,94 @@ export function DashboardPage() {
         {/* ═══ MAP ZOOM CONTROLS ═══ */}
         <div style={{
           position: 'absolute', bottom: 16, left: 312,
-          display: 'flex', flexDirection: 'column', gap: 4, pointerEvents: 'auto',
+          display: 'flex', alignItems: 'center', gap: 8, pointerEvents: 'auto',
           background: 'rgba(15, 23, 42, 0.85)', backdropFilter: 'blur(8px)',
           border: '1px solid rgba(255, 255, 255, 0.08)', borderRadius: 4,
-          padding: 4, zIndex: 30, boxShadow: '0 0 15px rgba(0,0,0,0.5)',
+          padding: '4px 10px', zIndex: 30, boxShadow: '0 0 15px rgba(0,0,0,0.5)',
         }}>
           <button className="hud-zoom-btn" onClick={() => {
-            const newZoom = Math.min(zoom * 1.3, 8);
-            const center = { x: 600, y: 300 };
-            const dx = center.x - pan.x;
-            const dy = center.y - pan.y;
-            setPan({
-              x: center.x - dx * (newZoom / zoom),
-              y: center.y - dy * (newZoom / zoom),
-            });
-            setZoom(newZoom);
-          }} style={zoomBtnStyle} title="Zoom In">+</button>
-          
-          <button className="hud-zoom-btn" onClick={() => {
-            const newZoom = Math.max(1, zoom / 1.3);
-            const center = { x: 600, y: 300 };
-            const dx = center.x - pan.x;
-            const dy = center.y - pan.y;
-            let newX = center.x - dx * (newZoom / zoom);
-            let newY = center.y - dy * (newZoom / zoom);
-            const maxPanX = 1200 * (newZoom - 1);
-            const maxPanY = 600 * (newZoom - 1);
-            newX = Math.max(-maxPanX, Math.min(0, newX));
-            newY = Math.max(-maxPanY, Math.min(0, newY));
-            setPan({ x: newX, y: newY });
+            const newZoom = Math.max(0.4, zoom / 1.3);
+            if (newZoom < 1) {
+              const newX = (1200 * (1 - newZoom)) / 2;
+              const newY = (600 * (1 - newZoom)) / 2;
+              setPan({ x: newX, y: newY });
+            } else {
+              const center = { x: 600, y: 300 };
+              const dx = center.x - pan.x;
+              const dy = center.y - pan.y;
+              let newX = center.x - dx * (newZoom / zoom);
+              let newY = center.y - dy * (newZoom / zoom);
+              const maxPanX = 1200 * (newZoom - 1);
+              const maxPanY = 600 * (newZoom - 1);
+              newX = Math.max(-maxPanX, Math.min(0, newX));
+              newY = Math.max(-maxPanY, Math.min(0, newY));
+              setPan({ x: newX, y: newY });
+            }
             setZoom(newZoom);
           }} style={zoomBtnStyle} title="Zoom Out">-</button>
-          
+
+          <input
+            type="range"
+            min="0.4"
+            max="6.0"
+            step="0.1"
+            value={zoom}
+            onChange={(e) => {
+              const newZoom = parseFloat(e.target.value);
+              if (newZoom < 1) {
+                const newX = (1200 * (1 - newZoom)) / 2;
+                const newY = (600 * (1 - newZoom)) / 2;
+                setPan({ x: newX, y: newY });
+              } else {
+                const center = { x: 600, y: 300 };
+                const dx = center.x - pan.x;
+                const dy = center.y - pan.y;
+                let newX = center.x - dx * (newZoom / zoom);
+                let newY = center.y - dy * (newZoom / zoom);
+                const maxPanX = 1200 * (newZoom - 1);
+                const maxPanY = 600 * (newZoom - 1);
+                newX = Math.max(-maxPanX, Math.min(0, newX));
+                newY = Math.max(-maxPanY, Math.min(0, newY));
+                setPan({ x: newX, y: newY });
+              }
+              setZoom(newZoom);
+            }}
+            className="hud-zoom-slider"
+            title="Adjust Map Size"
+          />
+
+          <button className="hud-zoom-btn" onClick={() => {
+            const newZoom = Math.min(zoom * 1.3, 8);
+            if (newZoom < 1) {
+              const newX = (1200 * (1 - newZoom)) / 2;
+              const newY = (600 * (1 - newZoom)) / 2;
+              setPan({ x: newX, y: newY });
+            } else {
+              const center = { x: 600, y: 300 };
+              const dx = center.x - pan.x;
+              const dy = center.y - pan.y;
+              let newX = center.x - dx * (newZoom / zoom);
+              let newY = center.y - dy * (newZoom / zoom);
+              const maxPanX = 1200 * (newZoom - 1);
+              const maxPanY = 600 * (newZoom - 1);
+              newX = Math.max(-maxPanX, Math.min(0, newX));
+              newY = Math.max(-maxPanY, Math.min(0, newY));
+              setPan({ x: newX, y: newY });
+            }
+            setZoom(newZoom);
+          }} style={zoomBtnStyle} title="Zoom In">+</button>
+
           <button className="hud-zoom-btn" onClick={() => {
             setZoom(1);
             setPan({ x: 0, y: 0 });
-          }} style={zoomBtnStyle} title="Reset Map">⟲</button>
-          
-          <div style={{
-            fontSize: 7, color: theme.colors.textDim, fontFamily: theme.fonts.mono,
-            textAlign: 'center', marginTop: 2, padding: '2px 0 0 0',
-            borderTop: '1px solid rgba(255,255,255,0.06)'
+          }} style={zoomBtnStyle} title="Reset Map Size">⟲</button>
+
+          <span style={{
+            fontSize: 8, color: theme.colors.textPrimary, fontFamily: theme.fonts.mono,
+            width: 28, textAlign: 'right', display: 'inline-block'
           }}>
             {zoom.toFixed(1)}x
-          </div>
+          </span>
         </div>
         
         {/* ═══ CENTER: Map Legend / Crosshair ═══ */}
@@ -883,6 +927,48 @@ export function DashboardPage() {
           background: rgba(59, 130, 246, 0.2) !important;
           border-color: rgba(59, 130, 246, 0.5) !important;
           color: #fff !important;
+        }
+        .hud-zoom-slider {
+          -webkit-appearance: none;
+          appearance: none;
+          width: 80px;
+          height: 4px;
+          background: rgba(255, 255, 255, 0.1);
+          border-radius: 2px;
+          outline: none;
+          cursor: pointer;
+        }
+        .hud-zoom-slider::-webkit-slider-runnable-track {
+          width: 100%;
+          height: 4px;
+          background: rgba(59, 130, 246, 0.25);
+          border-radius: 2px;
+        }
+        .hud-zoom-slider::-webkit-slider-thumb {
+          -webkit-appearance: none;
+          appearance: none;
+          width: 10px;
+          height: 10px;
+          border-radius: 50%;
+          background: #EF4444;
+          box-shadow: 0 0 6px #EF4444;
+          cursor: pointer;
+          margin-top: -3px;
+        }
+        .hud-zoom-slider::-moz-range-track {
+          width: 100%;
+          height: 4px;
+          background: rgba(59, 130, 246, 0.25);
+          border-radius: 2px;
+        }
+        .hud-zoom-slider::-moz-range-thumb {
+          width: 10px;
+          height: 10px;
+          border-radius: 50%;
+          background: #EF4444;
+          box-shadow: 0 0 6px #EF4444;
+          cursor: pointer;
+          border: none;
         }
       `}</style>
     </div>
@@ -1371,27 +1457,33 @@ function WorldMapSVG({
       
       const zoomFactor = 1.15;
       let newZoom = e.deltaY < 0 ? zoom * zoomFactor : zoom / zoomFactor;
-      newZoom = Math.max(1, Math.min(newZoom, 8)); // clamp zoom between 1x and 8x
+      newZoom = Math.max(0.4, Math.min(newZoom, 8)); // clamp zoom between 0.4x and 8x
       
-      const rect = mapEl.getBoundingClientRect();
-      const mouseX = e.clientX - rect.left;
-      const mouseY = e.clientY - rect.top;
-      
-      const svgX = (mouseX / rect.width) * 1200;
-      const svgY = (mouseY / rect.height) * 600;
+      if (newZoom < 1) {
+        const newX = (1200 * (1 - newZoom)) / 2;
+        const newY = (600 * (1 - newZoom)) / 2;
+        setPan({ x: newX, y: newY });
+      } else {
+        const rect = mapEl.getBoundingClientRect();
+        const mouseX = e.clientX - rect.left;
+        const mouseY = e.clientY - rect.top;
+        
+        const svgX = (mouseX / rect.width) * 1200;
+        const svgY = (mouseY / rect.height) * 600;
 
-      const dx = svgX - pan.x;
-      const dy = svgY - pan.y;
-      
-      let newX = svgX - dx * (newZoom / zoom);
-      let newY = svgY - dy * (newZoom / zoom);
-      
-      const maxPanX = 1200 * (newZoom - 1);
-      const maxPanY = 600 * (newZoom - 1);
-      newX = Math.max(-maxPanX, Math.min(0, newX));
-      newY = Math.max(-maxPanY, Math.min(0, newY));
+        const dx = svgX - pan.x;
+        const dy = svgY - pan.y;
+        
+        let newX = svgX - dx * (newZoom / zoom);
+        let newY = svgY - dy * (newZoom / zoom);
+        
+        const maxPanX = 1200 * (newZoom - 1);
+        const maxPanY = 600 * (newZoom - 1);
+        newX = Math.max(-maxPanX, Math.min(0, newX));
+        newY = Math.max(-maxPanY, Math.min(0, newY));
 
-      setPan({ x: newX, y: newY });
+        setPan({ x: newX, y: newY });
+      }
       setZoom(newZoom);
     };
 
@@ -1408,7 +1500,7 @@ function WorldMapSVG({
   };
 
   const handleMouseMove = (e: React.MouseEvent<SVGSVGElement>) => {
-    if (!isDragging) return;
+    if (!isDragging || zoom < 1) return;
     let newX = e.clientX - dragStart.current.x;
     let newY = e.clientY - dragStart.current.y;
     
