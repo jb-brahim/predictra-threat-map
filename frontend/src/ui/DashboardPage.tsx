@@ -1615,6 +1615,43 @@ function resolveArcs(arcIndices: number[], decodedArcs: number[][][]): number[][
   return coords;
 }
 
+function splitCoordsAtAntimeridian(coords: number[][]): number[][][] {
+  const parts: number[][][] = [];
+  let currentPart: number[][] = [];
+  
+  for (let i = 0; i < coords.length; i++) {
+    const pt = coords[i];
+    if (currentPart.length === 0) {
+      currentPart.push(pt);
+    } else {
+      const prev = currentPart[currentPart.length - 1];
+      const diffLon = pt[0] - prev[0];
+      
+      if (Math.abs(diffLon) > 180) {
+        const sign = Math.sign(diffLon);
+        const boundaryLon2 = sign > 0 ? -180 : 180;
+        const boundaryLon1 = sign > 0 ? 180 : -180;
+        
+        const t = (boundaryLon2 - prev[0]) / diffLon;
+        const intersectLat = prev[1] + t * (pt[1] - prev[1]);
+        
+        currentPart.push([boundaryLon2, intersectLat]);
+        parts.push(currentPart);
+        
+        currentPart = [[boundaryLon1, intersectLat], pt];
+      } else {
+        currentPart.push(pt);
+      }
+    }
+  }
+  
+  if (currentPart.length > 0) {
+    parts.push(currentPart);
+  }
+  
+  return parts;
+}
+
 const NUMERIC_TO_ALPHA2: Record<string, string> = {
   "840": "US", "156": "CN", "643": "RU", "826": "GB", "250": "FR", "276": "DE", "392": "JP", "356": "IN",
   "076": "BR", "124": "CA", "036": "AU", "410": "KR", "376": "IL", "364": "IR", "408": "KP", "804": "UA",
@@ -1705,17 +1742,28 @@ function WorldMapSVG({
           const numericId = String(geo.id);
           const alpha2 = NUMERIC_TO_ALPHA2[numericId] || '??';
           const name = COUNTRY_NAMES[alpha2] || geo.properties?.name || `Region ${numericId}`;
+          
+          // Skip Antarctica to prevent wrapping glitches at the bottom of the map
+          if (alpha2 === 'AQ' || numericId === '010' || name.toLowerCase().includes('antarctica')) {
+            continue;
+          }
+          
           const countryPaths: string[] = [];
 
           const processRing = (ring: number[]) => {
             const coords = resolveArcs(ring, decodedArcs);
             if (coords.length < 3) return;
-            const dPoints = coords.map(([lon, lat]) => {
-              const x = ((lon + 180) / 360) * 1200;
-              const y = ((90 - lat) / 180) * 600;
-              return `${x.toFixed(1)},${y.toFixed(1)}`;
-            });
-            countryPaths.push(`M${dPoints.join(' L')} Z`);
+            
+            const splitParts = splitCoordsAtAntimeridian(coords);
+            for (const part of splitParts) {
+              if (part.length < 3) continue;
+              const dPoints = part.map(([lon, lat]) => {
+                const x = ((lon + 180) / 360) * 1200;
+                const y = ((90 - lat) / 180) * 600;
+                return `${x.toFixed(1)},${y.toFixed(1)}`;
+              });
+              countryPaths.push(`M${dPoints.join(' L')} Z`);
+            }
           };
 
           if (geo.type === 'Polygon') {
