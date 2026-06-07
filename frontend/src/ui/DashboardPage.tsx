@@ -89,6 +89,19 @@ export function DashboardPage() {
   const [mapStyle, setMapStyle] = useState<'hologram' | 'dots' | 'outlines'>('hologram');
   const [layoutMode, setLayoutMode] = useState<'hud' | 'cinema'>('hud');
   const [mapOpacity, setMapOpacity] = useState(0.45);
+
+  // Automatically adjust zoom, pan, and opacity in Cinema mode
+  useEffect(() => {
+    if (layoutMode === 'cinema') {
+      setZoom(1.35);
+      setPan({ x: -210, y: -105 });
+      setMapOpacity(0.85);
+    } else {
+      setZoom(1.0);
+      setPan({ x: 0, y: 0 });
+      setMapOpacity(0.45);
+    }
+  }, [layoutMode]);
   const [activeCountry, setActiveCountry] = useState<string | null>(null);
   const [drillCountry, setDrillCountry] = useState<string | null>(null);
   const [hoveredCountryCode, setHoveredCountryCode] = useState<string | null>(null);
@@ -1138,6 +1151,11 @@ export function DashboardPage() {
         @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.5} }
         @keyframes slideIn { from{transform:translateX(100%);opacity:0} to{transform:translateX(0);opacity:1} }
         @keyframes fadeUp { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
+        @keyframes flow {
+          to {
+            stroke-dashoffset: -20;
+          }
+        }
         input::placeholder { color: rgba(90,122,148,0.7); }
         .hud-zoom-btn:hover {
           background: rgba(59, 130, 246, 0.2) !important;
@@ -1907,11 +1925,30 @@ function WorldMapSVG({
             <feMergeNode in="SourceGraphic" />
           </feMerge>
         </filter>
+        {['exploit', 'malware', 'phishing'].map(type => (
+          <marker
+            key={`arrow-${type}`}
+            id={`arrow-${type}`}
+            viewBox="0 0 10 10"
+            refX="7"
+            refY="5"
+            markerWidth="5"
+            markerHeight="5"
+            orient="auto"
+          >
+            <path d="M 0 1.5 L 7 5 L 0 8.5 Z" fill={getAttackColor(type as any)} opacity="0.8" />
+          </marker>
+        ))}
       </defs>
       <rect width="1200" height="600" fill="url(#grid)" />
 
       {/* Scalable & Pannable Group */}
-      <g transform={`translate(${pan.x}, ${pan.y}) scale(${zoom})`}>
+      <g 
+        transform={`translate(${pan.x}, ${pan.y}) scale(${zoom})`}
+        style={{
+          transition: isDragging ? 'none' : 'transform 0.4s cubic-bezier(0.16, 1, 0.3, 1)',
+        }}
+      >
         {/* Latitude lines */}
         {[100, 200, 300, 400, 500].map(y => (
           <line key={`lat-${y}`} x1="0" y1={y} x2="1200" y2={y} stroke="rgba(255,255,255,0.07)" strokeWidth="0.5" strokeDasharray="4,8" />
@@ -2036,19 +2073,55 @@ function WorldMapSVG({
             const tx = (1 - t) * (1 - t) * x1 + 2 * (1 - t) * t * cx + t * t * x2;
             const ty = (1 - t) * (1 - t) * y1 + 2 * (1 - t) * t * cy + t * t * y2;
 
+            // Helper to render fade-out trailing comet particles
+            const renderTrail = (offset: number, r: number, op: number) => {
+              const trailT = t - offset;
+              if (trailT <= 0) return null;
+              const clt = Math.min(1, trailT);
+              const txx = (1 - clt) * (1 - clt) * x1 + 2 * (1 - clt) * clt * cx + clt * clt * x2;
+              const tyy = (1 - clt) * (1 - clt) * y1 + 2 * (1 - clt) * clt * cy + clt * clt * y2;
+              return (
+                <circle
+                  cx={txx}
+                  cy={tyy}
+                  r={r / Math.sqrt(zoom)}
+                  fill={color}
+                  opacity={op}
+                />
+              );
+            };
+
             return (
               <g key={arc.id}>
-                {/* Arc stroke line */}
+                {/* Thin base path showing the full connection */}
                 <path
                   d={pathD}
                   fill="none"
                   stroke={color}
-                  strokeWidth={1.2 / Math.sqrt(zoom)}
-                  opacity="0.3"
-                  strokeDasharray="4,4"
+                  strokeWidth={0.8 / Math.sqrt(zoom)}
+                  opacity="0.12"
+                />
+
+                {/* Flowing animated dashed path with arrowhead at the target */}
+                <path
+                  d={pathD}
+                  fill="none"
+                  stroke={color}
+                  strokeWidth={1.4 / Math.sqrt(zoom)}
+                  opacity="0.5"
+                  strokeDasharray="4,6"
+                  markerEnd={`url(#arrow-${arc.attackType})`}
+                  style={{
+                    animation: 'flow 1.5s linear infinite'
+                  }}
                 />
                 
-                {/* Glowing tracer particle */}
+                {/* Comet tail fading particles */}
+                {renderTrail(0.04, 2.2, 0.55)}
+                {renderTrail(0.08, 1.5, 0.3)}
+                {renderTrail(0.12, 0.9, 0.12)}
+
+                {/* Main glowing head tracer particle */}
                 <circle
                   cx={tx}
                   cy={ty}
