@@ -1486,7 +1486,7 @@ function WorldMapSVG({
         ))}
 
         {/* Real world map - continents as path shapes */}
-        <g fill="rgba(15, 23, 42, 0.6)" stroke="rgba(59, 130, 246, 0.55)" strokeWidth={0.8 / zoom} style={{ transition: 'opacity 0.5s ease', opacity: polygons.length > 0 ? 1 : 0 }}>
+        <g fill="rgba(15, 23, 42, 0.6)" stroke="rgba(0, 210, 255, 0.8)" strokeWidth={1.2 / Math.sqrt(zoom)} style={{ transition: 'opacity 0.5s ease', opacity: polygons.length > 0 ? 1 : 0 }}>
           {paths.map((d, idx) => (
             <path key={idx} d={d} />
           ))}
