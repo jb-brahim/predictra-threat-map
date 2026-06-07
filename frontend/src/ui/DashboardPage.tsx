@@ -1209,9 +1209,95 @@ function MiniTag({ label, value, color }: { label: string; value: string; color:
   );
 }
 
+/* ─── TopoJSON Decoding Helpers for 2D Map ────────────────────────────────── */
+
+function decodeTopology(topology: any): number[][][] {
+  const { arcs: topoArcs, transform } = topology;
+  const { scale, translate } = transform || { scale: [1, 1], translate: [0, 0] };
+
+  return topoArcs.map((arc: number[][]) => {
+    let x = 0, y = 0;
+    return arc.map((point: number[]) => {
+      x += point[0];
+      y += point[1];
+      return [x * scale[0] + translate[0], y * scale[1] + translate[1]];
+    });
+  });
+}
+
+function resolveArcs(arcIndices: number[], decodedArcs: number[][][]): number[][] {
+  const coords: number[][] = [];
+  for (const idx of arcIndices) {
+    const arcIdx = idx < 0 ? ~idx : idx;
+    const arc = decodedArcs[arcIdx];
+    if (!arc) continue;
+    const points = idx < 0 ? [...arc].reverse() : arc;
+    for (let i = coords.length > 0 ? 1 : 0; i < points.length; i++) {
+      coords.push(points[i]);
+    }
+  }
+  return coords;
+}
+
+let cachedPolygons: number[][][] | null = null;
+
 /* ─── World Map SVG ──────────────────────────────────────────────────────── */
 
 function WorldMapSVG() {
+  const [polygons, setPolygons] = useState<number[][][]>(cachedPolygons || []);
+
+  useEffect(() => {
+    if (polygons.length > 0) return;
+    
+    fetch('https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json')
+      .then(res => res.json())
+      .then(topology => {
+        const decodedArcs = decodeTopology(topology);
+        const geometries = topology.objects.countries?.geometries || [];
+        const extracted: number[][][] = [];
+        for (const geo of geometries) {
+          if (geo.type === 'Polygon') {
+            for (const ring of geo.arcs) {
+              extracted.push(resolveArcs(ring, decodedArcs));
+            }
+          } else if (geo.type === 'MultiPolygon') {
+            for (const polygon of geo.arcs) {
+              for (const ring of polygon) {
+                extracted.push(resolveArcs(ring, decodedArcs));
+              }
+            }
+          }
+        }
+        cachedPolygons = extracted;
+        setPolygons(extracted);
+      })
+      .catch(err => console.warn('Failed to load SVG background map:', err));
+  }, [polygons.length]);
+
+  const paths = useMemo(() => {
+    return polygons.map(ring => {
+      if (ring.length < 3) return '';
+      const dPoints = ring.map(([lon, lat]) => {
+        const x = ((lon + 180) / 360) * 1200;
+        const y = ((90 - lat) / 180) * 600;
+        return `${x.toFixed(1)},${y.toFixed(1)}`;
+      });
+      return `M${dPoints.join(' L')} Z`;
+    }).filter(Boolean);
+  }, [polygons]);
+
+  const MAP_HOTSPOTS = [
+    { label: 'US', lat: 37.09, lon: -95.71 },
+    { label: 'EU', lat: 51.17, lon: 10.45 },
+    { label: 'CN', lat: 35.86, lon: 104.20 },
+    { label: 'JP', lat: 36.20, lon: 138.25 },
+    { label: 'IN', lat: 20.59, lon: 78.96 },
+    { label: 'RU', lat: 61.52, lon: 105.32 },
+    { label: 'AF', lat: 9.08, lon: 8.68 }, 
+    { label: 'AU', lat: -25.27, lon: 133.78 },
+    { label: 'BR', lat: -14.24, lon: -51.93 },
+  ];
+
   return (
     <svg
       viewBox="0 0 1200 600"
@@ -1235,44 +1321,11 @@ function WorldMapSVG() {
         <line key={`lon-${x}`} x1={x} y1="0" x2={x} y2="600" stroke="rgba(255,255,255,0.07)" strokeWidth="0.5" strokeDasharray="4,8" />
       ))}
 
-      {/* Simplified world map - continents as path shapes */}
-      <g fill="rgba(15, 23, 42, 0.5)" stroke="rgba(59, 130, 246, 0.25)" strokeWidth="0.5">
-        {/* North America */}
-        <path d="M150,100 L180,80 L220,75 L280,80 L320,100 L340,130 L350,160 L340,190 L320,210 L280,240 L260,280 L240,300 L220,290 L200,280 L180,260 L160,230 L140,200 L130,170 L140,140 Z" />
-        {/* Central America */}
-        <path d="M220,290 L240,300 L250,320 L240,340 L230,350 L220,340 L215,320 L218,300 Z" />
-        {/* South America */}
-        <path d="M240,340 L260,350 L290,370 L310,400 L320,440 L310,480 L290,510 L270,530 L260,520 L250,490 L240,460 L230,420 L225,390 L230,360 Z" />
-        {/* Europe */}
-        <path d="M520,100 L540,90 L570,85 L600,90 L620,100 L630,120 L620,140 L600,160 L580,170 L560,165 L540,150 L520,130 L515,115 Z" />
-        {/* UK/Ireland */}
-        <path d="M490,100 L505,95 L510,110 L505,125 L495,120 L490,110 Z" />
-        {/* Scandinavia */}
-        <path d="M560,60 L570,50 L590,55 L600,70 L595,85 L580,90 L565,80 Z" />
-        {/* Africa */}
-        <path d="M530,200 L560,190 L590,195 L620,210 L640,240 L650,280 L645,320 L630,360 L610,400 L590,430 L570,440 L550,430 L540,400 L520,360 L510,320 L505,280 L510,240 L520,220 Z" />
-        {/* Middle East */}
-        <path d="M630,160 L660,150 L690,160 L700,180 L690,200 L670,210 L650,205 L635,190 L630,175 Z" />
-        {/* Russia/Central Asia */}
-        <path d="M620,80 L680,60 L740,50 L800,45 L860,50 L920,60 L960,70 L980,85 L970,100 L940,110 L900,115 L850,110 L800,105 L750,100 L700,95 L660,95 L630,90 Z" />
-        {/* India */}
-        <path d="M720,200 L740,190 L760,200 L770,230 L760,260 L740,280 L720,270 L710,240 L715,220 Z" />
-        {/* China/East Asia */}
-        <path d="M800,120 L840,110 L880,115 L920,130 L940,150 L930,170 L910,185 L880,195 L850,190 L820,180 L800,165 L790,145 Z" />
-        {/* Japan */}
-        <path d="M950,140 L960,130 L965,145 L960,160 L955,155 Z" />
-        {/* Southeast Asia */}
-        <path d="M830,230 L860,220 L880,230 L890,250 L880,270 L860,280 L840,275 L830,260 L825,245 Z" />
-        {/* Indonesia */}
-        <path d="M840,300 L870,295 L900,300 L920,310 L910,320 L880,315 L855,310 Z" />
-        {/* Australia */}
-        <path d="M880,380 L920,370 L960,375 L990,390 L1000,420 L990,450 L970,470 L940,475 L910,470 L890,450 L880,420 L875,400 Z" />
-        {/* New Zealand */}
-        <path d="M1020,460 L1030,450 L1035,465 L1030,480 L1022,475 Z" />
-        {/* Greenland */}
-        <path d="M340,40 L380,35 L410,45 L420,60 L410,75 L380,80 L350,70 L340,55 Z" />
-        {/* Madagascar */}
-        <path d="M650,400 L660,395 L665,415 L660,430 L652,422 Z" />
+      {/* Real world map - continents as path shapes */}
+      <g fill="rgba(15, 23, 42, 0.5)" stroke="rgba(59, 130, 246, 0.25)" strokeWidth="0.5" style={{ transition: 'opacity 0.5s ease', opacity: polygons.length > 0 ? 1 : 0 }}>
+        {paths.map((d, idx) => (
+          <path key={idx} d={d} />
+        ))}
       </g>
 
       {/* Equator */}
@@ -1282,23 +1335,17 @@ function WorldMapSVG() {
       <line x1="0" y1="400" x2="1200" y2="400" stroke="rgba(245, 158, 11, 0.18)" strokeWidth="0.5" strokeDasharray="4,12" />
 
       {/* Marker dots for key cities/hotspots */}
-      {[
-        { x: 280, y: 180, label: 'US' },
-        { x: 560, y: 130, label: 'EU' },
-        { x: 850, y: 150, label: 'CN' },
-        { x: 950, y: 145, label: 'JP' },
-        { x: 740, y: 250, label: 'IN' },
-        { x: 650, y: 120, label: 'RU' },
-        { x: 560, y: 300, label: 'AF' },
-        { x: 940, y: 420, label: 'AU' },
-        { x: 270, y: 390, label: 'BR' },
-      ].map(({ x, y, label }) => (
-        <g key={label}>
-          <circle cx={x} cy={y} r="3.5" fill={theme.colors.exploit} opacity="0.75" />
-          <circle cx={x} cy={y} r="7" fill="none" stroke={theme.colors.exploit} strokeWidth="0.75" opacity="0.4" />
-          <text x={x + 10} y={y + 3.5} fill={theme.colors.textSecondary} fontSize="8" fontWeight="600" opacity="0.7" fontFamily={theme.fonts.mono}>{label}</text>
-        </g>
-      ))}
+      {MAP_HOTSPOTS.map(({ label, lat, lon }) => {
+        const x = ((lon + 180) / 360) * 1200;
+        const y = ((90 - lat) / 180) * 600;
+        return (
+          <g key={label}>
+            <circle cx={x} cy={y} r="3.5" fill={theme.colors.exploit} opacity="0.75" />
+            <circle cx={x} cy={y} r="7" fill="none" stroke={theme.colors.exploit} strokeWidth="0.75" opacity="0.4" />
+            <text x={x + 10} y={y + 3.5} fill={theme.colors.textSecondary} fontSize="8" fontWeight="600" opacity="0.7" fontFamily={theme.fonts.mono}>{label}</text>
+          </g>
+        );
+      })}
 
       {/* Coordinate labels */}
       <text x="1190" y="305" fill="rgba(255, 255, 255, 0.25)" fontSize="6" textAnchor="end" fontFamily="'JetBrains Mono', monospace">0°</text>
