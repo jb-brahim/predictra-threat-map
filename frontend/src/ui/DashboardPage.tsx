@@ -449,7 +449,7 @@ export function DashboardPage() {
       fontFamily: theme.fonts.mono,
     }}>
       {/* ── World Map SVG Background ────────────────────────────────── */}
-      <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: 0.18 }}>
+      <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: 0.45 }}>
         <WorldMapSVG />
       </div>
 
@@ -1221,22 +1221,22 @@ function WorldMapSVG() {
       {/* Grid lines */}
       <defs>
         <pattern id="grid" width="60" height="60" patternUnits="userSpaceOnUse">
-          <path d="M 60 0 L 0 0 0 60" fill="none" stroke="rgba(255,255,255,0.03)" strokeWidth="0.5" />
+          <path d="M 60 0 L 0 0 0 60" fill="none" stroke="rgba(255,255,255,0.05)" strokeWidth="0.5" />
         </pattern>
       </defs>
       <rect width="1200" height="600" fill="url(#grid)" />
 
       {/* Latitude lines */}
       {[100, 200, 300, 400, 500].map(y => (
-        <line key={`lat-${y}`} x1="0" y1={y} x2="1200" y2={y} stroke="rgba(255,255,255,0.04)" strokeWidth="0.5" strokeDasharray="4,8" />
+        <line key={`lat-${y}`} x1="0" y1={y} x2="1200" y2={y} stroke="rgba(255,255,255,0.07)" strokeWidth="0.5" strokeDasharray="4,8" />
       ))}
       {/* Longitude lines */}
       {[200, 400, 600, 800, 1000].map(x => (
-        <line key={`lon-${x}`} x1={x} y1="0" x2={x} y2="600" stroke="rgba(255,255,255,0.04)" strokeWidth="0.5" strokeDasharray="4,8" />
+        <line key={`lon-${x}`} x1={x} y1="0" x2={x} y2="600" stroke="rgba(255,255,255,0.07)" strokeWidth="0.5" strokeDasharray="4,8" />
       ))}
 
       {/* Simplified world map - continents as path shapes */}
-      <g fill="rgba(255,255,255,0.12)" stroke="rgba(255,255,255,0.08)" strokeWidth="0.5">
+      <g fill="rgba(15, 23, 42, 0.5)" stroke="rgba(59, 130, 246, 0.25)" strokeWidth="0.5">
         {/* North America */}
         <path d="M150,100 L180,80 L220,75 L280,80 L320,100 L340,130 L350,160 L340,190 L320,210 L280,240 L260,280 L240,300 L220,290 L200,280 L180,260 L160,230 L140,200 L130,170 L140,140 Z" />
         {/* Central America */}
@@ -1276,10 +1276,10 @@ function WorldMapSVG() {
       </g>
 
       {/* Equator */}
-      <line x1="0" y1="300" x2="1200" y2="300" stroke="rgba(239,68,68,0.08)" strokeWidth="0.5" strokeDasharray="8,4" />
+      <line x1="0" y1="300" x2="1200" y2="300" stroke="rgba(239, 68, 68, 0.22)" strokeWidth="0.5" strokeDasharray="8,4" />
       {/* Tropics */}
-      <line x1="0" y1="200" x2="1200" y2="200" stroke="rgba(245,158,11,0.05)" strokeWidth="0.5" strokeDasharray="4,12" />
-      <line x1="0" y1="400" x2="1200" y2="400" stroke="rgba(245,158,11,0.05)" strokeWidth="0.5" strokeDasharray="4,12" />
+      <line x1="0" y1="200" x2="1200" y2="200" stroke="rgba(245, 158, 11, 0.18)" strokeWidth="0.5" strokeDasharray="4,12" />
+      <line x1="0" y1="400" x2="1200" y2="400" stroke="rgba(245, 158, 11, 0.18)" strokeWidth="0.5" strokeDasharray="4,12" />
 
       {/* Marker dots for key cities/hotspots */}
       {[
@@ -1294,16 +1294,16 @@ function WorldMapSVG() {
         { x: 270, y: 390, label: 'BR' },
       ].map(({ x, y, label }) => (
         <g key={label}>
-          <circle cx={x} cy={y} r="3" fill="rgba(239,68,68,0.4)" />
-          <circle cx={x} cy={y} r="6" fill="none" stroke="rgba(239,68,68,0.15)" strokeWidth="0.5" />
-          <text x={x + 10} y={y + 3} fill="rgba(255,255,255,0.2)" fontSize="7" fontFamily="'JetBrains Mono', monospace">{label}</text>
+          <circle cx={x} cy={y} r="3.5" fill={theme.colors.exploit} opacity="0.75" />
+          <circle cx={x} cy={y} r="7" fill="none" stroke={theme.colors.exploit} strokeWidth="0.75" opacity="0.4" />
+          <text x={x + 10} y={y + 3.5} fill={theme.colors.textSecondary} fontSize="8" fontWeight="600" opacity="0.7" fontFamily={theme.fonts.mono}>{label}</text>
         </g>
       ))}
 
       {/* Coordinate labels */}
-      <text x="1190" y="305" fill="rgba(255,255,255,0.1)" fontSize="6" textAnchor="end" fontFamily="'JetBrains Mono', monospace">0°</text>
-      <text x="1190" y="205" fill="rgba(255,255,255,0.06)" fontSize="6" textAnchor="end" fontFamily="'JetBrains Mono', monospace">23.4°N</text>
-      <text x="1190" y="405" fill="rgba(255,255,255,0.06)" fontSize="6" textAnchor="end" fontFamily="'JetBrains Mono', monospace">23.4°S</text>
+      <text x="1190" y="305" fill="rgba(255, 255, 255, 0.25)" fontSize="6" textAnchor="end" fontFamily="'JetBrains Mono', monospace">0°</text>
+      <text x="1190" y="205" fill="rgba(255, 255, 255, 0.18)" fontSize="6" textAnchor="end" fontFamily="'JetBrains Mono', monospace">23.4°N</text>
+      <text x="1190" y="405" fill="rgba(255, 255, 255, 0.18)" fontSize="6" textAnchor="end" fontFamily="'JetBrains Mono', monospace">23.4°S</text>
     </svg>
   );
 }

@@ -119,12 +119,23 @@ function getGalaxyData() {
  */
 function resolveCountryCode(actor) {
   // Direct country field (2-letter code)
-  if (actor.meta?.country) return actor.meta.country.toUpperCase();
+  if (actor.meta?.country) {
+    const country = actor.meta.country;
+    if (Array.isArray(country)) {
+      return country[0] ? String(country[0]).toUpperCase() : null;
+    }
+    return String(country).toUpperCase();
+  }
   // State sponsor field (full name)
-  const sponsor = actor.meta?.['cfr-suspected-state-sponsor'];
+  let sponsor = actor.meta?.['cfr-suspected-state-sponsor'];
   if (sponsor) {
-    const cc = COUNTRY_NAME_TO_CC[sponsor.toLowerCase()];
-    if (cc) return cc;
+    if (Array.isArray(sponsor)) {
+      sponsor = sponsor[0] || '';
+    }
+    if (typeof sponsor === 'string') {
+      const cc = COUNTRY_NAME_TO_CC[sponsor.toLowerCase()];
+      if (cc) return cc;
+    }
   }
   return null;
 }
@@ -133,9 +144,12 @@ function resolveCountryCode(actor) {
  * Get victim country codes from actor metadata
  */
 function resolveVictimCountries(actor) {
-  const victims = actor.meta?.['cfr-suspected-victims'] || [];
+  let victims = actor.meta?.['cfr-suspected-victims'] || [];
+  if (!Array.isArray(victims)) {
+    victims = [victims];
+  }
   return victims
-    .map(v => COUNTRY_NAME_TO_CC[v.toLowerCase()])
+    .map(v => typeof v === 'string' ? COUNTRY_NAME_TO_CC[v.toLowerCase()] : null)
     .filter(Boolean);
 }
 
@@ -143,7 +157,14 @@ function resolveVictimCountries(actor) {
  * Resolve attack type from actor metadata
  */
 function resolveAttackType(actor) {
-  const incident = (actor.meta?.['cfr-type-of-incident'] || '').toLowerCase();
+  let incident = actor.meta?.['cfr-type-of-incident'] || '';
+  if (Array.isArray(incident)) {
+    incident = incident.join(' ');
+  } else if (typeof incident !== 'string') {
+    incident = String(incident);
+  }
+  incident = incident.toLowerCase();
+
   if (incident.includes('espionage')) return 'exploit';
   if (incident.includes('sabotage') || incident.includes('destruct')) return 'malware';
 
