@@ -10,15 +10,7 @@
           <mxGeometry x="50" y="50" width="240" height="150" as="geometry" />
         </mxCell>
 
-        <!-- 2. StixVisualizerPage Class Box -->
-        <mxCell id="stixVis" value="&lt;table border=&quot;0&quot; cellPadding=&quot;4&quot; cellSpacing=&quot;0&quot; style=&quot;width: 100%; height: 100%; border-collapse: collapse; font-family: Helvetica; font-size: 12px;&quot;&gt;&lt;tr&gt;&lt;td align=&quot;center&quot; style=&quot;border-bottom: 1px solid #333333;&quot;&gt;&lt;b&gt;StixVisualizerPage&lt;/b&gt;&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td align=&quot;left&quot; style=&quot;border-bottom: 1px solid #333333;&quot;&gt;+ graphNodes : GraphNode[]&lt;br&gt;+ graphLinks : GraphLink[]&lt;br&gt;+ hoverNode : GraphNode | null&lt;br&gt;- d3Simulation : Object&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td align=&quot;left&quot;&gt;+ buildGraphData(objects) : void&lt;br&gt;+ renderCustomNode(node, ctx) : void&lt;br&gt;+ applyD3ForceLaws() : void&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#333333;strokeWidth=1.5;shadow=0;align=left;verticalAlign=top;" parent="1" vertex="1">
-          <mxGeometry x="380" y="50" width="240" height="150" as="geometry" />
-        </mxCell>
 
-        <!-- Connection: sync arrow from StixDashboard to StixVisualizerPage -->
-        <mxCell id="passes_arrow" value="passes objects" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;strokeColor=#333333;strokeWidth=1.5;endArrow=block;fontColor=#333333;fontSize=12;fontWeight=bold;labelBackgroundColor=#FFFFFF;" parent="1" source="stixDash" target="stixVis" edge="1">
-          <mxGeometry relative="1" as="geometry" />
-        </mxCell>
 
       </root>
     </mxGraphModel>

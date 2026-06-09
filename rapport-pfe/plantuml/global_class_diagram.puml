@@ -152,14 +152,14 @@ package "React Dashboard & UI Pages" {
         + renderSectorDistribution(): ReactNode
     }
 
-    class StixVisualizerPage UI_COLOR;line:UI_BORDER;line.bold {
-        + parsedData: ParsedStixData
+    class StixDashboard UI_COLOR;line:UI_BORDER;line.bold {
+        + bundleData: STIXBundle | null
         + activeTab: String
-        - d3Simulation: ForceSimulation
+        + selectedObject: STIXObject | null
         --
         + parseBundle(jsonText): ParsedStixData
-        + mapAttackToPhase(apName): String[]
-        + applyForces(linkDist, strength): void
+        + mapAttackToPhase(name): String[]
+        + exportIOCsToCSV(): void
     }
 
     class CountryDashboard UI_COLOR;line:UI_BORDER;line.bold {
@@ -173,7 +173,7 @@ package "React Dashboard & UI Pages" {
     ' Compact 2x3 grid layout
     DashboardPage -[hidden]right-> HistoryPage
     DashboardPage -[hidden]down-> AnalyticsPage
-    HistoryPage -[hidden]down-> StixVisualizerPage
+    HistoryPage -[hidden]down-> StixDashboard
     AnalyticsPage -[hidden]down-> CountryDashboard
 }
 
@@ -199,7 +199,7 @@ ZustandStore --> PerfTelemetry : "tracks"
 ZustandStore ..> DashboardPage : "binds"
 ZustandStore ..> HistoryPage : "binds"
 ZustandStore ..> AnalyticsPage : "binds"
-ZustandStore ..> StixVisualizerPage : "binds"
+ZustandStore ..> StixDashboard : "binds"
 ZustandStore ..> CountryDashboard : "binds"
 
 @enduml

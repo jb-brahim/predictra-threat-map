@@ -1076,27 +1076,5 @@ export function classifyIndicator(pattern: string): string {
 }
 \end{verbatim}
 
----
 
-\section*{Appendix N: D3 Force-Directed Canvas Rendering}
-This section documents the rendering code that loops through active simulation links to draw custom neon lines and animate flowing particle entities:
-\begin{verbatim}
-ctx.beginPath();
-ctx.strokeStyle = 'rgba(59, 130, 246, 0.15)';
-ctx.moveTo(link.source.x, link.source.y);
-ctx.lineTo(link.target.x, link.target.y);
-ctx.stroke();
-
-// Particle flow animation
-const time = Date.now() * 0.003;
-const progress = (time + (link.index * 0.1)) % 1.0;
-const dx = link.target.x - link.source.x;
-const dy = link.target.y - link.source.y;
-const px = link.source.x + dx * progress;
-const py = link.source.y + dy * progress;
-ctx.beginPath();
-ctx.arc(px, py, 2.5, 0, 2 * Math.PI);
-ctx.fillStyle = '#3B82F6';
-ctx.fill();
-\end{verbatim}
 

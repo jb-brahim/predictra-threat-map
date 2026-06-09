@@ -12,11 +12,10 @@ For each sprint, we deeply analyze the backlog objectives, describe functional s
 \subsection{Sprint Backlog and Objectives}
 The primary objective of Sprint 3 was to equip the platform with deep, standardized analytical capabilities. While a real-time visual map is excellent for immediate situational awareness, security investigators require structured frameworks to trace complex campaigns. To fulfill this need, we implemented support for the \textbf{Structured Threat Information Expression (STIX) Version 2.1} standard, which is an XML/JSON-based serialization format developed by OASIS to represent cyber threat intelligence.
 
-The Sprint 3 backlog focused on three key deliverables:
+The Sprint 3 backlog focused on two key deliverables:
 \begin{itemize}
     \item \textbf{STIX 2.1 JSON Ingestion Service:} A client-side file upload and validation component to parse large, multi-megabyte intelligence bundles without overloading browser processes.
     \item \textbf{MITRE ATT\&CK Cyber Kill Chain Mapping Grid:} An automated taxonomy engine that maps ingested adversary behaviors directly to the 12 classic phases of the MITRE enterprise attack grid.
-    \item \textbf{Force-Directed Relationship Graph:} An interactive HTML5 canvas network visualizer that compiles STIX relationships (\texttt{source\_ref} and \texttt{target\_ref}) into nodes and links, animating threat flows via real-time particle simulations.
 \end{itemize}
 
 \subsection{Sprint Analysis: Use Case Modeling}
@@ -41,14 +40,6 @@ The functional workflows and validation rules for each use case are documented i
 Upload STIX 2.1 & Security Analyst / Uploads JSON File & 1. Analyst uploads a STIX JSON file. \\
 & & 2. The parser validates the existence of the `type: "bundle"` attribute and reads the JSON structures. \\
 & & 3. If validation fails, an error toast is displayed. \\
-\midrule
-Analyze Kill Chain & Security Analyst / Selects Tab & 1. The engine scans the list of parsed attack patterns. \\
-& & 2. It parses the `kill\_chain\_phases` tags of all attack patterns. \\
-& & 3. It groups and counts patterns into the 12 MITRE phases. \\
-\midrule
-Navigate Graph & Security Analyst / Mounts Canvas & 1. The visualizer compiles the nodes and link structures. \\
-& & 2. It initiates the D3 physics engine and mounts the HTML5 canvas. \\
-& & 3. Triggers flow animations mapping particles along active links. \\
 \midrule
 Filter IOCs & Security Analyst / Types in Search & 1. Analyst filters by search text or select box (IP, Hash, URL). \\
 & & 2. The system executes client-side regex matching and pagination. \\
@@ -140,38 +131,9 @@ The asynchronous parsing and graph building lifecycle triggered when an investig
 \label{fig:s3_sequence}
 \end{figure}
 
-\subsection{Conceptual Foundations of Graph Physics}
-To render a stable, highly readable representation of complex STIX relationships (where nodes representing threat actors, malwares, indicators, and tools do not overlap, related nodes cluster together harmoniously, and the global network remains centered on the canvas), we engineered a customized \textbf{D3 Force-Directed Simulation} utilizing Verlet integration. The coordinate updates on the HTML5 canvas at each animation frame are driven by a simulated physical environment, where nodes behave like charged particles connected by elastic springs.
 
-\subsubsection{1. Repulsive Force (Coulomb-like Charge)}
-To prevent nodes from overlapping and ensure clean spatial separation, a repulsive charge force is applied between all pairs of nodes in the simulation graph, analogous to Coulomb's Law in electrostatics. For any two nodes on the 2D canvas, the system evaluates their spatial separation by calculating the horizontal and vertical distance components along the coordinate axes.
 
-The Euclidean distance between the two nodes is computed from the sum of the squared coordinate differences. To prevent divide-by-zero errors when two nodes are placed at the exact same coordinate, a microscopic software softening constraint (epsilon value, set to 0.1 pixels) is introduced to establish a safe minimum distance.
-
-The repulsive force scalar is inversely proportional to the square of this safe distance, scaled by a negative charge constant representing the repulsion strength (empirically tuned in our platform to a value of -150 for optimal spacing). To apply this force to the respective node coordinate velocities, the force vector is split into its spatial horizontal and vertical components. This is achieved by multiplying the force scalar by the ratio of the horizontal or vertical distance component to the total safe distance. These components are added directly to the overall acceleration vector of the nodes, continuously pushing them apart.
-
-\subsubsection{2. Attractive Link Force (Hooke's Law Spring)}
-Nodes that share an active STIX relationship (such as a \texttt{threat-actor} that ``uses'' a specific \texttt{malware} SDO, or an \texttt{indicator} that ``indicates'' a particular \texttt{campaign} SDO) are pulled together using spring-like attractive forces, modeled on Hooke's Law.
-
-For any connected pair of nodes, the system evaluates the distance between them. The attractive force scalar along the link is calculated by multiplying a spring elasticity constant coefficient (which is dynamically adjusted based on the node's degree to distribute graph density evenly) by the displacement of the nodes from their natural rest length (fixed in our workspace to 45 pixels).
-
-The attractive force is then split into coordinate axes components by multiplying the force scalar by the ratio of the distance component to the safe distance. These forces act to pull connected threat indicators close to their actor nodes, forming visually logical clusters.
-
-\subsubsection{3. Centering Gravity Force}
-To prevent the entire graph from drifting off the boundaries of the canvas under the cumulative pressure of repulsive forces, a global centering gravity force is applied to all active nodes.
-
-For each node, the centering force along the horizontal and vertical axes is defined by multiplying a gravity scaling coefficient (set to 0.05) by the distance between the node's current coordinate and the central coordinates of the viewport (which are half of the canvas width and height, respectively). The negative sign ensures that this force acts as an attractive pull, drawing floating clusters gently back toward the center of the screen.
-
-\subsubsection{4. Alpha Cooling and Verlet Integration}
-At each animation frame interval, the accumulated force vectors on each node are integrated to update node velocity and coordinates. Rather than using standard Euler integration (which is prone to numerical instability and coordinate divergence under high force spikes), we implement Verlet integration.
-
-The net acceleration vector for each node is derived from the sum of all repulsive, attractive, and centering forces divided by the node's simulated mass. The node positions are updated by adding the product of the velocity and the frame duration to the product of half of the acceleration and the squared frame duration. The velocities are then updated by adding the product of the acceleration and the frame duration, and are subsequently scaled by a friction damping factor to simulate kinetic drag and prevent infinite oscillation.
-
-To ensure that the graph eventually converges to a completely static, stable layout rather than shaking indefinitely, the D3 simulation applies a dynamic \textbf{Alpha Cooling Scheduler}. The simulation maintains a heat level parameter (alpha), initialized to a maximum value of 1.0 upon startup or whenever the user interacts with the canvas (such as dragging a node). At each tick of the physics engine, this alpha parameter decays exponentially by multiplying its current value by a decay coefficient (set to a decay rate of 0.0228 per frame).
-
-The physical coordinate displacements applied to the node velocities are scaled directly by the current alpha coefficient. As the heat parameter approaches a minimum threshold (set to 0.001), the coordinate velocities decay to zero. This causes the interactive STIX relationship graph to settle into an aesthetically perfect, static equilibrium layout.
-
-\subsection{Sprint Realization: STIX Parsers and Interactive Graph}
+\subsection{Sprint Realization: STIX Ingestion and Mapping}
 
 \subsubsection{STIX 2.1 Parser Code Walkthrough}
 The parser located in `ui/StixDashboard.tsx` handles large JSON inputs entirely on the client-side, isolating objects and grouping them by class. Table~\ref{tab:stix_parser_rules} details the client-side parsing rules, sorting STIX objects by type and mapping Indicators to classes using regular expressions (with the complete parser utilities detailed in Appendix M).
@@ -198,32 +160,7 @@ The parser located in `ui/StixDashboard.tsx` handles large JSON inputs entirely 
 
     The parser loops through each attack pattern's \texttt{kill\_chain\_phases} array, filters for \texttt{kill\_chain\_name: "mitre-attack"}, replaces dashes with spaces for clean labels, and inserts the pattern object into a map grouped by phase name (detailed in Appendix M.1).
 
-\subsubsection{D3 Force Graph Canvas Realization}
-Our visualizer `ui/StixVisualizerPage.tsx` takes the parsed STIX nodes and relationships and draws them on an interactive HTML5 2D canvas:
-\begin{itemize}
-    \item \textbf{Custom Particle Flow Rendering:} The canvas simulation animates flow lines to represent data links. Table~\ref{tab:force_graph_params} summarizes the parameters and variables used in the animation rendering loop, with the complete source code detailed in Appendix N.
-    
-    \begin{table}[h!]
-    \centering
-    \small
-    \begin{tabular}{lll}
-    \toprule
-    \textbf{Rendering Parameter} & \textbf{Target Configuration} & \textbf{Role in Animation / Physics} \\
-    \midrule
-    Stroke Style & \texttt{rgba(59, 130, 246, 0.15)} & Draws faint static connection lines between nodes \\
-    Time Delta & \texttt{Date.now() * 0.003} & Time scalar coefficient driving uniform flow velocity \\
-    Link Progress & \texttt{(time + index * 0.1) \% 1.0} & Normalizes particle position relative to line segment length \\
-    Coordinates & \texttt{px, py = source + delta * progress} & Linearly interpolates particle location on Canvas \\
-    Particle Size & \texttt{Radius = 2.5} & Diameter size of the glowing particle node \\
-    Fill Style & \texttt{\#3B82F6} & Neon blue particle fill color matching CTI styling \\
-    \bottomrule
-    \end{tabular}
-    \caption{D3 Force Graph Link Rendering Parameters.}
-    \label{tab:force_graph_params}
-    \end{table}
-    \item \textbf{Color-Coded Threat Nodes:}
-    Nodes are rendered with distinct neon-tinted outlines and center labels to establish visual structure (e.g. threat actors are colored crimson, malwares are amber, indicators are cobalt blue, and victim organizations are emerald green).
-\end{itemize}
+
 
 ---
 
@@ -423,4 +360,4 @@ As historical records accumulate over years, a single MongoDB database instance 
 ---
 
 \section{Conclusion}
-This chapter detailed the completion of our second main release. By parsing STIX 2.1 JSON files client-side, mapping threat actions to MITRE ATT\&CK matrices, rendering animated force-directed canvas networks, setting up paginated history browsers, geolocating public network IPs, and establishing performance stabilizers (including circular RingBuffers and adaptive event sampling drop rates), we have realized a highly performant, standard-compliant, and operationally reliable Cyber Threat Intelligence platform. We proceed to the General Conclusion to summarize our academic achievements, review our project goals, and suggest future avenues for research.
+This chapter detailed the completion of our second main release. By parsing STIX 2.1 JSON files client-side, mapping threat actions to MITRE ATT\&CK matrices, setting up paginated history browsers, geolocating public network IPs, and establishing performance stabilizers (including circular RingBuffers and adaptive event sampling drop rates), we have realized a highly performant, standard-compliant, and operationally reliable Cyber Threat Intelligence platform. We proceed to the General Conclusion to summarize our academic achievements, review our project goals, and suggest future avenues for research.

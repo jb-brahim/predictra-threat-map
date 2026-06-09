@@ -18,7 +18,7 @@ skinparam PackageFontStyle bold
 !define UI_COLOR #FFFDF2
 !define UI_BORDER D35400
 
-title Sprint 3 - STIX 2.1 Dashboard & Visualizer Class Diagram
+title Sprint 3 - STIX 2.1 Dashboard Class Diagram
 
 package "React STIX Workspace Components" {
 
@@ -31,20 +31,6 @@ package "React STIX Workspace Components" {
         + parseBundle(jsonText : String) : void
         + extractIndicators(objects : any[]) : void
         + mapToKillChain(objects : any[]) : void
-        + exportIOCsToCSV() : void
     }
-
-    class "StixVisualizerPage (StixVisualizerPage.tsx)" as StixVisualizerPage UI_COLOR;line:UI_BORDER;line.bold {
-        + graphNodes : GraphNode[]
-        + graphLinks : GraphLink[]
-        + hoverNode : GraphNode | null
-        - d3Simulation : ForceSimulation
-        --
-        + buildGraphData(objects : any[]) : void
-        + renderCustomNode(node : GraphNode, ctx : CanvasRenderingContext2D) : void
-        + applyD3ForceLaws() : void
-    }
-
-    StixDashboard --> StixVisualizerPage : "passes parsed objects to"
 }
 @enduml

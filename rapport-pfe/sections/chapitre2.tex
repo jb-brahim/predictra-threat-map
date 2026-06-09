@@ -9,7 +9,7 @@ Establishing a robust system requires deep preparation, rigorous specifications,
 To ensure the Predictra Threat Map satisfies academic and operational standards, we captured and defined detailed functional and non-functional requirements.
 
 \subsection{Functional Requirements (RF)}
-The platform must support the following ten functional requirements, structured in detail below:
+The platform must support the following nine functional requirements, structured in detail below:
 
 \subsubsection{RF-1: Multi-Feeds Data Ingestion Engine}
 \begin{itemize}
@@ -74,16 +74,7 @@ The platform must support the following ten functional requirements, structured 
     \item \textbf{Validation Criteria:} Distribution counts per phase must update automatically upon parsing, highlighting the most heavily populated stages to focus mitigation efforts. Malformed or custom phase names must be safely grouped under an "Other / Custom" column to prevent grid rendering failures.
 \end{itemize}
 
-\subsubsection{RF-8: Interactive 3D/2D Force-Directed Graph}
-\begin{itemize}
-    \item \textbf{Description \& Operational Context:} The STIX workspace must compile relationships into a force-directed network graph, illustrating threat actor mappings to malwares and indicators. Visualizing relationships as an interactive node-link network simplifies tracking campaign footprints. In cyber threat intelligence, threat indicators do not exist in isolation; they are deeply interconnected. An IP address is associated with a malware sample, which is utilized by a specific threat actor operating during a particular campaign. Tabular logs fail to illustrate these relationships. An interactive force-directed graph represents these connections as physical nodes and links, simulating natural spring forces. Analysts can drag nodes, zoom in on clusters, and hover over relationships to trace how threat infrastructure is tied back to human adversaries.
-    \item \textbf{Use-Case Scenario:} An analyst loads a STIX campaign. The graph renders a central red node (Threat Actor) connected to multiple amber nodes (Malwares) and blue nodes (IPs).
-    \item \textbf{Inputs:} Parsed STIX relationship nodes and links extracted from the uploaded JSON bundle.
-    \item \textbf{Outputs:} Interactive 2D HTML5 canvas force-directed network simulation with flowing particles mapping relationship paths.
-    \item \textbf{Validation Criteria:} Flowing particles must travel along active relationships from origin to destination at variable speeds corresponding to severity. Hovering over a node must highlight its adjacent links and dim unrelated nodes in real-time.
-\end{itemize}
-
-\subsubsection{RF-9: Searchable Historical Database Browser}
+\subsubsection{RF-8: Searchable Historical Database Browser}
 \begin{itemize}
     \item \textbf{Description \& Operational Context:} The platform must provide a searchable historical log viewer of persisted threat records, filtering by country, target sector, IP address, and free-text regex queries, with paging to protect server performance. Real-time visual monitoring must be backed by a strong historical record system. When a security incident is detected, investigators must query historical logs to perform forensic audits, searching if similar threat vectors have targeted their infrastructure in the past. To ensure high speed, the database queries must leverage indexes on frequently searched fields. The interface must provide paginated views to protect server and client memory from massive document arrays.
     \item \textbf{Use-Case Scenario:} An investigator searches for all "Healthcare" threats originating from "Russia" (RU) during the last week, filtering the results instantly in a searchable table.
@@ -92,7 +83,7 @@ The platform must support the following ten functional requirements, structured 
     \item \textbf{Validation Criteria:} Query page size must be bounded (default 50 logs per page) to prevent server memory bloat, with database queries executing in under 50ms using indexing.
 \end{itemize}
 
-\subsubsection{RF-10: Target My IP Helper \& Excel Export}
+\subsubsection{RF-9: Target My IP Helper \& Excel Export}
 \begin{itemize}
     \item \textbf{Description \& Operational Context:} The history page must integrate a quick-helper to geolocate and query threats targeting the investigator's public IP, alongside a feature to export threat logs into formatted Microsoft Excel files. Analysts often need to run quick sanity checks on their local networks or export forensic evidence for presentation to stakeholders. The "Target My IP" helper queries an external public IP API, geolocates the client, and automatically searches the threat history database to identify if their specific public network IP or neighboring subnet blocks have been logged as active targets by any scraper. The Excel export feature converts current query results into standard XML Spreadsheet formats entirely client-side.
     \item \textbf{Use-Case Scenario:} An analyst wants to see if their current network has been targeted. They click "Target My IP," geolocate themselves, filter the logs, and export the threat list to Excel for a security briefing.
@@ -177,8 +168,8 @@ Security Analyst accesses the threat intelligence portal. The system retrieves s
 \midrule
 Manage STIX Intel &
 \textbf{Includes:} Parse STIX 2.1 \newline
-\textbf{Extends:} Upload STIX, Map MITRE, Explore Threat Graph &
-Security Analyst mounts the STIX 2.1 analysis environment. The analyst uploads a JSON bundle, parsed client-side. The frontend compiles objects into an interactive D3 node-link force-directed graph and maps adversary patterns into the 12 phases of the MITRE ATT\&CK Cyber Kill Chain. \\
+\textbf{Extends:} Upload STIX, Map MITRE &
+Security Analyst mounts the STIX 2.1 analysis environment. The analyst uploads a JSON bundle, parsed client-side. The frontend maps adversary patterns into the 12 phases of the MITRE ATT\&CK Cyber Kill Chain. \\
 \bottomrule
 \end{tabular}
 \caption{Detailed descriptions of the global primary use cases and their relationships.}
@@ -195,7 +186,7 @@ The features requested by the Product Owner were broken down into four distinct 
 \begin{itemize}
     \item \textbf{Sprint 1 (Ingestion Backend):} Setup Express backend server, database schemas, MongoDB Atlas connections, 9 parallel REST/stream scrapers, and the 5-layer sector classification pipeline. Focus on high-throughput database inserts and robust API connection pooling.
     \item \textbf{Sprint 2 (Visualizer Frontend 3D Earth):} Develop the Express SSE feed endpoint with 300ms queue, establish the Zustand store on the React frontend, and build the 3D procedural WebGL Earth Canvas with bloom rendering, bezier fly-arcs, and pulsating markers. Target a smooth 60fps orbital rotation.
-    \item \textbf{Sprint 3 (STIX Analysis Workspace):} Create the frontend STIX 2.1 JSON parser, implement the MITRE ATT\&CK Kill Chain mapping, and render the force-directed relationship graph using Canvas. Focus on client-side graph physics stability and custom particle flowing lines.
+    \item \textbf{Sprint 3 (STIX Analysis Workspace):} Create the frontend STIX 2.1 JSON parser and implement the MITRE ATT\&CK Kill Chain mapping. Focus on client-side parsing performance and kill chain validation.
     \item \textbf{Sprint 4 (Analytics, History \& Performance Polish):} Setup the historical log browser, code "Target My IP" geolocator, integrate MISP threat actor datasets, write Excel export streams, and implement performance safeguards (RingBuffer, Zustand throttler, and adaptive FPS sampling drops).
 \end{itemize}
 
@@ -224,7 +215,7 @@ Our chronological sprint schedule is modeled in Figure~\ref{fig:gantt_chart} usi
     
     % Sprint 3: Weeks 7-9
     \draw[draw=charcoal, fill=cyberblue!60, thick, rounded corners] (6,1) rectangle (9,1.6);
-    \node at (7.5, 1.3) {\small Sprint 3: STIX Graph};
+    \node at (7.5, 1.3) {\small Sprint 3: STIX Parser};
     
     % Sprint 4: Weeks 10-12
     \draw[draw=charcoal, fill=cyberblue!80, thick, rounded corners] (9,0) rectangle (12,0.6);
@@ -386,7 +377,7 @@ The structural design modeled in Figure~\ref{fig:global_class_diagram} highlight
 \begin{itemize}
     \item \textbf{Backend Ingestion \& Persistence Tier:} The central \texttt{Express Server} instantiates and schedules multiple concurrent \texttt{ScraperService} instances (e.g. \texttt{Urlhaus}, \texttt{AlienVault}, \texttt{MispGalaxy}, \texttt{Ransomwatch}). As threat telemetry is gathered, it is processed via the \texttt{EnrichmentService} which resolves network organizations and classifies critical infrastructure sectors. The server then persists the resulting dataset using the Mongoose \texttt{ThreatEvent} data model, maintaining standard index rules.
     \item \texttt{Zustand Store} and performance utilities: The client-side \texttt{useStreamStore} acts as a real-time reactive state manager. To handle incoming threat stream data without memory leaks or high garbage collection cycles, the store encapsulates a circular \texttt{RingBuffer} class structure and tracks performance through the custom instrumented \texttt{perfTelemetry} class.
-    \item \textbf{React Views Tier:} React pages and tab elements represent the core view controllers. The \texttt{DashboardPage}, \texttt{HistoryPage}, \texttt{AnalyticsPage}, \texttt{StixVisualizerPage}, and \texttt{CountryDashboard} subscribe to the Zustand store state slices and bind to specific endpoints (like \texttt{/api/history} and \texttt{/api/stats}) to drive layout changes and charts.
+    \item \textbf{React Views Tier:} React pages and tab elements represent the core view controllers. The \texttt{DashboardPage}, \texttt{HistoryPage}, \texttt{AnalyticsPage}, \texttt{StixDashboard}, and \texttt{CountryDashboard} subscribe to the Zustand store state slices and bind to specific endpoints (like \texttt{/api/history} and \texttt{/api/stats}) to drive layout changes and charts.
 \end{itemize}
 
 ---
