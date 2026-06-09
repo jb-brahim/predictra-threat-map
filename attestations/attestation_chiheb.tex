@@ -1,0 +1,125 @@
+\documentclass[12pt,a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[english]{babel}
+\usepackage{geometry}
+\usepackage{xcolor}
+\usepackage{tikz}
+\usepackage{setspace}
+\usepackage{hyperref}
+
+\usetikzlibrary{calc}
+
+% Compact Page Geometry
+\geometry{
+    a4paper,
+    left=2.0cm,
+    right=2.0cm,
+    top=1.5cm,
+    bottom=1.5cm
+}
+
+% Consistent Color Palette (Matching Thesis Report)
+\definecolor{cyberblue}{HTML}{3B82F6}
+\definecolor{charcoal}{HTML}{1E293B}
+\definecolor{stampcolor}{HTML}{2A3F9D} % Ink blue for stamp
+
+\hypersetup{
+    colorlinks=true,
+    linkcolor=cyberblue,
+    urlcolor=cyberblue
+}
+
+\begin{document}
+
+\thispagestyle{empty}
+
+% Border Frame (Aligned to page bounds)
+\begin{tikzpicture}[remember picture, overlay]
+    % Outer charcoal border
+    \draw[line width=2.0pt, color=charcoal] 
+        ($(current page.north west) + (1.0cm,-1.0cm)$) 
+        rectangle 
+        ($(current page.south east) + (-1.0cm,1.0cm)$);
+    % Inner cyberblue border
+    \draw[line width=0.6pt, color=cyberblue] 
+        ($(current page.north west) + (1.15cm,-1.15cm)$) 
+        rectangle 
+        ($(current page.south east) + (-1.15cm,1.15cm)$);
+    
+    % Decorative corners
+    \foreach \x/\xo/\yo in {north west/1.15cm/-1.15cm, north east/-1.15cm/-1.15cm, south west/1.15cm/1.15cm, south east/-1.15cm/1.15cm} {
+        \fill[cyberblue] ($(current page.\x) + (\xo,\yo)$) circle (3pt);
+    }
+\end{tikzpicture}
+
+% Company Header Block
+\begin{center}
+    \vspace*{-0.2cm}
+    {\Large \textbf{\textsc{\textcolor{charcoal}{PREDICTRA}}}}\\[0.1cm]
+    {\small \textcolor{cyberblue}{\textbf{\textsc{AI-Powered Threat Intelligence Division}}}}\\[0.2cm]
+    \rule{6cm}{0.8pt}
+\end{center}
+
+\vspace{0.4cm}
+
+% Document Title
+\begin{center}
+    {\Huge \bfseries \textcolor{charcoal}{INTERNSHIP CERTIFICATE}} \\[0.15cm]
+    \rule{3.0cm}{2.0pt}
+\end{center}
+
+\vspace{0.4cm}
+
+% Certificate Body
+\setstretch{1.2}
+\normalsize
+
+\noindent I, the undersigned, Mr. \textbf{Aymen Soualmia}, in my capacity as Chief Executive Officer (CEO) of \textbf{Predictra}, hereby certify that:
+
+\vspace{0.3cm}
+\begin{center}
+    {\Large \textbf{\textcolor{charcoal}{Mr. Chiheb Amri}}}\\
+    \vspace{0.1cm}
+    {\normalsize holder of the National Identity Card (CIN) No. \textbf{15264841}}
+\end{center}
+\vspace{0.3cm}
+
+\noindent has successfully completed a graduation internship within our company for a period of \textbf{four (4) months}, from \textbf{February 1\textsuperscript{st}, 2026 to May 31\textsuperscript{st}, 2026}, as part of his Final Year Project (PFE) towards obtaining the Applied License in Information Technology from the Higher Institute of Technological Studies (\textbf{ISET}) of Gafsa.
+
+\vspace{0.25cm}
+\noindent During this internship, he was fully integrated into the security development and research department, where he actively participated in the design and implementation of the project titled:
+
+\vspace{0.25cm}
+\begin{center}
+    \textbf{\textcolor{cyberblue}{``Predictra Threat Map: Real-Time Cyber Threat Intelligence\\ Aggregation and Spatial Analytics Platform''}}
+\end{center}
+
+\vspace{0.25cm}
+\noindent Throughout his internship at Predictra, Mr. Chiheb Amri demonstrated a strong sense of initiative, solid technical skills, great rigor in his work, and excellent integration within our development team. His contributions have greatly enriched our platform.
+
+\vspace{0.25cm}
+\noindent This certificate is issued to him to serve and assert his rights.
+
+\vspace{0.3cm}
+
+% Date and Signatures Block
+\noindent
+\begin{minipage}[t]{0.40\textwidth}
+    \begin{flushleft}
+        \textcolor{gray}{\scriptsize Ref: PFE-2026-PRED01}\\
+        \textcolor{gray}{\scriptsize Official Predictra document}\\
+        \textcolor{gray}{\scriptsize Permanent validity}
+    \end{flushleft}
+\end{minipage}
+\hfill
+\begin{minipage}[t]{0.55\textwidth}
+    \begin{flushright}
+        Done in Tunis, on June 9, 2026 \\[0.15cm]
+        \textbf{For Predictra} \\
+        Chief Executive Officer (CEO) \\[1.8cm]
+        \textbf{Mr. Aymen Soualmia}
+    \end{flushright}
+\end{minipage}
+
+\end{document}
