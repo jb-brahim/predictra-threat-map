@@ -130,16 +130,16 @@ We identified two main actors interacting with our system:
 \subsection{Global Use Case Diagram}
 The global interactions are illustrated in the UML Use Case diagram in Figure~\ref{fig:global_usecase}.
 
-\begin{figure}[h!]
+\begin{figure}[htbp]
 \centering
-\includegraphics[width=0.95\textwidth]{assets/global_usecase.png}
+\includegraphics[width=\textwidth,height=0.85\textheight,keepaspectratio]{assets/global_usecase.png}
 \caption{UML Global Use Case diagram for the Predictra CTI platform.}
 \label{fig:global_usecase}
 \end{figure}
 
 The specific functional workflows of these use cases are summarized in Table~\ref{tab:global_uc_desc}.
 
-\begin{table}[h!]
+\begin{table}[htbp]
 \centering
 \small
 \begin{tabular}{>{\raggedright\arraybackslash}p{3.2cm}>{\raggedright\arraybackslash}p{3.5cm}>{\raggedright\arraybackslash}p{7.3cm}}
@@ -193,36 +193,101 @@ The features requested by the Product Owner were broken down into four distinct 
 \subsection{Previsional Gantt Chart}
 Our chronological sprint schedule is modeled in Figure~\ref{fig:gantt_chart} using a native LaTeX TikZ timeline chart.
 
-\begin{figure}[h!]
+\begin{figure}[htbp]
 \centering
-\begin{tikzpicture}[scale=0.9, every node/.style={transform shape}]
-    % Grid lines representing weeks
-    \draw[very thin, gray!30] (0,-0.5) grid (12,4.5);
-    
-    % Timeline weeks header
-    \foreach \w in {1,2,...,12} {
-        \node at (\w - 0.5, 4.2) {\small W\w};
-    }
-    
-    % Sprints
-    % Sprint 1: Weeks 1-3
-    \draw[draw=charcoal, fill=cyberblue!20, thick, rounded corners] (0,3) rectangle (3,3.6);
-    \node at (1.5, 3.3) {\small Sprint 1: Harvester};
-    
-    % Sprint 2: Weeks 4-6
-    \draw[draw=charcoal, fill=cyberblue!40, thick, rounded corners] (3,2) rectangle (6,2.6);
-    \node at (4.5, 2.3) {\small Sprint 2: Visualizer};
-    
-    % Sprint 3: Weeks 7-9
-    \draw[draw=charcoal, fill=cyberblue!60, thick, rounded corners] (6,1) rectangle (9,1.6);
-    \node at (7.5, 1.3) {\small Sprint 3: STIX Parser};
-    
-    % Sprint 4: Weeks 10-12
-    \draw[draw=charcoal, fill=cyberblue!80, thick, rounded corners] (9,0) rectangle (12,0.6);
-    \node at (10.5, 0.3) {\small Sprint 4: Polish};
-    
-    % Project timeline axis
-    \draw[thick, ->, color=charcoal] (0,-0.2) -- (12.5,-0.2) node[right] {\small Timeline};
+\begin{tikzpicture}[x=0.95cm, y=0.85cm]
+
+  % ─── constants ────────────────────────────────────────────────────
+  \def\nrows{4}   % number of sprint rows
+  \def\ncols{12}  % total weeks
+  \def\lw{2.6}    % left-label column width (in x-units, shifted)
+
+  % ─── alternating row backgrounds ──────────────────────────────────
+  \fill[gray!8]  (0, 0) rectangle (\ncols, 1);
+  \fill[white]   (0, 1) rectangle (\ncols, 2);
+  \fill[gray!8]  (0, 2) rectangle (\ncols, 3);
+  \fill[white]   (0, 3) rectangle (\ncols, 4);
+
+  % ─── outer border ─────────────────────────────────────────────────
+  \draw[charcoal!40, line width=0.7pt] (0,0) rectangle (\ncols, 4);
+
+  % ─── vertical week separator lines ────────────────────────────────
+  \foreach \w in {1,2,...,11} {
+    \draw[gray!30, line width=0.35pt] (\w, 0) -- (\w, 4);
+  }
+
+  % ─── horizontal row separator lines ───────────────────────────────
+  \foreach \r in {1,2,3} {
+    \draw[gray!30, line width=0.35pt] (0, \r) -- (\ncols, \r);
+  }
+
+  % ─── header row ───────────────────────────────────────────────────
+  \fill[charcoal!12] (0,4) rectangle (\ncols, 4.55);
+  \draw[charcoal!40, line width=0.7pt] (0,4) rectangle (\ncols, 4.55);
+  \foreach \w in {1,...,12} {
+    \node[font=\footnotesize\bfseries, text=charcoal]
+      at (\w-0.5, 4.275) {W\w};
+  }
+
+  % ─── row label column header ───────────────────────────────────────
+  % (drawn to the left of x=0)
+  \fill[charcoal!12] (-\lw, 0) rectangle (0, 4.55);
+  \draw[charcoal!40, line width=0.7pt] (-\lw, 0) rectangle (0, 4.55);
+  \draw[charcoal!40, line width=0.5pt] (-\lw, 4) -- (0, 4);
+  \node[font=\footnotesize\bfseries, text=charcoal] at (-\lw/2, 4.275) {Sprint};
+
+  % row dividers in label column
+  \foreach \r in {1,2,3} {
+    \draw[gray!30, line width=0.35pt] (-\lw, \r) -- (0, \r);
+  }
+
+  % ─── sprint row labels ─────────────────────────────────────────────
+  \node[font=\small\bfseries, text=charcoal, align=center]
+    at (-\lw/2, 3.5) {\#1};
+  \node[font=\small\bfseries, text=charcoal, align=center]
+    at (-\lw/2, 2.5) {\#2};
+  \node[font=\small\bfseries, text=charcoal, align=center]
+    at (-\lw/2, 1.5) {\#3};
+  \node[font=\small\bfseries, text=charcoal, align=center]
+    at (-\lw/2, 0.5) {\#4};
+
+  % ─── Sprint bars ──────────────────────────────────────────────────
+  % Sprint 1: Weeks 1-3, Row 4 (y=3..4)
+  \fill[cyberblue!30, rounded corners=3pt]
+    (0.08, 3.14) rectangle (2.92, 3.86);
+  \draw[cyberblue!70, line width=0.8pt, rounded corners=3pt]
+    (0.08, 3.14) rectangle (2.92, 3.86);
+  \node[font=\scriptsize\bfseries, text=charcoal, align=center,
+         text width=2.6cm]
+    at (1.5, 3.5) {Harvester\\Backend};
+
+  % Sprint 2: Weeks 4-6, Row 3 (y=2..3)
+  \fill[cyberblue!48, rounded corners=3pt]
+    (3.08, 2.14) rectangle (5.92, 2.86);
+  \draw[cyberblue!80, line width=0.8pt, rounded corners=3pt]
+    (3.08, 2.14) rectangle (5.92, 2.86);
+  \node[font=\scriptsize\bfseries, text=charcoal, align=center,
+         text width=2.6cm]
+    at (4.5, 2.5) {3D Visualizer};
+
+  % Sprint 3: Weeks 7-9, Row 2 (y=1..2)
+  \fill[cyberblue!66, rounded corners=3pt]
+    (6.08, 1.14) rectangle (8.92, 1.86);
+  \draw[cyberblue!90, line width=0.8pt, rounded corners=3pt]
+    (6.08, 1.14) rectangle (8.92, 1.86);
+  \node[font=\scriptsize\bfseries, text=charcoal, align=center,
+         text width=2.6cm]
+    at (7.5, 1.5) {STIX Parser};
+
+  % Sprint 4: Weeks 10-12, Row 1 (y=0..1)
+  \fill[cyberblue!88, rounded corners=3pt]
+    (9.08, 0.14) rectangle (11.92, 0.86);
+  \draw[cyberblue, line width=0.8pt, rounded corners=3pt]
+    (9.08, 0.14) rectangle (11.92, 0.86);
+  \node[font=\scriptsize\bfseries, text=white, align=center,
+         text width=2.6cm]
+    at (10.5, 0.5) {Analytics\\\& Polish};
+
 \end{tikzpicture}
 \caption{Previsional Gantt Chart of development sprints.}
 \label{fig:gantt_chart}
@@ -292,7 +357,7 @@ For our long-term persistence layer, we utilized **MongoDB Atlas** and **Mongoos
 \subsubsection{Technology Stack Comparative Summary Matrix}
 To formalize the architectural rationale behind our technology choices, a detailed comparison matrix evaluating our selected stack against traditional enterprise alternatives is presented in Table~\ref{tab:tech_stack_comparison}.
 
-\begin{table}[h!]
+\begin{table}[htbp]
 \centering
 \small
 \begin{tabular}{>{\raggedright\arraybackslash}p{2.2cm}>{\raggedright\arraybackslash}p{2.5cm}>{\raggedright\arraybackslash}p{2.5cm}>{\raggedright\arraybackslash}p{6.8cm}}
@@ -320,7 +385,7 @@ The system deployment model is structured into three cloud layers:
 \begin{enumerate}
     \item \textbf{Frontend Layer (Vercel CDN):} The single-page application is hosted on Vercel's global Content Delivery Network. The configuration file `vercel.json` intercepts client requests and handles API proxy rewrites directly, as summarized in Table~\ref{tab:vercel_proxy} (with the full production configuration file detailed in Appendix D.1).
 
-    \begin{table}[h!]
+    \begin{table}[htbp]
     \centering
     \small
     \begin{tabular}{ll}
@@ -340,7 +405,7 @@ The system deployment model is structured into three cloud layers:
 \subsection{System Package Component Architecture}
 To ensure clean separation of concerns, our physical system is organized into decoupled modules, as illustrated in the UML Component diagram in Figure~\ref{fig:component_diagram}.
 
-\begin{figure}[h!]
+\begin{figure}[htbp]
 \centering
 \includegraphics[width=0.95\textwidth]{assets/component_diagram.png}
 \caption{UML Component diagram of the Predictra CTI system.}
@@ -350,7 +415,7 @@ To ensure clean separation of concerns, our physical system is organized into de
 \subsection{Application Logical Architecture}
 The Predictra Threat Map's internal logic is partitioned into 4 distinct tiers, as illustrated in the TikZ logical architecture diagram in Figure~\ref{fig:logical_architecture}.
 
-\begin{figure}[h!]
+\begin{figure}[htbp]
 \centering
 \includegraphics[width=0.95\textwidth]{assets/multi_tier_architecture.png}
 \caption{Predictra platform multi-tier layered application architecture.}
@@ -366,7 +431,7 @@ This multi-tier structure enforces strict data-flow boundaries:
 \subsection{Global Class Diagram}
 To model the static structure of the Predictra CTI system, we designed a Global Class Diagram that illustrates the key logical modules, their core attributes, operational methods, and structural relationships. The diagram is illustrated in Figure~\ref{fig:global_class_diagram}.
 
-\begin{figure}[p]
+\begin{figure}[htbp]
 \centering
 \includegraphics[width=0.95\textwidth]{assets/global_class_diagram.png}
 \caption{UML Global Class diagram of the Predictra CTI system.}

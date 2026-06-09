@@ -17,6 +17,15 @@
 \usepackage{xcolor}
 \usepackage{tikz}
 \usetikzlibrary{shapes.geometric, arrows, positioning, fit, calc, shadows, shapes.symbols}
+\usepackage{eso-pic}
+\AddToShipoutPictureBG{%
+  \begin{tikzpicture}[remember picture, overlay]
+    \draw[line width=1.5pt]
+      ($(current page.south west)+(0.5cm,0.5cm)$)
+      rectangle
+      ($(current page.north east)-(0.5cm,0.5cm)$);
+  \end{tikzpicture}
+}
 
 % Define stickman actor for PFE diagrams
 \tikzset{
@@ -38,7 +47,8 @@
 }
 
 % Theme Colors
-\definecolor{cyberblue}{HTML}{3B82F6}
+\definecolor{navyblue}{HTML}{1B3B77}
+\definecolor{cyberblue}{HTML}{3B6A80}
 \definecolor{cyberamber}{HTML}{F59E0B}
 \definecolor{cyberred}{HTML}{EF4444}
 \definecolor{charcoal}{HTML}{1E293B}
@@ -46,9 +56,9 @@
 % Fancy headers and footers
 \pagestyle{fancy}
 \fancyhf{}
-\fancyhead[L]{\nouppercase{\leftmark}}
-\fancyhead[R]{\textcolor{cyberblue}{\textbf{Predictra Threat Map}}}
-\fancyfoot[C]{\thepage}
+
+\fancyhead[L]{\textcolor{navyblue}{\nouppercase{\leftmark}}}
+
 \renewcommand{\headrulewidth}{0.4pt}
 \renewcommand{\footrulewidth}{0pt}
 
@@ -62,6 +72,9 @@
 \titleformat{\subsection}
   {\normalfont\large\bfseries\color{charcoal}}
   {\thesubsection}{1em}{}
+\titleformat{\subsubsection}
+  {\normalfont\normalsize\bfseries\color{charcoal}}
+  {\thesubsubsection}{1em}{}
 
 \hypersetup{
     colorlinks=true,

@@ -21,7 +21,7 @@ The Sprint 3 backlog focused on two key deliverables:
 \subsection{Sprint Analysis: Use Case Modeling}
 The analyst's interactions with the STIX workspace are captured in Figure~\ref{fig:s3_usecase} using a native LaTeX TikZ Use Case diagram, illustrating actor boundaries and system triggers.
 
-\begin{figure}[h!]
+\begin{figure}[htbp]
 \centering
 \includegraphics[width=0.95\textwidth]{assets/s3_usecase.png}
 \caption{Sprint 3: Use Case diagram for the STIX 2.1 dashboard.}
@@ -30,7 +30,7 @@ The analyst's interactions with the STIX workspace are captured in Figure~\ref{f
 
 The functional workflows and validation rules for each use case are documented in Table~\ref{tab:s3_uc_desc_expanded}.
 
-\begin{table}[h!]
+\begin{table}[htbp]
 \centering
 \small
 \begin{tabular}{>{\raggedright\arraybackslash}p{2.6cm}>{\raggedright\arraybackslash}p{4.4cm}>{\raggedright\arraybackslash}p{6.8cm}}
@@ -86,24 +86,26 @@ Standard STIX 2.1 bundles represent complex threat profiles using objects and re
 
     To illustrate the input of our ingestion engine and demonstrate a complete, realistic intelligence structure, Table~\ref{tab:stix_bundle_objects} summarizes the STIX Domain Objects (SDOs) and Relationship Objects (SROs) parsed by our engine, with the full raw JSON bundle detailed in Appendix J.
 
-    \begin{table}[h!]
+    \begin{table}[htbp]
     \centering
     \small
-    \begin{tabular}{lll}
+    \begin{tabular}{>{\raggedright\arraybackslash}p{2.8cm}
+                    >{\raggedright\arraybackslash}p{3.6cm}
+                    >{\raggedright\arraybackslash}p{7.0cm}}
     \toprule
     \textbf{STIX Object Type} & \textbf{Name / Identifier} & \textbf{Key Characteristics / Attributes} \\
     \midrule
-    \texttt{threat-actor} & Apex Spyder & Nation-state actor, Espionage goals, Innovator sophistication \\
-    \texttt{campaign} & Operation Silent Breach & Target: telecommunication networks tap \\
-    \texttt{malware} & SpectreShell & Remote access trojan, DNS exfiltration, registry persistence \\
-    \texttt{tool} & SharpDump & C\# credential exploitation (LSASS memory dumper) \\
-    \texttt{attack-pattern} & LSASS Memory Dumping & Maps to MITRE ATT\&CK phase: \texttt{credential-access} \\
-    \texttt{identity} & TelcoGlobal Inc. & Target identity: telecommunications and technology sectors \\
-    \texttt{indicator} & SpectreShell C2 Beacon & Pattern: \texttt{[domain-name:value = 'c2.corp-updates.net']} \\
-    \texttt{relationship} & attributed-to & Connects campaign to threat-actor \\
-    \texttt{relationship} & uses & Connects threat-actor to malware, and malware to tool \\
-    \texttt{relationship} & targets & Connects malware and campaign to victim identity \\
-    \texttt{relationship} & indicates & Connects indicator to malware \\
+    \texttt{threat-actor}   & Apex Spyder              & Nation-state actor, Espionage goals, Innovator sophistication \\
+    \texttt{campaign}       & Operation Silent Breach  & Target: telecommunication networks tap \\
+    \texttt{malware}        & SpectreShell             & Remote access trojan, DNS exfiltration, registry persistence \\
+    \texttt{tool}           & SharpDump                & C\# credential exploitation (LSASS memory dumper) \\
+    \texttt{attack-pattern} & LSASS Memory Dumping     & Maps to MITRE ATT\&CK phase: \texttt{credential-access} \\
+    \texttt{identity}       & TelcoGlobal Inc.         & Target identity: telecommunications and technology sectors \\
+    \texttt{indicator}      & SpectreShell C2 Beacon   & Pattern: \texttt{[domain-name:value = 'c2.corp-updates.net']} \\
+    \texttt{relationship}   & attributed-to            & Connects campaign to threat-actor \\
+    \texttt{relationship}   & uses                     & Connects threat-actor to malware, and malware to tool \\
+    \texttt{relationship}   & targets                  & Connects malware and campaign to victim identity \\
+    \texttt{relationship}   & indicates                & Connects indicator to malware \\
     \bottomrule
     \end{tabular}
     \caption{STIX 2.1 Sample Intelligence Bundle Components.}
@@ -114,7 +116,7 @@ Standard STIX 2.1 bundles represent complex threat profiles using objects and re
 \subsubsection{UML Class Diagram}
 The structural layout of our client-side parser services, data models, and visualization pages is illustrated in Figure~\ref{fig:s3_class}.
 
-\begin{figure}[h!]
+\begin{figure}[htbp]
 \centering
 \includegraphics[width=0.95\textwidth]{assets/s3_class.png}
 \caption{Sprint 3: Conception Class diagram.}
@@ -124,7 +126,7 @@ The structural layout of our client-side parser services, data models, and visua
 \subsubsection{UML Sequence Diagram}
 The asynchronous parsing and graph building lifecycle triggered when an investigator uploads a threat bundle is traced in Figure~\ref{fig:s3_sequence}.
 
-\begin{figure}[h!]
+\begin{figure}[htbp]
 \centering
 \includegraphics[width=0.95\textwidth]{assets/s3_sequence.png}
 \caption{Sprint 3: Sequence diagram of STIX bundle parsing and graph rendering.}
@@ -138,20 +140,22 @@ The asynchronous parsing and graph building lifecycle triggered when an investig
 \subsubsection{STIX 2.1 Parser Code Walkthrough}
 The parser located in `ui/StixDashboard.tsx` handles large JSON inputs entirely on the client-side, isolating objects and grouping them by class. Table~\ref{tab:stix_parser_rules} details the client-side parsing rules, sorting STIX objects by type and mapping Indicators to classes using regular expressions (with the complete parser utilities detailed in Appendix M).
 
-    \begin{table}[h!]
+    \begin{table}[htbp]
     \centering
     \small
-    \begin{tabular}{lll}
+    \begin{tabular}{>{\raggedright\arraybackslash}p{3.5cm}
+                    >{\raggedright\arraybackslash}p{4.0cm}
+                    >{\raggedright\arraybackslash}p{5.9cm}}
     \toprule
     \textbf{Target Object / Class} & \textbf{STIX Type / Pattern Match} & \textbf{Parser Mapping \& Actions} \\
     \midrule
-    Threat Actor & \texttt{threat-actor} & Populates the actor analysis cards \\
-    Malware / Tool & \texttt{malware} / \texttt{tool} & Populates the active adversary tools inventory \\
-    Attack Pattern & \texttt{attack-pattern} & Compiled to MITRE ATT\&CK phase matrix \\
-    IPv4 Indicator & \texttt{/ipv4-addr:value/} & Classified as 'IPv4 Address' IOC \\
-    SHA-256 Hash & \texttt{/file:hashes\textbackslash.'SHA-256'/} & Classified as 'SHA-256 Hash' IOC \\
-    Domain Name & \texttt{/domain-name:value/} & Classified as 'Domain Name' IOC \\
-    URL Endpoint & \texttt{/url:value/} & Classified as 'URL Endpoint' IOC \\
+    Threat Actor   & \texttt{threat-actor}                        & Populates the actor analysis cards \\
+    Malware / Tool & \texttt{malware} / \texttt{tool}              & Populates the active adversary tools inventory \\
+    Attack Pattern & \texttt{attack-pattern}                      & Compiled to MITRE ATT\&CK phase matrix \\
+    IPv4 Indicator & \texttt{/ipv4-addr:value/}                   & Classified as 'IPv4 Address' IOC \\
+    SHA-256 Hash   & \texttt{/file:hashes\textbackslash.\allowbreak'SHA-256'/} & Classified as 'SHA-256 Hash' IOC \\
+    Domain Name    & \texttt{/domain-name:value/}                 & Classified as 'Domain Name' IOC \\
+    URL Endpoint   & \texttt{/url:value/}                         & Classified as 'URL Endpoint' IOC \\
     \bottomrule
     \end{tabular}
     \caption{STIX 2.1 Parser Object Classification Rules.}
@@ -180,7 +184,7 @@ The Sprint 4 backlog focused on four critical objectives:
 \subsection{Sprint Analysis: Use Case Modeling}
 The investigator's search and performance diagnostics use cases are captured in Figure~\ref{fig:s4_usecase}.
 
-\begin{figure}[h!]
+\begin{figure}[htbp]
 \centering
 \includegraphics[width=0.95\textwidth]{assets/s4_usecase.png}
 \caption{Sprint 4: Use Case diagram for database browsing and performance monitoring.}
@@ -189,7 +193,7 @@ The investigator's search and performance diagnostics use cases are captured in 
 
 The functional steps are detailed in Table~\ref{tab:s4_uc_desc}.
 
-\begin{table}[h!]
+\begin{table}[htbp]
 \centering
 \small
 \begin{tabular}{>{\raggedright\arraybackslash}p{2.6cm}>{\raggedright\arraybackslash}p{4.4cm}>{\raggedright\arraybackslash}p{6.8cm}}
@@ -210,7 +214,7 @@ Monitor Performance HUD & Security Analyst / Toggles Switch & Renders an SVG ove
 \subsubsection{UML Class Diagram}
 The structural layout of our historical logs queries, circular memory buffers, and adaptive sampling stores is illustrated in Figure~\ref{fig:s4_class}.
 
-\begin{figure}[h!]
+\begin{figure}[htbp]
 \centering
 \includegraphics[width=0.95\textwidth]{assets/s4_class.png}
 \caption{Sprint 4: Conception Class diagram.}
@@ -220,7 +224,7 @@ The structural layout of our historical logs queries, circular memory buffers, a
 \subsubsection{UML Sequence Diagram}
 The paginated network round-trip tracing query submissions, backend mongoose filters, and frontend table rendering is illustrated in Figure~\ref{fig:s4_sequence}.
 
-\begin{figure}[h!]
+\begin{figure}[htbp]
 \centering
 \includegraphics[width=0.95\textwidth]{assets/s4_sequence.png}
 \caption{Sprint 4: Sequence diagram of paginated historical threat search.}
@@ -244,7 +248,7 @@ The system monitors browser frame rates using an active window delta timer. The 
 
 The Zustand store tracks the moving average of this frame rate. If this average drops below operational thresholds, the ingestion engine triggers dynamic dropping rules to protect the main rendering thread from performance spikes. The drop mapping is defined in Table~\ref{tab:perf_drop_rules}.
 
-\begin{table}[h!]
+\begin{table}[htbp]
 \centering
 \small
 \begin{tabular}{>{\raggedright\arraybackslash}p{4.2cm}>{\raggedright\arraybackslash}p{4.2cm}>{\raggedright\arraybackslash}p{5.6cm}}
@@ -265,17 +269,19 @@ The Zustand store tracks the moving average of this frame rate. If this average 
 \subsubsection{Circular Memory Buffer Implementation}
 The circular buffer is coded inside `utils/perf.ts`. The complete class structure, showing its memory pre-allocation, circular writing logic, and constant-time extraction is summarized in Table~\ref{tab:ring_buffer_api}, with the complete source code detailed in Appendix K:
     
-    \begin{table}[h!]
+    \begin{table}[htbp]
     \centering
     \small
-    \begin{tabular}{lll}
+    \begin{tabular}{>{\raggedright\arraybackslash}p{4.0cm}
+                    >{\raggedright\arraybackslash}p{3.2cm}
+                    >{\raggedright\arraybackslash}p{6.2cm}}
     \toprule
     \textbf{Method / Property} & \textbf{Time Complexity} & \textbf{Functional Role / Behavior} \\
     \midrule
-    \texttt{constructor(capacity)} & $O(N)$ heap allocation & Pre-allocates fixed size array to block dynamic GC triggers \\
-    \texttt{push(item)} & $O(1)$ constant time & Overwrites index \texttt{pointer \% capacity} and increments pointer \\
-    \texttt{getAll()} & $O(N)$ linear time & Sequentially reads elements starting from oldest index to pointer \\
-    \texttt{getLength()} & $O(1)$ constant time & Returns the active number of records stored (capped at capacity) \\
+    \texttt{constructor\allowbreak(capacity)} & $O(N)$ heap allocation  & Pre-allocates fixed size array to block dynamic GC triggers \\
+    \texttt{push(item)}            & $O(1)$ constant time    & Overwrites index \texttt{pointer \% capacity} and increments pointer \\
+    \texttt{getAll()}              & $O(N)$ linear time      & Sequentially reads elements starting from oldest index to pointer \\
+    \texttt{getLength()}           & $O(1)$ constant time    & Returns the active number of records stored (capped at capacity) \\
     \bottomrule
     \end{tabular}
     \caption{Circular RingBuffer API Specifications.}
@@ -293,18 +299,20 @@ To prevent instantaneous micro-stutters from triggering false-positive sampling 
 
 By utilizing a recursive low-pass filter, the telemetry stream remains exceptionally stable, filtering out single-frame garbage collection pauses while responding smoothly to sustained rendering degradation caused by attack storm payloads. The client-side implementation of this high-precision frame rate telemetry collector hook is summarized in Table~\ref{tab:fps_telemetry_vars}, with the complete source code detailed in Appendix L:
 
-    \begin{table}[h!]
+    \begin{table}[htbp]
     \centering
     \small
-    \begin{tabular}{lll}
+    \begin{tabular}{>{\raggedright\arraybackslash}p{4.2cm}
+                    >{\raggedright\arraybackslash}p{3.8cm}
+                    >{\raggedright\arraybackslash}p{5.4cm}}
     \toprule
     \textbf{Variable / Hook} & \textbf{Type / Source} & \textbf{Operational Role in FPS Loop} \\
     \midrule
-    \texttt{setFps} & Zustand Action Dispatcher & Dispatches calculated frame rates to the global state store \\
-    \texttt{frameCountRef} & React \texttt{useRef<number>} & Tracks the count of frame draws within the current second interval \\
-    \texttt{lastTimeRef} & React \texttt{useRef<number>} & High-precision timestamp of the last second boundary \\
-    \texttt{requestRef} & React \texttt{useRef<number>} & Reference handle of the active \texttt{requestAnimationFrame} loop \\
-    \texttt{requestAnimationFrame} & Browser API & Coordinates paint ticks to sync calculations with refresh rate \\
+    \texttt{setFps}               & Zustand Action Dispatcher          & Dispatches calculated frame rates to the global state store \\
+    \texttt{frameCountRef}        & React \texttt{useRef<number>}      & Tracks the count of frame draws within the current second interval \\
+    \texttt{lastTimeRef}          & React \texttt{useRef<number>}      & High-precision timestamp of the last second boundary \\
+    \texttt{requestRef}           & React \texttt{useRef<number>}      & Reference handle of the active \texttt{requestAnimationFrame} loop \\
+    \texttt{requestAnimationFrame}& Browser API                        & Coordinates paint ticks to sync calculations with refresh rate \\
     \bottomrule
     \end{tabular}
     \caption{FPS Telemetry Collector State Variables.}

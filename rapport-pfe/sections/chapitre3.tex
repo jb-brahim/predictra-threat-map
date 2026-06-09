@@ -15,7 +15,7 @@ The primary engineering challenges in this sprint involved managing parallel con
 \subsection{Sprint Analysis: Use Case Modeling}
 The ingestion use cases are captured in Figure~\ref{fig:s1_usecase}, illustrating how the External API Feed actor triggers the harvest loop.
 
-\begin{figure}[h!]
+\begin{figure}[htbp]
 \centering
 \includegraphics[width=0.95\textwidth]{assets/s1_usecase.png}
 \caption{Sprint 1: Use Case diagram for threat data harvesting.}
@@ -24,7 +24,7 @@ The ingestion use cases are captured in Figure~\ref{fig:s1_usecase}, illustratin
 
 The functional behaviors of these use cases are structured in Table~\ref{tab:s1_uc_desc}.
 
-\begin{table}[h!]
+\begin{table}[htbp]
 \centering
 \small
 \begin{tabular}{>{\raggedright\arraybackslash}p{3.8cm}>{\raggedright\arraybackslash}p{4.7cm}>{\raggedright\arraybackslash}p{4.7cm}}
@@ -44,7 +44,7 @@ Enrich \& Store Payload & Express Server (Callback / Data In) & Upon retrieval, 
 \subsubsection{UML Class Diagram}
 The structural interfaces created in Sprint 1 are illustrated in Figure~\ref{fig:s1_class}.
 
-\begin{figure}[h!]
+\begin{figure}[htbp]
 \centering
 \includegraphics[width=0.95\textwidth]{assets/s1_class.png}
 \caption{Sprint 1: Conception Class diagram.}
@@ -54,7 +54,7 @@ The structural interfaces created in Sprint 1 are illustrated in Figure~\ref{fig
 \subsubsection{MongoDB Schema Dictionary}
 To accommodate high-velocity database writes (up to hundreds of logs per second), the MongoDB schema in `models/ThreatEvent.js` uses \textbf{compact field names} to minimize BSON document sizes. This layout reduces document sizes from 200 bytes to 80 bytes, conserving cloud database storage. Furthermore, a compound index was established on `s\_ip` and `timestamp` to accelerate fast queries on the history explorer page. The database schema dictionary mapping is defined in Table~\ref{tab:db_dictionary}.
 
-\begin{table}[h!]
+\begin{table}[htbp]
 \centering
 \small
 \begin{tabular}{>{\raggedright\arraybackslash}p{3.2cm}>{\raggedright\arraybackslash}p{2.0cm}>{\raggedright\arraybackslash}p{1.4cm}>{\raggedright\arraybackslash}p{6.0cm}}
@@ -79,7 +79,7 @@ To accommodate high-velocity database writes (up to hundreds of logs per second)
 \subsubsection{UML Sequence Diagram}
 The transactional messaging timeline tracing threat log polling, geocoding, target enrichment, and bulk database persistence is illustrated in Figure~\ref{fig:s1_sequence}.
 
-\begin{figure}[h!]
+\begin{figure}[htbp]
 \centering
 \includegraphics[width=0.95\textwidth]{assets/s1_sequence.png}
 \caption{Sprint 1: Sequence diagram of the harvesting and enrichment loop.}
@@ -96,7 +96,7 @@ Below, we catalog and detail the architectural specifications, raw payload schem
 \subsubsection{1. Checkpoint Scraper (\texttt{checkpoint.js})}
 \begin{itemize}
     \item \textbf{Source Endpoint \& Protocol:} Establishes a direct, long-lived, secure Server-Sent Events (SSE) HTTP stream connection to Checkpoint's corporate live threat telemetry server (summarized in Table~\ref{tab:spec_checkpoint}).
-    \begin{table}[h!]
+    \begin{table}[htbp]
     \centering
     \small
     \begin{tabular}{ll}
@@ -114,7 +114,7 @@ Below, we catalog and detail the architectural specifications, raw payload schem
     \end{table}
 
     \item \textbf{Expected Payload Schema:} The stream broadcasts newline-separated SSE threat packets. The parsed JSON data attributes are defined in Table~\ref{tab:payload_checkpoint} (with the raw payload example detailed in Appendix I.1).
-    \begin{table}[h!]
+    \begin{table}[htbp]
     \centering
     \small
     \begin{tabular}{lll}
@@ -141,7 +141,7 @@ Below, we catalog and detail the architectural specifications, raw payload schem
 \subsubsection{2. Bitdefender Live Telemetry Scraper (\texttt{bitdefender.js})}
 \begin{itemize}
     \item \textbf{Source Endpoint \& Protocol:} Establishes a real-time Web Socket connection using the \texttt{socket.io-client} protocol to Bitdefender's global threat intelligence sharing hub (summarized in Table~\ref{tab:spec_bitdefender}).
-    \begin{table}[h!]
+    \begin{table}[htbp]
     \centering
     \small
     \begin{tabular}{ll}
@@ -159,7 +159,7 @@ Below, we catalog and detail the architectural specifications, raw payload schem
     \end{table}
 
     \item \textbf{Expected Payload Schema:} The WebSocket channel broadcasts binary frames converted into JSON. The attributes are listed in Table~\ref{tab:payload_bitdefender} (with the raw payload example detailed in Appendix I.2).
-    \begin{table}[h!]
+    \begin{table}[htbp]
     \centering
     \small
     \begin{tabular}{lll}
@@ -185,7 +185,7 @@ Below, we catalog and detail the architectural specifications, raw payload schem
 \subsubsection{3. Fortinet FortiGuard Scraper (\texttt{fortinet.js})}
 \begin{itemize}
     \item \textbf{Source Endpoint \& Protocol:} Polls Fortinet's active exploit telemetry API using standard stateless HTTP queries (summarized in Table~\ref{tab:spec_fortinet}).
-    \begin{table}[h!]
+    \begin{table}[htbp]
     \centering
     \small
     \begin{tabular}{ll}
@@ -203,7 +203,7 @@ Below, we catalog and detail the architectural specifications, raw payload schem
     \end{table}
 
     \item \textbf{Expected Payload Schema:} The API returns a structured JSON array of exploit records. The schema fields are defined in Table~\ref{tab:payload_fortinet} (with the raw payload example detailed in Appendix I.3).
-    \begin{table}[h!]
+    \begin{table}[htbp]
     \centering
     \small
     \begin{tabular}{lll}
@@ -228,7 +228,7 @@ Below, we catalog and detail the architectural specifications, raw payload schem
 \subsubsection{4. URLhaus Malware Scraper (\texttt{urlhaus.js})}
 \begin{itemize}
     \item \textbf{Source Endpoint \& Protocol:} Queries abuse.ch's URLhaus API to retrieve newly identified malicious URL distribution nodes (summarized in Table~\ref{tab:spec_urlhaus}).
-    \begin{table}[h!]
+    \begin{table}[htbp]
     \centering
     \small
     \begin{tabular}{ll}
@@ -245,7 +245,7 @@ Below, we catalog and detail the architectural specifications, raw payload schem
     \end{table}
 
     \item \textbf{Expected Payload Schema:} Returns a dictionary containing a list of active threat URLs. The schema fields for each item are defined in Table~\ref{tab:payload_urlhaus} (with the raw payload example detailed in Appendix I.4).
-    \begin{table}[h!]
+    \begin{table}[htbp]
     \centering
     \small
     \begin{tabular}{lll}
@@ -271,7 +271,7 @@ Below, we catalog and detail the architectural specifications, raw payload schem
 \subsubsection{5. Kaspersky Feodo Botnet Tracker (\texttt{kaspersky.js})}
 \begin{itemize}
     \item \textbf{Source Endpoint \& Protocol:} Polls abuse.ch's Feodo Tracker database of active Botnet command-and-control (C2) servers (summarized in Table~\ref{tab:spec_kaspersky}).
-    \begin{table}[h!]
+    \begin{table}[htbp]
     \centering
     \small
     \begin{tabular}{ll}
@@ -288,7 +288,7 @@ Below, we catalog and detail the architectural specifications, raw payload schem
     \end{table}
 
     \item \textbf{Expected Payload Schema:} The feed returns CSV formatted text lines. The schema fields mapping to the CSV headers are defined in Table~\ref{tab:payload_kaspersky} (with the raw payload example detailed in Appendix I.5).
-    \begin{table}[h!]
+    \begin{table}[htbp]
     \centering
     \small
     \begin{tabular}{lll}
@@ -313,7 +313,7 @@ Below, we catalog and detail the architectural specifications, raw payload schem
 \subsubsection{6. AlienVault OTX Pulse Scraper (\texttt{alienvault.js})}
 \begin{itemize}
     \item \textbf{Source Endpoint \& Protocol:} Queries the AlienVault Open Threat Exchange REST API, utilizing custom developer API authentication tokens (summarized in Table~\ref{tab:spec_alienvault}).
-    \begin{table}[h!]
+    \begin{table}[htbp]
     \centering
     \small
     \begin{tabular}{ll}
@@ -331,7 +331,7 @@ Below, we catalog and detail the architectural specifications, raw payload schem
     \end{table}
 
     \item \textbf{Expected Payload Schema:} Returns nested threat pulses. The parsed schema attributes are described in Table~\ref{tab:payload_alienvault} (with the raw payload example detailed in Appendix I.6).
-    \begin{table}[h!]
+    \begin{table}[htbp]
     \centering
     \small
     \begin{tabular}{lll}
@@ -356,7 +356,7 @@ Below, we catalog and detail the architectural specifications, raw payload schem
 \subsubsection{7. Ransomwatch Extortion Scraper (\texttt{ransomwatch.js})}
 \begin{itemize}
     \item \textbf{Source Endpoint \& Protocol:} Polls the Ransomlook.io API endpoint monitoring active ransomware extortion leak sites (summarized in Table~\ref{tab:spec_ransomwatch}).
-    \begin{table}[h!]
+    \begin{table}[htbp]
     \centering
     \small
     \begin{tabular}{ll}
@@ -373,7 +373,7 @@ Below, we catalog and detail the architectural specifications, raw payload schem
     \end{table}
 
     \item \textbf{Expected Payload Schema:} Returns a list of dark web leak site posts. The metadata attributes are defined in Table~\ref{tab:payload_ransomwatch} (with the raw payload example detailed in Appendix I.7).
-    \begin{table}[h!]
+    \begin{table}[htbp]
     \centering
     \small
     \begin{tabular}{lll}
@@ -397,7 +397,7 @@ Below, we catalog and detail the architectural specifications, raw payload schem
 \subsubsection{8. MontySecurity C2 Tracker (\texttt{c2tracker.js})}
 \begin{itemize}
     \item \textbf{Source Endpoint \& Protocol:} Polls the MontySecurity command-and-control tracker endpoint to monitor active listener framework IPs (summarized in Table~\ref{tab:spec_c2tracker}).
-    \begin{table}[h!]
+    \begin{table}[htbp]
     \centering
     \small
     \begin{tabular}{ll}
@@ -414,7 +414,7 @@ Below, we catalog and detail the architectural specifications, raw payload schem
     \end{table}
 
     \item \textbf{Expected Payload Schema:} Returns active command host framework arrays. The JSON fields are described in Table~\ref{tab:payload_c2tracker} (with the raw payload example detailed in Appendix I.8).
-    \begin{table}[h!]
+    \begin{table}[htbp]
     \centering
     \small
     \begin{tabular}{lll}
@@ -438,7 +438,7 @@ Below, we catalog and detail the architectural specifications, raw payload schem
 \subsubsection{9. MISP Galaxy Synthetic Scraper (\texttt{misp-galaxy.js})}
 \begin{itemize}
     \item \textbf{Source Endpoint \& Protocol:} Accesses local JSON data structures cached inside the backend configuration folder (summarized in Table~\ref{tab:spec_misp_galaxy}).
-    \begin{table}[h!]
+    \begin{table}[htbp]
     \centering
     \small
     \begin{tabular}{ll}
@@ -456,7 +456,7 @@ Below, we catalog and detail the architectural specifications, raw payload schem
     \end{table}
 
     \item \textbf{Expected Payload Schema:} Evaluates cached MISP JSON metadata templates. The main template structures are defined in Table~\ref{tab:payload_misp_galaxy} (with the raw payload format referenced in Appendix I.9).
-    \begin{table}[h!]
+    \begin{table}[htbp]
     \centering
     \small
     \begin{tabular}{lll}
@@ -514,7 +514,7 @@ Sprint 2 covered the frontend and communication setup. The goal was to write the
 \subsection{Sprint Analysis: Use Case Modeling}
 The visualizer use cases are captured in Figure~\ref{fig:s2_usecase}, illustrating the analyst's dashboard controls.
 
-\begin{figure}[h!]
+\begin{figure}[htbp]
 \centering
 \includegraphics[width=0.95\textwidth]{assets/s2_usecase.png}
 \caption{Sprint 2: Use Case diagram for the 3D map visualizer.}
@@ -523,7 +523,7 @@ The visualizer use cases are captured in Figure~\ref{fig:s2_usecase}, illustrati
 
 The functional steps are detailed in Table~\ref{tab:s2_uc_desc}.
 
-\begin{table}[h!]
+\begin{table}[htbp]
 \centering
 \small
 \begin{tabular}{>{\raggedright\arraybackslash}p{2.8cm}>{\raggedright\arraybackslash}p{5.2cm}>{\raggedright\arraybackslash}p{5.2cm}}
@@ -566,7 +566,7 @@ While spherical linear interpolation keeps paths aligned to the sphere's surface
 \subsubsection{UML Sequence Diagram}
 The real-time streaming pipeline from scraper broadcasts to frontend Zustand store accumulation and WebGL rendering cycles is traced in Figure~\ref{fig:s2_sequence}.
 
-\begin{figure}[h!]
+\begin{figure}[htbp]
 \centering
 \includegraphics[width=0.95\textwidth]{assets/s2_sequence.png}
 \caption{Sprint 2: Sequence diagram of real-time streaming and WebGL rendering.}
@@ -593,7 +593,7 @@ Our primary globe mesh in \texttt{globe/Earth.tsx} implements a highly performan
     
     To illustrate this shader logic, Table~\ref{tab:glow_shader_vars} outlines the shader attributes and parameters passed between the rendering passes, with the complete source code detailed in Appendix H.1:
 
-    \begin{table}[h!]
+    \begin{table}[htbp]
     \centering
     \small
     \begin{tabular}{lll}
