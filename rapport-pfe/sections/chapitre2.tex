@@ -498,6 +498,349 @@ This multi-tier structure enforces strict data-flow boundaries:
     \item \textbf{Decoupled Presentation:} The WebGL client consumes the live stream directly via the SSE pipeline. This bypasses long-term storage routes, ensuring that high database writes do not interfere with 3D canvas responsiveness.
 \end{itemize}
 
+\subsection{Global Class Diagram}
+To model the static structure of the Predictra CTI system, we designed a Global Class Diagram that illustrates the key logical modules, their core attributes, operational methods, and structural relationships. The diagram is rendered natively in vector format using LaTeX TikZ in Figure~\ref{fig:global_class_diagram}.
+
+\begin{figure}[p]
+\centering
+\begin{tikzpicture}[
+    scale=0.40, every node/.style={transform shape},
+    node distance=2.2cm,
+    class/.style={draw=charcoal, rectangle, top color=white, bottom color=cyberblue!5, drop shadow, thick, rounded corners=2pt, align=left, font=\tiny},
+    association/.style={draw=charcoal, thick},
+    directed/.style={draw=charcoal, -latex, thick},
+    dependency/.style={draw=charcoal, dashed, -latex, thick}
+]
+    % Row 1: Ingestion & Backend Services (Y = 9.0)
+    \node[class, text width=5.2cm] (scraper) at (0.0, 9.0) {
+        \textbf{ScraperService} \\
+        \hrulefill \\
+        - name: String \\
+        - frequency: Number \\
+        - isActive: Boolean \\
+        - apiUrl: String \\
+        - headers: Object \\
+        - reconnectAttempts: Number \\
+        \quad \textit{Crawlers:} \\
+        \quad + AlienVault | Bitdefender \\
+        \quad + C2Tracker | Checkpoint \\
+        \quad + Fortinet | Kaspersky \\
+        \quad + MispGalaxy | Ransomwatch | Urlhaus \\
+        \hrulefill \\
+        + run(): Promise\textless void\textgreater \\
+        + fetchFeed(): Promise\textless rawJSON\textgreater \\
+        + normalize(raw): ThreatEvent[] \\
+        + handleError(err: Error): void \\
+        + startScheduler(): void \\
+        + stopScheduler(): void
+    };
+
+    \node[class, text width=5.8cm] (server) at (6.6, 9.0) {
+        \textbf{Express Server (server.js)} \\
+        \hrulefill \\
+        - app: ExpressApp \\
+        - server: HttpServer \\
+        - port: Number \\
+        - sseClients: Response[] \\
+        - enrichmentQueue: Object[] \\
+        - activeScrapers: Scraper[] \\
+        \hrulefill \\
+        + startServer(): void \\
+        + initMiddleware(): void \quad \% cors, helmet, rateLimit \\
+        + initDatabase(): void \quad \% Mongoose connection \\
+        + initRoutes(): void \quad \% API endpoints \\
+        + setupSSEFeed(req, res): void \quad \% /api/feed \\
+        + getHistory(req, res): Promise\textless void\textgreater \quad \% /api/history \\
+        + getStats(req, res): Promise\textless void\textgreater \quad \% /api/stats \\
+        + getHealth(req, res): void \quad \% /api/health \\
+        + startScrapers(): void \\
+        + broadcastToClients(events): void \\
+        - flushQueue(): void (300ms throttle) \\
+        - monitorDBQuota(): void
+    };
+
+    \node[class, text width=5.2cm] (enrich) at (13.2, 9.0) {
+        \textbf{EnrichmentService} \\
+        \hrulefill \\
+        - rdapCache: Map\textless string, string\textgreater \\
+        - keywordMap: Record\textless string, string[]\textgreater \\
+        - categoryMapping: Record\textless string, string\textgreater \\
+        \hrulefill \\
+        + getEnrichedSector(event): String \\
+        + getIpOrganization(ip): Promise\textless string\textgreater \\
+        - matches(text, keywords): Boolean
+    };
+
+    \node[class, text width=5.2cm] (model) at (19.8, 9.0) {
+        \textbf{ThreatEvent (Mongoose Model)} \\
+        \hrulefill \\
+        + a\_c: Number (Attack Count) \\
+        + a\_n: String (Attack Name) \\
+        + a\_t: 'exploit'|'malware'|'phishing' \\
+        + s\_co / d\_co: String (Country Codes) \\
+        + s\_la / s\_lo: Number (Source Lat/Lon) \\
+        + d\_la / d\_lo: Number (Dest Lat/Lon) \\
+        + s\_ip / d\_ip: String (IP Addresses) \\
+        + meta: Mixed \{ port, org, malware\_family, ... \} \\
+        + timestamp: Date (TTL 30 days) \\
+        + source\_api: String \\
+        \hrulefill \\
+        + schema.index(\{ timestamp: 1 \}): void \\
+        + schema.index(\{ s\_ip: 1, timestamp: -1 \}): void \\
+        + schema.pre("save", callback): void
+    };
+
+    % Row 2: Client State & Performance Utilities (Y = 3.0)
+    \node[class, text width=5.8cm] (store) at (6.6, 3.0) {
+        \textbf{Zustand Store (useStreamStore)} \\
+        \hrulefill \\
+        + status: ConnectionStatus (live|recon|paused) \\
+        + reconnectAttempts: Number \\
+        + currentView: 'map'|'history'|'dashboard'| \\
+        \quad 'country'|'analytics'|'stix' \\
+        + selectedCountry: \{ name: String, code: String \} | null \\
+        + historySearch: \{ q: String, ip: String \} \\
+        + eventBuffer: RingBuffer\textless ThreatEvent\textgreater \\
+        + recentEvents: ThreatEvent[] \\
+        + counterData: CounterData | null \\
+        + totalAttacks: Number \\
+        + attacksPerSecond: Number \\
+        + typeDistribution: TypeDistribution \\
+        + vectorDistribution: Record\textless string, number\textgreater \\
+        + originDistribution: Record\textless string, number\textgreater \\
+        + targetDistribution: Record\textless string, number\textgreater \\
+        + corridorDistribution: Record\textless string, number\textgreater \\
+        + sourceApiDistribution: Record\textless string, number\textgreater \\
+        + trendData: Number[] (10s buckets) \\
+        + lastTrendTime: Number \\
+        + arcs: ArcData[] \\
+        + markers: MarkerData[] \\
+        + activeArcCount: Number \\
+        + config: \{ rotation, trails, audio, preset, ... \} \\
+        + projectionMode: '3d' | '2d' \\
+        + \_cleanup: (() =\textgreater void) | null \\
+        \hrulefill \\
+        + addEvents(events): void \\
+        + updateCounter(data): void \\
+        + setStatus(status): void \\
+        + incrementReconnect(): void \\
+        + tick(now): void \\
+        + setConfig(key, value): void \\
+        + setView(view): void \\
+        + setSelectedCountry(co): void \\
+        + setHistorySearch(search): void \\
+        + setProjectionMode(mode): void \\
+        + initStream(): void
+    };
+
+    \node[class, text width=5.2cm] (ring) at (13.2, 3.0) {
+        \textbf{RingBuffer\textless T\textgreater (perf.ts)} \\
+        \hrulefill \\
+        - capacity: Number \\
+        - buffer: T[] \\
+        - pointer: Number \\
+        - size: Number \\
+        \hrulefill \\
+        + push(item: T): void \\
+        + pushMany(items: T[]): void \\
+        + getAll(): T[] \\
+        + getRecent(n: number): T[] \\
+        + clear(): void \\
+        + getLength(): Number
+    };
+
+    \node[class, text width=5.2cm] (telemetry) at (19.8, 3.0) {
+        \textbf{perfTelemetry (perf.ts)} \\
+        \hrulefill \\
+        - stats: \{ fps, activeArcs, activeMarkers, \\
+        \quad bufferSize, droppedEvents, reconnectAttempts \} \\
+        - history: Number[] \\
+        \hrulefill \\
+        + recordEvent(): void \\
+        + updateFps(fps): void \\
+        + getReport(): Object
+    };
+
+    % Row 3: UI Pages / View Controllers (Y = -3.0)
+    \node[class, text width=5.2cm] (dash) at (0.0, -3.0) {
+        \textbf{DashboardPage (UI Component)} \\
+        \hrulefill \\
+        + timeMode: 'live' | 'dvr' \\
+        + searchQuery: String \\
+        + activeTypes: Set\textless AttackType\textgreater \\
+        + feedPaused: Boolean \\
+        - searchRef: RefObject \\
+        \hrulefill \\
+        + filterDataBySource(src): void \\
+        + handleCountryDrillDown(co): void \\
+        + handleExportCSV(): void \\
+        + handleExportJSON(): void \\
+        + handleExportExcel(): void
+    };
+
+    \node[class, text width=5.2cm] (hist) at (6.6, -3.0) {
+        \textbf{HistoryPage (UI Component)} \\
+        \hrulefill \\
+        + events: ThreatEvent[] \\
+        + page: Number \\
+        + limit: Number \\
+        + filters: Object \\
+        + isLoading: Boolean \\
+        \hrulefill \\
+        + fetchHistory(): Promise\textless void\textgreater \\
+        + handlePageChange(p): void \\
+        + handleFilterChange(f): void \\
+        + handleExport(): void
+    };
+
+    \node[class, text width=5.2cm] (anal) at (13.2, -3.0) {
+        \textbf{AnalyticsPage (UI Component)} \\
+        \hrulefill \\
+        + timeframe: String ("1h" | "24h" | "7d") \\
+        + chartType: "bar" | "line" | "doughnut" \\
+        + filteredData: ThreatEvent[] \\
+        \hrulefill \\
+        + renderTrendChart(): ReactNode \\
+        + renderSectorDistribution(): ReactNode \\
+        + calculateTopVectors(): Array \\
+        + calculateGeographicalAggregates(): Array
+    };
+
+    \node[class, text width=5.2cm] (stix) at (19.8, -3.0) {
+        \textbf{StixVisualizerPage (UI Component)} \\
+        \hrulefill \\
+        + parsedData: ParsedStixData \\
+        + activeTab: String \\
+        + hoverNode: GraphNode | null \\
+        + selectedItem: Object | null \\
+        - d3Simulation: ForceSimulation \\
+        \hrulefill \\
+        + parseBundle(jsonText): ParsedStixData \\
+        + classifyIndicator(ioc): Object \\
+        + mapAttackToPhase(apName): String[] \\
+        + paintNode(node, ctx, scale): void \\
+        + paintLink(link, ctx, scale): void \\
+        + applyForces(linkDist, strength): void
+    };
+
+    \node[class, text width=5.2cm] (country) at (26.4, -3.0) {
+        \textbf{CountryDashboard (UI Component)} \\
+        \hrulefill \\
+        + countryData: Object \\
+        + topOrigins: Array \\
+        + topTargets: Array \\
+        + activeThreatsCount: Number \\
+        \hrulefill \\
+        + renderHologram(): ReactNode \\
+        + fetchCountryStats(): Promise\textless void\textgreater \\
+        + renderRiskScoreGauge(): ReactNode
+    };
+
+    % Row 4: 3D Visualization Pipeline (Y = -9.0)
+    \node[class, text width=5.2cm] (globe) at (0.0, -9.0) {
+        \textbf{GlobeScene (R3F Canvas)} \\
+        \hrulefill \\
+        + qualityPreset: String \\
+        + rotationSpeed: Number \\
+        + arcsLimit: Number \\
+        + projectionMode: String \\
+        - cameraControls: OrbitControls \\
+        \hrulefill \\
+        + renderAtmosphereGlow(): Material \\
+        + handleFpsDropMitigation(fps): void \\
+        - useFrame(state, delta): void
+    };
+
+    \node[class, text width=5.2cm] (earth) at (6.6, -9.0) {
+        \textbf{Earth (Three.js Sphere)} \\
+        \hrulefill \\
+        + globeTexture: Texture \\
+        + bumpMapTexture: Texture \\
+        + specularMapTexture: Texture \\
+        + cloudsTexture: Texture \\
+        \hrulefill \\
+        + renderLandmassShader(): Material \\
+        + updateRotation(delta): void \\
+        + handleMouseClick(event): void
+    };
+
+    \node[class, text width=5.2cm] (arcs) at (13.2, -9.0) {
+        \textbf{AttackArcs (WebGL Instancing)} \\
+        \hrulefill \\
+        + instancedGeometry: InstancedGeometry \\
+        + arcMaterial: ShaderMaterial \\
+        + bezierCurves: Curve3[] \\
+        \hrulefill \\
+        + updateArcUniforms(progress): void \\
+        + latLonToVector3(lat, lon): Vector3 \\
+        + calculateBezierCurve(src, dst): Curve3
+    };
+
+    \node[class, text width=5.2cm] (markers) at (19.8, -9.0) {
+        \textbf{ImpactMarkers (Three.js Points)} \\
+        \hrulefill \\
+        + markerTexture: Texture \\
+        + markerArray: MarkerData[] \\
+        \hrulefill \\
+        + renderRippleAnimation(delta): void \\
+        + latLonToVector3(lat, lon): Vector3
+    };
+
+    \node[class, text width=5.2cm] (outlines) at (26.4, -9.0) {
+        \textbf{CountryOutlines (GeoJSON)} \\
+        \hrulefill \\
+        + geoJsonData: Object \\
+        + borderMaterial: LineBasicMaterial \\
+        + hoveredCountry: String | null \\
+        \hrulefill \\
+        + renderBorders(): LineSegments \\
+        + highlightBorder(coCode): void
+    };
+
+    % Relationships (Arrows)
+    % Row 1 Relationships
+    \draw[directed] (server) -- node[above, scale=0.8] {runs} (scraper);
+    \draw[directed] (server) -- node[above, scale=0.8] {uses} (enrich);
+
+    % Row 1 to Row 2 Relationships
+    \draw[directed] (server.south west) -- node[left, pos=0.7, scale=0.8] {persists} (model.north east);
+    \draw[dependency] (server.south) -- node[right, scale=0.8] {streams (SSE)} (store.north);
+    \draw[dependency] (enrich.south west) -- node[below, sloped, pos=0.8, scale=0.8] {returns} (model.north east);
+
+    % Row 2 Relationships
+    \draw[directed] (store) -- node[above, scale=0.8] {aggregates} (ring);
+    \draw[directed] (store.east) -- node[above, scale=0.8] {tracks} (telemetry.west);
+    \draw[dependency] (model) -- node[above, scale=0.8] {populates} (store);
+
+    % Row 2 to Row 3 Relationships
+    \draw[dependency] (store.south west) -- node[left, pos=0.4, scale=0.8] {binds} (dash.north east);
+    \draw[dependency] (store.south) -- node[right, pos=0.4, scale=0.8] {binds} (hist.north);
+    \draw[dependency] (store.south east) -- node[right, pos=0.4, scale=0.8] {binds} (anal.north west);
+    \draw[dependency] (store.south east) -- node[right, pos=0.6, scale=0.8] {binds} (stix.north west);
+    \draw[dependency] (store.south east) -- node[right, pos=0.8, scale=0.8] {binds} (country.north west);
+
+    % Row 3 to Row 4 Relationships
+    \draw[dependency] (dash.south) -- node[left, scale=0.8] {overlays} (globe.north);
+    \draw[dependency] (country.south) -- node[right, scale=0.8] {overlays} (outlines.north);
+
+    % Row 4 internal Relationships (Globe Scene composition)
+    \draw[directed] (globe) -- node[above, scale=0.8] {contains} (earth);
+    \draw[directed] (globe.south east) -- node[below, sloped, scale=0.8] {contains} (arcs.north west);
+    \draw[directed] (globe.south east) -- node[below, sloped, scale=0.8] {contains} (markers.north west);
+    \draw[directed] (globe.south east) -- node[below, sloped, scale=0.8] {contains} (outlines.north west);
+\end{tikzpicture}
+\caption{UML Global Class diagram of the Predictra CTI system.}
+\label{fig:global_class_diagram}
+\end{figure}
+
+The structural design modeled in Figure~\ref{fig:global_class_diagram} highlights several key object-oriented associations, compositions, and structural dependencies across the four main tiers of our application:
+\begin{itemize}
+    \item \textbf{Backend Ingestion \& Persistence Tier:} The central \texttt{Express Server} instantiates and schedules multiple concurrent \texttt{ScraperService} instances (e.g. \texttt{Urlhaus}, \texttt{AlienVault}, \texttt{MispGalaxy}, \texttt{Ransomwatch}). As threat telemetry is gathered, it is processed via the \texttt{EnrichmentService} which resolves network organizations and classifies critical infrastructure sectors. The server then persists the resulting dataset using the Mongoose \texttt{ThreatEvent} data model, maintaining standard index rules.
+    \item \texttt{Zustand Store} and performance utilities: The client-side \texttt{useStreamStore} acts as a real-time reactive state manager. To handle incoming threat stream data without memory leaks or high garbage collection cycles, the store encapsulates a circular \texttt{RingBuffer} class structure and tracks performance through the custom instrumented \texttt{perfTelemetry} class.
+    \item \textbf{React Views Tier:} React pages and tab elements represent the core view controllers. The \texttt{DashboardPage}, \texttt{HistoryPage}, \texttt{AnalyticsPage}, \texttt{StixVisualizerPage}, and \texttt{CountryDashboard} subscribe to the Zustand store state slices and bind to specific endpoints (like \texttt{/api/history} and \texttt{/api/stats}) to drive layout changes and charts.
+    \item \textbf{3D Rendering Pipeline:} The \texttt{GlobeScene} component acts as the parent WebGL container. It coordinates and composes the nested three.js modules: the \texttt{Earth} sphere, the GPU instanced \texttt{AttackArcs}, the animated ripple \texttt{ImpactMarkers}, and the \texttt{CountryOutlines} boundary outlines.
+\end{itemize}
+
 ---
 
 \section{Conclusion}
