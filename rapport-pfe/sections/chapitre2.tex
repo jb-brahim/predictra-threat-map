@@ -421,14 +421,21 @@ To guarantee maximum horizontal scalability and system responsiveness under high
 \subsection{Deployment Architecture}
 The system deployment model is structured into three cloud layers:
 \begin{enumerate}
-    \item \textbf{Frontend Layer (Vercel CDN):} The single-page application is hosted on Vercel's global Content Delivery Network. The configuration file `vercel.json` intercepts client requests and handles API proxy rewrites directly:
-    \begin{verbatim}
-    {
-      "source": "/api/:path*",
-      "destination": "http://api:3001/api/:path*"
-    }
-    \end{verbatim}
-    This proxy logic avoids Cross-Origin Resource Sharing (CORS) complications and protects internal server names. It also ensures that all requests share the same origin block, simplifying browser cookie and credential policies.
+    \item \textbf{Frontend Layer (Vercel CDN):} The single-page application is hosted on Vercel's global Content Delivery Network. The configuration file `vercel.json` intercepts client requests and handles API proxy rewrites directly, as summarized in Table~\ref{tab:vercel_proxy} (with the full production configuration file detailed in Appendix D.1).
+
+    \begin{table}[h!]
+    \centering
+    \small
+    \begin{tabular}{ll}
+    \toprule
+    \textbf{Source Match Rule} & \textbf{Target VM Service Endpoint} \\
+    \midrule
+    \texttt{/api/:path*} & \texttt{http://api:3001/api/:path*} \\
+    \bottomrule
+    \end{tabular}
+    \caption{Frontend Reverse-Proxy Routing Configuration.}
+    \label{tab:vercel_proxy}
+    \end{table}
     \item \textbf{Backend Layer (Virtual Cloud VM):} The Node.js Express server runs as a continuous service managed by PM2 on a secure virtual instance. PM2 clusters the Node process across multiple virtual CPU cores, routing client requests and handling automated crash recoveries.
     \item \textbf{Database Layer (MongoDB Atlas Cluster):} persistence is offloaded to a replicated MongoDB Atlas cloud cluster, handling scalable BSON document writes.
 \end{enumerate}

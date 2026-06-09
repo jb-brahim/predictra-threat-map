@@ -115,151 +115,31 @@ Standard STIX 2.1 bundles represent complex threat profiles using objects and re
     \item \textbf{Relationship SRO:} Standard STIX Relationship Objects linking two SDOs via defined verbs (e.g., \texttt{threat-actor} ``uses'' \texttt{malware}, \texttt{indicator} ``indicates'' \texttt{campaign}, \texttt{malware} ``targets'' \texttt{sector}).
 \end{itemize}
 
-To illustrate the input of our ingestion engine and demonstrate a complete, realistic intelligence structure, a highly complex STIX 2.1 JSON bundle representing a nation-state cyber espionage campaign targeting regional infrastructure is detailed below:
-\begin{verbatim}
-{
-  "type": "bundle",
-  "id": "bundle--9d48721c-a3f1-4df2-8e10",
-  "spec_version": "2.1",
-  "objects": [
-    {
-      "type": "threat-actor",
-      "id": "threat-actor--8e0f66e0",
-      "created": "2026-05-21T12:00:00.000Z",
-      "modified": "2026-05-21T12:00:00.000Z",
-      "name": "Apex Spyder",
-      "description": "Nation-state cyber espionage active since 2018.",
-      "threat_actor_types": ["spy", "nation-state"],
-      "aliases": ["APT99", "RedHorizon"],
-      "roles": ["infrastructure-operator", "malware-author"],
-      "goals": ["espionage", "intellectual-property-theft"],
-      "sophistication": "innovator",
-      "resource_level": "government"
-    },
-    {
-      "type": "campaign",
-      "id": "campaign--4f32890b",
-      "created": "2026-05-21T12:00:00.000Z",
-      "modified": "2026-05-21T12:00:00.000Z",
-      "name": "Operation Silent Breach",
-      "description": "Targeted infiltration of telco networks.",
-      "first_seen": "2026-01-15T08:00:00Z",
-      "objective": "Establish persistence and tap fiber links."
-    },
-    {
-      "type": "malware",
-      "id": "malware--3b5f928e",
-      "created": "2026-05-21T12:00:00.000Z",
-      "modified": "2026-05-21T12:00:00.000Z",
-      "name": "SpectreShell",
-      "description": "Modular remote access trojan via encrypted DNS.",
-      "is_family": true,
-      "malware_types": ["remote-access-trojan", "exfiltration"],
-      "architecture_execution_envs": ["x86", "x64"],
-      "capabilities": ["anti-sandbox", "dns-exfil", "registry-persist"]
-    },
-    {
-      "type": "tool",
-      "id": "tool--e912b48a",
-      "created": "2026-05-21T12:00:00.000Z",
-      "modified": "2026-05-21T12:00:00.000Z",
-      "name": "SharpDump",
-      "description": "A C# tool to dump LSASS memory partitions.",
-      "tool_types": ["credential-exploitation"],
-      "aliases": ["LsassDumper"]
-    },
-    {
-      "type": "attack-pattern",
-      "id": "attack-pattern--7d29bc3b",
-      "created": "2026-05-21T12:00:00.000Z",
-      "modified": "2026-05-21T12:00:00.000Z",
-      "name": "LSASS Memory Dumping",
-      "description": "LSASS memory dumping for domain credentials.",
-      "kill_chain_phases": [
-        {
-          "kill_chain_name": "mitre-attack",
-          "phase_name": "credential-access"
-        }
-      ]
-    },
-    {
-      "type": "identity",
-      "id": "identity--8a39dfa2",
-      "created": "2026-05-21T12:00:00.000Z",
-      "modified": "2026-05-21T12:00:00.000Z",
-      "name": "TelcoGlobal Inc.",
-      "description": "International telco provider in EMEA.",
-      "identity_class": "organization",
-      "sectors": ["telecommunications", "technology"]
-    },
-    {
-      "type": "indicator",
-      "id": "indicator--bc3f829e",
-      "created": "2026-05-21T12:00:00.000Z",
-      "modified": "2026-05-21T12:00:00.000Z",
-      "name": "SpectreShell C2 Server Beacon",
-      "description": "Detects SpectreShell outbound DNS beaconing.",
-      "pattern": "[domain-name:value = 'c2.corp-updates.net']",
-      "pattern_type": "stix",
-      "valid_from": "2026-01-15T00:00:00Z"
-    },
-    {
-      "type": "relationship",
-      "id": "relationship--c112a9e8",
-      "created": "2026-05-21T12:00:00.000Z",
-      "modified": "2026-05-21T12:00:00.000Z",
-      "relationship_type": "attributed-to",
-      "source_ref": "campaign--4f32890b",
-      "target_ref": "threat-actor--8e0f66e0"
-    },
-    {
-      "type": "relationship",
-      "id": "relationship--a918bde2",
-      "created": "2026-05-21T12:00:00.000Z",
-      "modified": "2026-05-21T12:00:00.000Z",
-      "relationship_type": "uses",
-      "source_ref": "threat-actor--8e0f66e0",
-      "target_ref": "malware--3b5f928e"
-    },
-    {
-      "type": "relationship",
-      "id": "relationship--e018a1bc",
-      "created": "2026-05-21T12:00:00.000Z",
-      "modified": "2026-05-21T12:00:00.000Z",
-      "relationship_type": "uses",
-      "source_ref": "malware--3b5f928e",
-      "target_ref": "tool--e912b48a"
-    },
-    {
-      "type": "relationship",
-      "id": "relationship--103cdef1",
-      "created": "2026-05-21T12:00:00.000Z",
-      "modified": "2026-05-21T12:00:00.000Z",
-      "relationship_type": "targets",
-      "source_ref": "malware--3b5f928e",
-      "target_ref": "identity--8a39dfa2"
-    },
-    {
-      "type": "relationship",
-      "id": "relationship--d028e1bc",
-      "created": "2026-05-21T12:00:00.000Z",
-      "modified": "2026-05-21T12:00:00.000Z",
-      "relationship_type": "targets",
-      "source_ref": "campaign--4f32890b",
-      "target_ref": "identity--8a39dfa2"
-    },
-    {
-      "type": "relationship",
-      "id": "relationship--a03bf19a",
-      "created": "2026-05-21T12:00:00.000Z",
-      "modified": "2026-05-21T12:00:00.000Z",
-      "relationship_type": "indicates",
-      "source_ref": "indicator--bc3f829e",
-      "target_ref": "malware--3b5f928e"
-    }
-  ]
-}
-\end{verbatim}
+    To illustrate the input of our ingestion engine and demonstrate a complete, realistic intelligence structure, Table~\ref{tab:stix_bundle_objects} summarizes the STIX Domain Objects (SDOs) and Relationship Objects (SROs) parsed by our engine, with the full raw JSON bundle detailed in Appendix J.
+
+    \begin{table}[h!]
+    \centering
+    \small
+    \begin{tabular}{lll}
+    \toprule
+    \textbf{STIX Object Type} & \textbf{Name / Identifier} & \textbf{Key Characteristics / Attributes} \\
+    \midrule
+    \texttt{threat-actor} & Apex Spyder & Nation-state actor, Espionage goals, Innovator sophistication \\
+    \texttt{campaign} & Operation Silent Breach & Target: telecommunication networks tap \\
+    \texttt{malware} & SpectreShell & Remote access trojan, DNS exfiltration, registry persistence \\
+    \texttt{tool} & SharpDump & C\# credential exploitation (LSASS memory dumper) \\
+    \texttt{attack-pattern} & LSASS Memory Dumping & Maps to MITRE ATT\&CK phase: \texttt{credential-access} \\
+    \texttt{identity} & TelcoGlobal Inc. & Target identity: telecommunications and technology sectors \\
+    \texttt{indicator} & SpectreShell C2 Beacon & Pattern: \texttt{[domain-name:value = 'c2.corp-updates.net']} \\
+    \texttt{relationship} & attributed-to & Connects campaign to threat-actor \\
+    \texttt{relationship} & uses & Connects threat-actor to malware, and malware to tool \\
+    \texttt{relationship} & targets & Connects malware and campaign to victim identity \\
+    \texttt{relationship} & indicates & Connects indicator to malware \\
+    \bottomrule
+    \end{tabular}
+    \caption{STIX 2.1 Sample Intelligence Bundle Components.}
+    \label{tab:stix_bundle_objects}
+    \end{table}
 
 
 \subsubsection{UML Class Diagram}
@@ -379,73 +259,53 @@ The physical coordinate displacements applied to the node velocities are scaled 
 \subsection{Sprint Realization: STIX Parsers and Interactive Graph}
 
 \subsubsection{STIX 2.1 Parser Code Walkthrough}
-The parser located in `ui/StixDashboard.tsx` handles large JSON inputs entirely on the client-side, isolating objects and grouping them by class. A code walk showing how we process indicators, extract victim sectors, and handle MITRE ATT\&CK kill chains is detailed below:
-\begin{itemize}
-    \item \textbf{Object Separation Logic:}
-    The parser maps through the STIX objects array, sorting each element by its \texttt{type} tag into dedicated buckets:
-    \begin{verbatim}
-    const objects = stixData.objects || [];
-    const actors = objects.filter(o => o.type === 'threat-actor');
-    const malwares = objects.filter(o => o.type === 'malware');
-    const tools = objects.filter(o => o.type === 'tool');
-    const indicators = objects.filter(o => o.type === 'indicator');
-    const relationships =
-      objects.filter(o => o.type === 'relationship');
-    \end{verbatim}
-    \item \textbf{MITRE ATT\&CK Kill Chain Compiler:}
-    Adversary techniques are cataloged using their defined \texttt{kill\_chain\_phases} list. The parser iterates through these phases, verifying the standard \texttt{kill\_chain\_name: "mitre-attack"} tag and mapping the technique to the corresponding phase index:
-    \begin{verbatim}
-    const phasesMap = new Map();
-    attackPatterns.forEach(ap => {
-      (ap.kill_chain_phases || []).forEach(phase => {
-        if (phase.kill_chain_name === 'mitre-attack') {
-          const phaseName = phase.phase_name.replace(/-/g, ' ');
-          if (!phasesMap.has(phaseName)) {
-            phasesMap.set(phaseName, []);
-          }
-          phasesMap.get(phaseName).push(ap);
-        }
-      });
-    });
-    \end{verbatim}
-    \item \textbf{Indicator Classifier Helper:}
-    To build search filters, indicators are classified by performing regex evaluations on their \texttt{pattern} fields (e.g. matching IPv4 octet structures, SHA-256 hashes, domains, and malicious URLs):
-    \begin{verbatim}
-    export function classifyIndicator(pattern: string): string {
-      if (/ipv4-addr:value/.test(pattern)) return 'IPv4 Address';
-      if (/file:hashes\.'SHA-256'/.test(pattern))
-        return 'SHA-256 Hash';
-      if (/domain-name:value/.test(pattern)) return 'Domain Name';
-      if (/url:value/.test(pattern)) return 'URL Endpoint';
-      return 'File/Mutex Pattern';
-    }
-    \end{verbatim}
-\end{itemize}
+The parser located in `ui/StixDashboard.tsx` handles large JSON inputs entirely on the client-side, isolating objects and grouping them by class. Table~\ref{tab:stix_parser_rules} details the client-side parsing rules, sorting STIX objects by type and mapping Indicators to classes using regular expressions (with the complete parser utilities detailed in Appendix M).
+
+    \begin{table}[h!]
+    \centering
+    \small
+    \begin{tabular}{lll}
+    \toprule
+    \textbf{Target Object / Class} & \textbf{STIX Type / Pattern Match} & \textbf{Parser Mapping \& Actions} \\
+    \midrule
+    Threat Actor & \texttt{threat-actor} & Populates the actor analysis cards \\
+    Malware / Tool & \texttt{malware} / \texttt{tool} & Populates the active adversary tools inventory \\
+    Attack Pattern & \texttt{attack-pattern} & Compiled to MITRE ATT\&CK phase matrix \\
+    IPv4 Indicator & \texttt{/ipv4-addr:value/} & Classified as 'IPv4 Address' IOC \\
+    SHA-256 Hash & \texttt{/file:hashes\textbackslash.'SHA-256'/} & Classified as 'SHA-256 Hash' IOC \\
+    Domain Name & \texttt{/domain-name:value/} & Classified as 'Domain Name' IOC \\
+    URL Endpoint & \texttt{/url:value/} & Classified as 'URL Endpoint' IOC \\
+    \bottomrule
+    \end{tabular}
+    \caption{STIX 2.1 Parser Object Classification Rules.}
+    \label{tab:stix_parser_rules}
+    \end{table}
+
+    The parser loops through each attack pattern's \texttt{kill\_chain\_phases} array, filters for \texttt{kill\_chain\_name: "mitre-attack"}, replaces dashes with spaces for clean labels, and inserts the pattern object into a map grouped by phase name (detailed in Appendix M.1).
 
 \subsubsection{D3 Force Graph Canvas Realization}
 Our visualizer `ui/StixVisualizerPage.tsx` takes the parsed STIX nodes and relationships and draws them on an interactive HTML5 2D canvas:
 \begin{itemize}
-    \item \textbf{Custom Particle Flow Rendering:}
-    Rather than drawing simple static lines, we implement live particle animations flowing along relationship links. The system calculates vector coordinates along each link, rendering moving neon circles from the threat actor toward the target, indicating intelligence-directed data flows:
-    \begin{verbatim}
-    ctx.beginPath();
-    ctx.strokeStyle = 'rgba(59, 130, 246, 0.15)';
-    ctx.moveTo(link.source.x, link.source.y);
-    ctx.lineTo(link.target.x, link.target.y);
-    ctx.stroke();
-
-    // Particle flow animation
-    const time = Date.now() * 0.003;
-    const progress = (time + (link.index * 0.1)) % 1.0;
-    const dx = link.target.x - link.source.x;
-    const dy = link.target.y - link.source.y;
-    const px = link.source.x + dx * progress;
-    const py = link.source.y + dy * progress;
-    ctx.beginPath();
-    ctx.arc(px, py, 2.5, 0, 2 * Math.PI);
-    ctx.fillStyle = '#3B82F6';
-    ctx.fill();
-    \end{verbatim}
+    \item \textbf{Custom Particle Flow Rendering:} The canvas simulation animates flow lines to represent data links. Table~\ref{tab:force_graph_params} summarizes the parameters and variables used in the animation rendering loop, with the complete source code detailed in Appendix N.
+    
+    \begin{table}[h!]
+    \centering
+    \small
+    \begin{tabular}{lll}
+    \toprule
+    \textbf{Rendering Parameter} & \textbf{Target Configuration} & \textbf{Role in Animation / Physics} \\
+    \midrule
+    Stroke Style & \texttt{rgba(59, 130, 246, 0.15)} & Draws faint static connection lines between nodes \\
+    Time Delta & \texttt{Date.now() * 0.003} & Time scalar coefficient driving uniform flow velocity \\
+    Link Progress & \texttt{(time + index * 0.1) \% 1.0} & Normalizes particle position relative to line segment length \\
+    Coordinates & \texttt{px, py = source + delta * progress} & Linearly interpolates particle location on Canvas \\
+    Particle Size & \texttt{Radius = 2.5} & Diameter size of the glowing particle node \\
+    Fill Style & \texttt{\#3B82F6} & Neon blue particle fill color matching CTI styling \\
+    \bottomrule
+    \end{tabular}
+    \caption{D3 Force Graph Link Rendering Parameters.}
+    \label{tab:force_graph_params}
+    \end{table}
     \item \textbf{Color-Coded Threat Nodes:}
     Nodes are rendered with distinct neon-tinted outlines and center labels to establish visual structure (e.g. threat actors are colored crimson, malwares are amber, indicators are cobalt blue, and victim organizations are emerald green).
 \end{itemize}
@@ -630,61 +490,27 @@ The Zustand store tracks the moving average of this frame rate. If this average 
 \subsection{Sprint Realization: Performance Guardrails and Buffers}
 
 \subsubsection{Circular Memory Buffer Implementation}
-The circular buffer is coded inside `utils/perf.ts`. The complete class structure, showing its memory pre-allocation, circular writing logic, and constant-time extraction is detailed below:
-\begin{verbatim}
-export class RingBuffer<T> {
-  private capacity: number;
-  private buffer: T[];
-  private pointer: number = 0;
-  private size: number = 0;
-
-  constructor(capacity: number) {
-    this.capacity = capacity;
-    this.buffer = new Array<T>(capacity);
-  }
-
-  public push(item: T): void {
-    this.buffer[this.pointer] = item;
-    this.pointer = (this.pointer + 1) % this.capacity;
-    if (this.size < this.capacity) {
-      this.size++;
-    }
-  }
-
-  public getAll(): T[] {
-    const result: T[] = [];
-    const start = this.size === this.capacity ? this.pointer : 0;
-    for (let i = 0; i < this.size; i++) {
-      const idx = (start + i) % this.capacity;
-      result.push(this.buffer[idx]);
-    }
-    return result;
-  }
-
-  public getLength(): number {
-    return this.size;
-  }
-}
-\end{verbatim}
+The circular buffer is coded inside `utils/perf.ts`. The complete class structure, showing its memory pre-allocation, circular writing logic, and constant-time extraction is summarized in Table~\ref{tab:ring_buffer_api}, with the complete source code detailed in Appendix K:
+    
+    \begin{table}[h!]
+    \centering
+    \small
+    \begin{tabular}{lll}
+    \toprule
+    \textbf{Method / Property} & \textbf{Time Complexity} & \textbf{Functional Role / Behavior} \\
+    \midrule
+    \texttt{constructor(capacity)} & $O(N)$ heap allocation & Pre-allocates fixed size array to block dynamic GC triggers \\
+    \texttt{push(item)} & $O(1)$ constant time & Overwrites index \texttt{pointer \% capacity} and increments pointer \\
+    \texttt{getAll()} & $O(N)$ linear time & Sequentially reads elements starting from oldest index to pointer \\
+    \texttt{getLength()} & $O(1)$ constant time & Returns the active number of records stored (capped at capacity) \\
+    \bottomrule
+    \end{tabular}
+    \caption{Circular RingBuffer API Specifications.}
+    \label{tab:ring_buffer_api}
+    \end{table}
 
 \subsubsection{Adaptive Event Sampling Integration}
-Inside `stream/useStreamStore.ts`, the Zustand store utilizes the adaptive sampling rules. Incoming threat SSE payloads are evaluated against the current FPS telemetry value before being converted into 3D vectors or arc lines:
-\begin{verbatim}
-const currentFps = get().fps;
-let dropRate = 0;
-
-if (currentFps < 30) {
-  dropRate = 0.75; // Stress Mode
-} else if (currentFps < 45) {
-  dropRate = 0.50; // Medium Mode
-}
-
-// Evaluate random drop coefficient
-const shouldProcess = Math.random() >= dropRate;
-if (!shouldProcess) {
-  return; // Silently drop event animations
-}
-\end{verbatim}
+Inside `stream/useStreamStore.ts`, the Zustand store utilizes the adaptive sampling rules. The Zustand store evaluates the current frames-per-second (`fps`) against critical performance boundaries. If the frame rate falls under 30 FPS, a drop rate of 75\% is set. If it falls under 45 FPS, a drop rate of 50\% is set. For each new streaming event, a random threshold comparison determines if Three.js WebGL arc objects should be spawned or discarded (with the complete store logic detailed in Appendix E).
 By dropping only the visual vector creation and three.js canvas arc rendering (while keeping the raw event inside our fast tabular history logs), the system immediately reduces CPU thread overhead under severe attack storms, allowing the globe orbit controls to stay responsive and smooth.
 
 \subsubsection{Browser-Side FPS Telemetry Collection Loop}
@@ -692,45 +518,25 @@ To feed the Adaptive Sampling Controller with real-time frame rates, the present
 
 To prevent instantaneous micro-stutters from triggering false-positive sampling adjustments, the engine applies an Exponential Moving Average (EMA) filter with a smoothing factor set to 0.1 to the calculated frame rate. The filtered frame rate is calculated recursively as the sum of two weighted terms: first, the product of the smoothing factor and the instantaneous frame rate (derived by dividing 1,000 milliseconds by the current frame's duration); and second, the product of the remaining weight (one minus the smoothing factor) and the previously filtered frame rate average.
 
-By utilizing a recursive low-pass filter, the telemetry stream remains exceptionally stable, filtering out single-frame garbage collection pauses while responding smoothly to sustained rendering degradation caused by attack storm payloads. The client-side implementation of this high-precision frame rate telemetry collector hook is detailed below:
-\begin{verbatim}
-import { useEffect, useRef } from 'react';
-import { useStreamStore } from '../stream/useStreamStore';
+By utilizing a recursive low-pass filter, the telemetry stream remains exceptionally stable, filtering out single-frame garbage collection pauses while responding smoothly to sustained rendering degradation caused by attack storm payloads. The client-side implementation of this high-precision frame rate telemetry collector hook is summarized in Table~\ref{tab:fps_telemetry_vars}, with the complete source code detailed in Appendix L:
 
-export function useFpsTelemetry() {
-  const setFps = useStreamStore((s) => s.setFps);
-  const frameCountRef = useRef(0);
-  const lastTimeRef = useRef(performance.now());
-  const requestRef = useRef<number | null>(null);
-
-  useEffect(() => {
-    const loop = () => {
-      frameCountRef.current++;
-      const now = performance.now();
-      const delta = now - lastTimeRef.current;
-
-      // Update telemetry average every 1 second
-      if (delta >= 1000) {
-        const calculatedFps = (frameCountRef.current * 1000) / delta;
-        setFps(Math.round(calculatedFps));
-        
-        // Reset counters
-        frameCountRef.current = 0;
-        lastTimeRef.current = now;
-      }
-      
-      requestRef.current = requestAnimationFrame(loop);
-    };
-
-    requestRef.current = requestAnimationFrame(loop);
-    return () => {
-      if (requestRef.current) {
-        cancelAnimationFrame(requestRef.current);
-      }
-    };
-  }, [setFps]);
-}
-\end{verbatim}
+    \begin{table}[h!]
+    \centering
+    \small
+    \begin{tabular}{lll}
+    \toprule
+    \textbf{Variable / Hook} & \textbf{Type / Source} & \textbf{Operational Role in FPS Loop} \\
+    \midrule
+    \texttt{setFps} & Zustand Action Dispatcher & Dispatches calculated frame rates to the global state store \\
+    \texttt{frameCountRef} & React \texttt{useRef<number>} & Tracks the count of frame draws within the current second interval \\
+    \texttt{lastTimeRef} & React \texttt{useRef<number>} & High-precision timestamp of the last second boundary \\
+    \texttt{requestRef} & React \texttt{useRef<number>} & Reference handle of the active \texttt{requestAnimationFrame} loop \\
+    \texttt{requestAnimationFrame} & Browser API & Coordinates paint ticks to sync calculations with refresh rate \\
+    \bottomrule
+    \end{tabular}
+    \caption{FPS Telemetry Collector State Variables.}
+    \label{tab:fps_telemetry_vars}
+    \end{table}
 By decoupling the telemetry collector hook from the main 3D rendering component and updating the Zustand state only once per second, the telemetry loop inflicts zero rendering overhead on the main JavaScript execution stack.
 
 ---
