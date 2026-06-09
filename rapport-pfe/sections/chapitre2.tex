@@ -139,102 +139,136 @@ We identified two main actors interacting with our system:
 \subsection{Global Use Case Diagram}
 The global interactions are illustrated in the UML Use Case diagram in Figure~\ref{fig:global_usecase}, rendered natively in vector format using LaTeX TikZ.
 
-\begin{figure}[h!]
+\\begin{figure}[h!]
 \centering
-\begin{tikzpicture}[node distance=2.2cm, scale=0.75, every node/.style={transform shape}]
-    % Boundary Box
-    \draw[draw=charcoal, fill=charcoal!2, thick, rounded corners] (-0.5,-7.5) rectangle (13.8,6.8);
-    \node at (6.65,6.4) {\textbf{Predictra Threat Map System Boundary}};
+\begin{plantuml}
+@startuml
+skinparam actorStyle awesome
+skinparam linetype ortho
+left to right direction
 
-    % Actors
-    \node[draw=charcoal, top color=white, bottom color=gray!15, drop shadow, thick, rounded corners, minimum width=2.2cm, minimum height=1cm, align=center] (api) at (-3.5, 4.5) {\textbf{External Threat}\\\textbf{APIs \& Feeds}};
-    \coordinate (analyst) at (-3.5, -1.5);
-    \pic at (analyst) {actor};
-    \node[align=center, below=0.7cm of analyst, font=\small\bfseries] {Security\\Analyst};
+' Color Palette Definitions (no # for line border hex codes)
+!define BASE_COLOR #F2F9FF
+!define BASE_BORDER 2980B9
+!define INC_COLOR #FFF2F2
+!define INC_BORDER C0392B
+!define EXT_COLOR #FFFDF2
+!define EXT_BORDER D35400
 
-    % Styles for Use Cases
-    \tikzstyle{baseuc} = [draw=charcoal, ellipse, top color=white, bottom color=cyberblue!15, drop shadow, minimum width=3.2cm, minimum height=0.75cm, align=center, font=\small]
-    \tikzstyle{incuc} = [draw=charcoal, ellipse, top color=white, bottom color=cyberred!15, drop shadow, minimum width=3.2cm, minimum height=0.75cm, align=center, font=\small]
-    \tikzstyle{extuc} = [draw=charcoal, ellipse, top color=white, bottom color=cyberamber!15, drop shadow, minimum width=3.2cm, minimum height=0.75cm, align=center, font=\small]
+' Style Customizations
+skinparam BackgroundColor #FFFFFF
+skinparam TitleFontColor #1E293B
+skinparam ActorBorderColor #1E293B
+skinparam ActorBackgroundColor #FFFFFF
+skinparam ActorFontSize 12
+skinparam ActorFontStyle bold
 
-    % Column 1: Primary Tab Use Cases (X = 2.2)
-    \node[baseuc] (ucMap) at (2.2, 4.5) {View Live Map};
-    \node[baseuc] (ucDash) at (2.2, 2.5) {View Dashboard};
-    \node[baseuc] (ucHist) at (2.2, 0.5) {Browse Threat History};
-    \node[baseuc] (ucAnal) at (2.2, -2.0) {Analyze CTI\\(Threat Analytics)};
-    \node[baseuc] (ucStix) at (2.2, -4.5) {Manage STIX Intel};
+skinparam RectangleBorderColor #475569
+skinparam RectangleBackgroundColor #F8FAFC
+skinparam RectangleFontSize 12
+skinparam RectangleFontStyle bold
 
-    % Column 2: Included Use Cases (X = 6.8)
-    \node[incuc] (ucEnrich) at (6.8, 6.0) {Enrich \& Geocode Log};
-    \node[incuc] (ucStream) at (6.8, 4.8) {Stream Live Threat Events};
-    \node[incuc] (ucGlobe) at (6.8, 3.6) {Render 3D Globe};
-    \node[incuc] (ucFlat) at (6.8, 2.4) {Render 2D Flat Map};
-    \node[incuc] (ucQueryH) at (6.8, 0.8) {Query Historical Logs};
-    \node[incuc] (ucQueryG) at (6.8, -2.0) {Query MISP Galaxy Intel};
-    \node[incuc] (ucParseS) at (6.8, -4.5) {Parse STIX 2.1 Data};
+skinparam ArrowColor #475569
+skinparam ArrowFontSize 9
+skinparam ArrowFontColor #475569
 
-    % Column 3: Extending Use Cases (X = 11.5)
-    % Live Map Extensions
-    \node[extuc] (ucProj) at (11.5, 5.4) {Toggle 2D/3D Projection};
-    \node[extuc] (ucQual) at (11.5, 4.4) {Configure Map Quality};
-    \node[extuc] (ucMeta) at (11.5, 3.4) {Inspect Incident Metadata};
-    % Dashboard Extensions
-    \node[extuc] (ucFiltD) at (11.5, 2.3) {Filter Dashboard Stream};
-    \node[extuc] (ucDrillC) at (11.5, 1.3) {Drill-down Country Stats};
-    % Shared / History / Export
-    \node[extuc] (ucExport) at (11.5, 0.2) {Export Threat Logs\\(Excel, JSON, CSV)};
-    \node[extuc] (ucTargetIP) at (11.5, -0.8) {Target My IP};
-    % Analytics Extensions
-    \node[extuc] (ucActors) at (11.5, -1.8) {Browse Threat Actors};
-    \node[extuc] (ucMalware) at (11.5, -2.8) {Browse Malware Registry};
-    \node[extuc] (ucRiskC) at (11.5, -3.8) {Browse Country Risk};
-    % STIX Extensions
-    \node[extuc] (ucUploadS) at (11.5, -4.8) {Upload STIX 2.1 Bundle};
-    \node[extuc] (ucMitre) at (11.5, -5.8) {Map MITRE ATT\&CK};
-    \node[extuc] (ucGraph) at (11.5, -6.8) {Explore Threat Graph};
+title Predictra Threat Map - Functional Use Cases by Module
 
-    % Actor Connections (Solid lines)
-    \draw[thick, -] (api) -- (ucStream);
-    
-    \draw[thick, -] (analyst) -- (ucMap);
-    \draw[thick, -] (analyst) -- (ucDash);
-    \draw[thick, -] (analyst) -- (ucHist);
-    \draw[thick, -] (analyst) -- (ucAnal);
-    \draw[thick, -] (analyst) -- (ucStix);
+' Actors
+actor "External Threat\nAPIs & Feeds" as api
+actor "Security Analyst" as analyst
 
-    % Relationships (Dashed lines with arrowheads)
-    \tikzstyle{rel} = [dashed, -latex, thick, font=\scriptsize, color=charcoal]
+rectangle "Predictra Threat Map System Boundary" {
 
-    % Include relations (Base -> Included)
-    \draw[rel] (ucStream) -- node[above, sloped] {\textless\textless include\textgreater\textgreater} (ucEnrich);
-    \draw[rel] (ucMap) -- node[above, sloped] {\textless\textless include\textgreater\textgreater} (ucStream);
-    \draw[rel] (ucMap) -- node[below, sloped] {\textless\textless include\textgreater\textgreater} (ucGlobe);
-    \draw[rel] (ucDash) -- node[above, sloped] {\textless\textless include\textgreater\textgreater} (ucStream);
-    \draw[rel] (ucDash) -- node[below, sloped] {\textless\textless include\textgreater\textgreater} (ucFlat);
-    \draw[rel] (ucHist) -- node[above, sloped] {\textless\textless include\textgreater\textgreater} (ucQueryH);
-    \draw[rel] (ucAnal) -- node[above, sloped] {\textless\textless include\textgreater\textgreater} (ucQueryG);
-    \draw[rel] (ucStix) -- node[above, sloped] {\textless\textless include\textgreater\textgreater} (ucParseS);
+    rectangle "Module 1: Real-Time Threat Visualization" {
+        usecase "View Live Map" as ucMap BASE_COLOR;line:BASE_BORDER;line.bold
+        usecase "Stream Live Threat Events" as ucStream INC_COLOR;line:INC_BORDER
+        usecase "Render 3D Globe" as ucGlobe INC_COLOR;line:INC_BORDER
+        usecase "Enrich & Geocode Log" as ucEnrich INC_COLOR;line:INC_BORDER
+        
+        usecase "Toggle 2D/3D Projection" as ucProj EXT_COLOR;line:EXT_BORDER
+        usecase "Configure Map Quality" as ucQual EXT_COLOR;line:EXT_BORDER
+        usecase "Inspect Incident Metadata" as ucMeta EXT_COLOR;line:EXT_BORDER
 
-    % Extend relations (Extension -> Base)
-    \draw[rel] (ucProj) -- node[above, sloped] {\textless\textless extend\textgreater\textgreater} (ucMap);
-    \draw[rel] (ucQual) -- node[above, sloped] {\textless\textless extend\textgreater\textgreater} (ucMap);
-    \draw[rel] (ucMeta) -- node[below, sloped] {\textless\textless extend\textgreater\textgreater} (ucMap);
-    
-    \draw[rel] (ucFiltD) -- node[above, sloped] {\textless\textless extend\textgreater\textgreater} (ucDash);
-    \draw[rel] (ucDrillC) -- node[below, sloped] {\textless\textless extend\textgreater\textgreater} (ucDash);
-    
-    \draw[rel] (ucExport) -- node[above, sloped] {\textless\textless extend\textgreater\textgreater} (ucDash);
-    \draw[rel] (ucExport) -- node[below, sloped] {\textless\textless extend\textgreater\textgreater} (ucHist);
-    \draw[rel] (ucTargetIP) -- node[below, sloped] {\textless\textless extend\textgreater\textgreater} (ucHist);
-    
-    \draw[rel] (ucActors) -- node[above, sloped] {\textless\textless extend\textgreater\textgreater} (ucAnal);
-    \draw[rel] (ucMalware) -- node[above, sloped] {\textless\textless extend\textgreater\textgreater} (ucAnal);
-    \draw[rel] (ucRiskC) -- node[below, sloped] {\textless\textless extend\textgreater\textgreater} (ucAnal);
-    
-    \draw[rel] (ucUploadS) -- node[above, sloped] {\textless\textless extend\textgreater\textgreater} (ucStix);
-    \draw[rel] (ucMitre) -- node[above, sloped] {\textless\textless extend\textgreater\textgreater} (ucStix);
-    \draw[rel] (ucGraph) -- node[below, sloped] {\textless\textless extend\textgreater\textgreater} (ucStix);
-\end{tikzpicture}
+        ' Connections inside Module 1
+        ucMap ..> ucStream : <<include>>
+        ucMap ..> ucGlobe : <<include>>
+        ucStream ..> ucEnrich : <<include>>
+        
+        ucMap <.. ucProj : <<extend>>
+        ucMap <.. ucQual : <<extend>>
+        ucMap <.. ucMeta : <<extend>>
+    }
+
+    rectangle "Module 2: Analytical Dashboard & History" {
+        usecase "View Dashboard" as ucDash BASE_COLOR;line:BASE_BORDER;line.bold
+        usecase "Browse Threat History" as ucHist BASE_COLOR;line:BASE_BORDER;line.bold
+        
+        usecase "Render 2D Flat Map" as ucFlat INC_COLOR;line:INC_BORDER
+        usecase "Query Historical Logs" as ucQueryH INC_COLOR;line:INC_BORDER
+        
+        usecase "Filter Dashboard Stream" as ucFiltD EXT_COLOR;line:EXT_BORDER
+        usecase "Drill-down Country Stats" as ucDrillC EXT_COLOR;line:EXT_BORDER
+        usecase "Export Threat Logs\n(Excel, JSON, CSV)" as ucExport EXT_COLOR;line:EXT_BORDER
+        usecase "Target My IP" as ucTargetIP EXT_COLOR;line:EXT_BORDER
+
+        ' Connections inside Module 2
+        ucDash ..> ucFlat : <<include>>
+        ucHist ..> ucQueryH : <<include>>
+        
+        ucDash <.. ucFiltD : <<extend>>
+        ucDash <.. ucDrillC : <<extend>>
+        ucDash <.. ucExport : <<extend>>
+        ucHist <.. ucExport : <<extend>>
+        ucHist <.. ucTargetIP : <<extend>>
+    }
+
+    rectangle "Module 3: Cyber Threat Intelligence (CTI)" {
+        usecase "Analyze CTI\n(Threat Analytics)" as ucAnal BASE_COLOR;line:BASE_BORDER;line.bold
+        usecase "Query MISP Galaxy Intel" as ucQueryG INC_COLOR;line:INC_BORDER
+        
+        usecase "Browse Threat Actors" as ucActors EXT_COLOR;line:EXT_BORDER
+        usecase "Browse Malware Registry" as ucMalware EXT_COLOR;line:EXT_BORDER
+        usecase "Browse Country Risk" as ucRiskC EXT_COLOR;line:EXT_BORDER
+
+        ' Connections inside Module 3
+        ucAnal ..> ucQueryG : <<include>>
+        
+        ucAnal <.. ucActors : <<extend>>
+        ucAnal <.. ucMalware : <<extend>>
+        ucAnal <.. ucRiskC : <<extend>>
+    }
+
+    rectangle "Module 4: STIX Analysis Workspace" {
+        usecase "Manage STIX Intel" as ucStix BASE_COLOR;line:BASE_BORDER;line.bold
+        usecase "Parse STIX 2.1 Data" as ucParseS INC_COLOR;line:INC_BORDER
+        
+        usecase "Upload STIX 2.1 Bundle" as ucUploadS EXT_COLOR;line:EXT_BORDER
+        usecase "Map MITRE ATT&CK" as ucMitre EXT_COLOR;line:EXT_BORDER
+        usecase "Explore Threat Graph" as ucGraph EXT_COLOR;line:EXT_BORDER
+
+        ' Connections inside Module 4
+        ucStix ..> ucParseS : <<include>>
+        
+        ucStix <.. ucUploadS : <<extend>>
+        ucStix <.. ucMitre : <<extend>>
+        ucStix <.. ucGraph : <<extend>>
+    }
+}
+
+' External Connections (Solid Lines)
+analyst --> ucMap
+analyst --> ucDash
+analyst --> ucHist
+analyst --> ucAnal
+analyst --> ucStix
+
+' Shared Threat Feed Connections
+api --> ucStream
+ucDash ..> ucStream : <<include>>
+
+@endum
+\end{plantuml}
 \caption{UML Global Use Case diagram for the Predictra CTI platform.}
 \label{fig:global_usecase}
 \end{figure}
@@ -513,342 +547,222 @@ To model the static structure of the Predictra CTI system, we designed a Global 
 
 \begin{figure}[p]
 \centering
-\begin{tikzpicture}[
-    scale=0.40, every node/.style={transform shape},
-    node distance=2.2cm,
-    class/.style={draw=charcoal, rectangle, top color=white, bottom color=cyberblue!5, drop shadow, thick, rounded corners=2pt, align=left, font=\tiny},
-    association/.style={draw=charcoal, thick},
-    directed/.style={draw=charcoal, -latex, thick},
-    dependency/.style={draw=charcoal, dashed, -latex, thick}
-]
-    % Row 1: Ingestion & Backend Services (Y = 9.0)
-    \node[class, text width=5.2cm] (scraper) at (0.0, 9.0) {
-        \textbf{ScraperService} \\
-        \hrulefill \\
-        - name: String \\
-        - frequency: Number \\
-        - isActive: Boolean \\
-        - apiUrl: String \\
-        - headers: Object \\
-        - reconnectAttempts: Number \\
-        \quad \textit{Crawlers:} \\
-        \quad + AlienVault | Bitdefender \\
-        \quad + C2Tracker | Checkpoint \\
-        \quad + Fortinet | Kaspersky \\
-        \quad + MispGalaxy | Ransomwatch | Urlhaus \\
-        \hrulefill \\
-        + run(): Promise\textless void\textgreater \\
-        + fetchFeed(): Promise\textless rawJSON\textgreater \\
-        + normalize(raw): ThreatEvent[] \\
-        + handleError(err: Error): void \\
-        + startScheduler(): void \\
-        + stopScheduler(): void
-    };
+\begin{plantuml}
+@startuml
+skinparam classAttributeIconSize 0
+skinparam linetype ortho
+left to right direction
 
-    \node[class, text width=5.8cm] (server) at (6.6, 9.0) {
-        \textbf{Express Server (server.js)} \\
-        \hrulefill \\
-        - app: ExpressApp \\
-        - server: HttpServer \\
-        - port: Number \\
-        - sseClients: Response[] \\
-        - enrichmentQueue: Object[] \\
-        - activeScrapers: Scraper[] \\
-        \hrulefill \\
-        + startServer(): void \\
-        + initMiddleware(): void \quad \% cors, helmet, rateLimit \\
-        + initDatabase(): void \quad \% Mongoose connection \\
-        + initRoutes(): void \quad \% API endpoints \\
-        + setupSSEFeed(req, res): void \quad \% /api/feed \\
-        + getHistory(req, res): Promise\textless void\textgreater \quad \% /api/history \\
-        + getStats(req, res): Promise\textless void\textgreater \quad \% /api/stats \\
-        + getHealth(req, res): void \quad \% /api/health \\
-        + startScrapers(): void \\
-        + broadcastToClients(events): void \\
-        - flushQueue(): void (300ms throttle) \\
-        - monitorDBQuota(): void
-    };
+' Style Customizations
+skinparam BackgroundColor #FFFFFF
+skinparam TitleFontColor #1E293B
+skinparam ArrowColor #475569
+skinparam ArrowFontSize 10
+skinparam ArrowFontColor #475569
 
-    \node[class, text width=5.2cm] (enrich) at (13.2, 9.0) {
-        \textbf{EnrichmentService} \\
-        \hrulefill \\
-        - rdapCache: Map\textless string, string\textgreater \\
-        - keywordMap: Record\textless string, string[]\textgreater \\
-        - categoryMapping: Record\textless string, string\textgreater \\
-        \hrulefill \\
-        + getEnrichedSector(event): String \\
-        + getIpOrganization(ip): Promise\textless string\textgreater \\
-        - matches(text, keywords): Boolean
-    };
+skinparam PackageBorderColor #64748B
+skinparam PackageBackgroundColor #F8FAFC
+skinparam PackageFontSize 13
+skinparam PackageFontStyle bold
 
-    \node[class, text width=5.2cm] (model) at (19.8, 9.0) {
-        \textbf{ThreatEvent (Mongoose Model)} \\
-        \hrulefill \\
-        + a\_c: Number (Attack Count) \\
-        + a\_n: String (Attack Name) \\
-        + a\_t: 'exploit'|'malware'|'phishing' \\
-        + s\_co / d\_co: String (Country Codes) \\
-        + s\_la / s\_lo: Number (Source Lat/Lon) \\
-        + d\_la / d\_lo: Number (Dest Lat/Lon) \\
-        + s\_ip / d\_ip: String (IP Addresses) \\
-        + meta: Mixed \{ port, org, malware\_family, ... \} \\
-        + timestamp: Date (TTL 30 days) \\
-        + source\_api: String \\
-        \hrulefill \\
-        + schema.index(\{ timestamp: 1 \}): void \\
-        + schema.index(\{ s\_ip: 1, timestamp: -1 \}): void \\
-        + schema.pre("save", callback): void
-    };
+' Color Palette variables
+!define BACKEND_COLOR #F2F9FF
+!define BACKEND_BORDER 2980B9
+!define STATE_COLOR #F5EEF8
+!define STATE_BORDER 8E44AD
+!define UI_COLOR #FFFDF2
+!define UI_BORDER D35400
 
-    % Row 2: Client State & Performance Utilities (Y = 3.0)
-    \node[class, text width=5.8cm] (store) at (6.6, 3.0) {
-        \textbf{Zustand Store (useStreamStore)} \\
-        \hrulefill \\
-        + status: ConnectionStatus (live|recon|paused) \\
-        + reconnectAttempts: Number \\
-        + currentView: 'map'|'history'|'dashboard'| \\
-        \quad 'country'|'analytics'|'stix' \\
-        + selectedCountry: \{ name: String, code: String \} | null \\
-        + historySearch: \{ q: String, ip: String \} \\
-        + eventBuffer: RingBuffer\textless ThreatEvent\textgreater \\
-        + recentEvents: ThreatEvent[] \\
-        + counterData: CounterData | null \\
-        + totalAttacks: Number \\
-        + attacksPerSecond: Number \\
-        + typeDistribution: TypeDistribution \\
-        + vectorDistribution: Record\textless string, number\textgreater \\
-        + originDistribution: Record\textless string, number\textgreater \\
-        + targetDistribution: Record\textless string, number\textgreater \\
-        + corridorDistribution: Record\textless string, number\textgreater \\
-        + sourceApiDistribution: Record\textless string, number\textgreater \\
-        + trendData: Number[] (10s buckets) \\
-        + lastTrendTime: Number \\
-        + arcs: ArcData[] \\
-        + markers: MarkerData[] \\
-        + activeArcCount: Number \\
-        + config: \{ rotation, trails, audio, preset, ... \} \\
-        + projectionMode: '3d' | '2d' \\
-        + \_cleanup: (() =\textgreater void) | null \\
-        \hrulefill \\
-        + addEvents(events): void \\
-        + updateCounter(data): void \\
-        + setStatus(status): void \\
-        + incrementReconnect(): void \\
-        + tick(now): void \\
-        + setConfig(key, value): void \\
-        + setView(view): void \\
-        + setSelectedCountry(co): void \\
-        + setHistorySearch(search): void \\
-        + setProjectionMode(mode): void \\
+title Predictra Threat Map - Global Class Diagram
+
+' ==========================================
+' TIER 1: Backend Ingestion & Persistence
+' ==========================================
+package "Backend Ingestion & Persistence Tier" {
+    
+    class "Express Server (server.js)" as Server BACKEND_COLOR;line:BACKEND_BORDER;line.bold {
+        - app: ExpressApp
+        - port: Number
+        - sseClients: Response[]
+        - activeScrapers: Scraper[]
+        --
+        + startServer(): void
+        + initDatabase(): void
+        + setupSSEFeed(req, res): void
+        + broadcastToClients(events): void
+    }
+
+    class EnrichmentService BACKEND_COLOR;line:BACKEND_BORDER;line.bold {
+        - rdapCache: Map
+        - keywordMap: Record
+        --
+        + getEnrichedSector(event): String
+        + getIpOrganization(ip): Promise<string>
+    }
+
+    class ScraperService BACKEND_COLOR;line:BACKEND_BORDER;line.bold {
+        - name: String
+        - frequency: Number
+        - isActive: Boolean
+        - apiUrl: String
+        --
+        + run(): Promise<void>
+        + fetchFeed(): Promise<rawJSON>
+        + normalize(raw): ThreatEvent[]
+    }
+
+    class "ThreatEvent (Mongoose Model)" as ThreatEvent BACKEND_COLOR;line:BACKEND_BORDER;line.bold {
+        + a_c: Number
+        + a_n: String
+        + a_t: 'exploit'|'malware'|'phishing'
+        + s_ip / d_ip: String
+        + source_api: String
+        + timestamp: Date
+    }
+
+    ' Compact 2x2 grid layout
+    Server -[hidden]right-> EnrichmentService
+    Server -[hidden]down-> ScraperService
+    EnrichmentService -[hidden]down-> ThreatEvent
+}
+
+' ==========================================
+' TIER 2: Client State & Performance Store
+' ==========================================
+package "Client State & Performance Store" {
+
+    class "Zustand Store (useStreamStore)" as ZustandStore STATE_COLOR;line:STATE_BORDER;line.bold {
+        + status: ConnectionStatus
+        + currentView: ViewType
+        + eventBuffer: RingBuffer
+        + recentEvents: ThreatEvent[]
+        + totalAttacks: Number
+        + attacksPerSecond: Number
+        + arcs: ArcData[]
+        + markers: MarkerData[]
+        + projectionMode: '3d' | '2d'
+        --
+        + addEvents(events): void
+        + updateCounter(data): void
+        + setProjectionMode(mode): void
         + initStream(): void
-    };
+    }
 
-    \node[class, text width=5.2cm] (ring) at (13.2, 3.0) {
-        \textbf{RingBuffer\textless T\textgreater (perf.ts)} \\
-        \hrulefill \\
-        - capacity: Number \\
-        - buffer: T[] \\
-        - pointer: Number \\
-        - size: Number \\
-        \hrulefill \\
-        + push(item: T): void \\
-        + pushMany(items: T[]): void \\
-        + getAll(): T[] \\
-        + getRecent(n: number): T[] \\
-        + clear(): void \\
-        + getLength(): Number
-    };
+    class "RingBuffer<T>" as RingBuffer STATE_COLOR;line:STATE_BORDER;line.bold {
+        - capacity: Number
+        - buffer: T[]
+        --
+        + push(item: T): void
+        + getAll(): T[]
+        + getRecent(n): T[]
+    }
 
-    \node[class, text width=5.2cm] (telemetry) at (19.8, 3.0) {
-        \textbf{perfTelemetry (perf.ts)} \\
-        \hrulefill \\
-        - stats: \{ fps, activeArcs, activeMarkers, \\
-        \quad bufferSize, droppedEvents, reconnectAttempts \} \\
-        - history: Number[] \\
-        \hrulefill \\
-        + recordEvent(): void \\
-        + updateFps(fps): void \\
+    class "perfTelemetry" as PerfTelemetry STATE_COLOR;line:STATE_BORDER;line.bold {
+        - stats: Stats
+        --
+        + recordEvent(): void
+        + updateFps(fps): void
         + getReport(): Object
-    };
+    }
 
-    % Row 3: UI Pages / View Controllers (Y = -3.0)
-    \node[class, text width=5.2cm] (dash) at (0.0, -3.0) {
-        \textbf{DashboardPage (UI Component)} \\
-        \hrulefill \\
-        + timeMode: 'live' | 'dvr' \\
-        + searchQuery: String \\
-        + activeTypes: Set\textless AttackType\textgreater \\
-        + feedPaused: Boolean \\
-        - searchRef: RefObject \\
-        \hrulefill \\
-        + filterDataBySource(src): void \\
-        + handleCountryDrillDown(co): void \\
-        + handleExportCSV(): void \\
-        + handleExportJSON(): void \\
+    ' Compact side-by-side and stacked layout
+    ZustandStore -[hidden]right-> RingBuffer
+    RingBuffer -[hidden]down-> PerfTelemetry
+}
+
+' ==========================================
+' TIER 3: React Dashboard & UI Pages
+' ==========================================
+package "React Dashboard & UI Pages" {
+
+    class DashboardPage UI_COLOR;line:UI_BORDER;line.bold {
+        + timeMode: 'live' | 'dvr'
+        + searchQuery: String
+        --
+        + filterDataBySource(src): void
+        + handleCountryDrillDown(co): void
         + handleExportExcel(): void
-    };
+    }
 
-    \node[class, text width=5.2cm] (hist) at (6.6, -3.0) {
-        \textbf{HistoryPage (UI Component)} \\
-        \hrulefill \\
-        + events: ThreatEvent[] \\
-        + page: Number \\
-        + limit: Number \\
-        + filters: Object \\
-        + isLoading: Boolean \\
-        \hrulefill \\
-        + fetchHistory(): Promise\textless void\textgreater \\
-        + handlePageChange(p): void \\
-        + handleFilterChange(f): void \\
+    class HistoryPage UI_COLOR;line:UI_BORDER;line.bold {
+        + events: ThreatEvent[]
+        + page: Number
+        + limit: Number
+        --
+        + fetchHistory(): Promise<void>
+        + handlePageChange(p): void
         + handleExport(): void
-    };
+    }
 
-    \node[class, text width=5.2cm] (anal) at (13.2, -3.0) {
-        \textbf{AnalyticsPage (UI Component)} \\
-        \hrulefill \\
-        + timeframe: String ("1h" | "24h" | "7d") \\
-        + chartType: "bar" | "line" | "doughnut" \\
-        + filteredData: ThreatEvent[] \\
-        \hrulefill \\
-        + renderTrendChart(): ReactNode \\
-        + renderSectorDistribution(): ReactNode \\
-        + calculateTopVectors(): Array \\
-        + calculateGeographicalAggregates(): Array
-    };
+    class AnalyticsPage UI_COLOR;line:UI_BORDER;line.bold {
+        + timeframe: String
+        + chartType: ChartType
+        --
+        + renderTrendChart(): ReactNode
+        + renderSectorDistribution(): ReactNode
+    }
 
-    \node[class, text width=5.2cm] (stix) at (19.8, -3.0) {
-        \textbf{StixVisualizerPage (UI Component)} \\
-        \hrulefill \\
-        + parsedData: ParsedStixData \\
-        + activeTab: String \\
-        + hoverNode: GraphNode | null \\
-        + selectedItem: Object | null \\
-        - d3Simulation: ForceSimulation \\
-        \hrulefill \\
-        + parseBundle(jsonText): ParsedStixData \\
-        + classifyIndicator(ioc): Object \\
-        + mapAttackToPhase(apName): String[] \\
-        + paintNode(node, ctx, scale): void \\
-        + paintLink(link, ctx, scale): void \\
+    class StixVisualizerPage UI_COLOR;line:UI_BORDER;line.bold {
+        + parsedData: ParsedStixData
+        + activeTab: String
+        - d3Simulation: ForceSimulation
+        --
+        + parseBundle(jsonText): ParsedStixData
+        + mapAttackToPhase(apName): String[]
         + applyForces(linkDist, strength): void
-    };
+    }
 
-    \node[class, text width=5.2cm] (country) at (26.4, -3.0) {
-        \textbf{CountryDashboard (UI Component)} \\
-        \hrulefill \\
-        + countryData: Object \\
-        + topOrigins: Array \\
-        + topTargets: Array \\
-        + activeThreatsCount: Number \\
-        \hrulefill \\
-        + renderHologram(): ReactNode \\
-        + fetchCountryStats(): Promise\textless void\textgreater \\
-        + renderRiskScoreGauge(): ReactNode
-    };
+    class CountryDashboard UI_COLOR;line:UI_BORDER;line.bold {
+        + countryData: Object
+        + activeThreatsCount: Number
+        --
+        + renderHologram(): ReactNode
+        + fetchCountryStats(): Promise<void>
+    }
 
-    % Row 4: 3D Visualization Pipeline (Y = -9.0)
-    \node[class, text width=5.2cm] (globe) at (0.0, -9.0) {
-        \textbf{GlobeScene (R3F Canvas)} \\
-        \hrulefill \\
-        + qualityPreset: String \\
-        + rotationSpeed: Number \\
-        + arcsLimit: Number \\
-        + projectionMode: String \\
-        - cameraControls: OrbitControls \\
-        \hrulefill \\
-        + renderAtmosphereGlow(): Material \\
-        + handleFpsDropMitigation(fps): void \\
-        - useFrame(state, delta): void
-    };
+    ' Compact 2x3 grid layout
+    DashboardPage -[hidden]right-> HistoryPage
+    DashboardPage -[hidden]down-> AnalyticsPage
+    HistoryPage -[hidden]down-> StixVisualizerPage
+    AnalyticsPage -[hidden]down-> CountryDashboard
+}
 
-    \node[class, text width=5.2cm] (earth) at (6.6, -9.0) {
-        \textbf{Earth (Three.js Sphere)} \\
-        \hrulefill \\
-        + globeTexture: Texture \\
-        + bumpMapTexture: Texture \\
-        + specularMapTexture: Texture \\
-        + cloudsTexture: Texture \\
-        \hrulefill \\
-        + renderLandmassShader(): Material \\
-        + updateRotation(delta): void \\
-        + handleMouseClick(event): void
-    };
+' ==========================================
+' RELATIONSHIPS & CONNECTIONS
+' ==========================================
 
-    \node[class, text width=5.2cm] (arcs) at (13.2, -9.0) {
-        \textbf{AttackArcs (WebGL Instancing)} \\
-        \hrulefill \\
-        + instancedGeometry: InstancedGeometry \\
-        + arcMaterial: ShaderMaterial \\
-        + bezierCurves: Curve3[] \\
-        \hrulefill \\
-        + updateArcUniforms(progress): void \\
-        + latLonToVector3(lat, lon): Vector3 \\
-        + calculateBezierCurve(src, dst): Curve3
-    };
+' Tier 1 Relationships
+Server --> ScraperService : "runs"
+Server --> EnrichmentService : "uses"
+Server --> ThreatEvent : "persists"
+EnrichmentService ..> ThreatEvent : "returns"
 
-    \node[class, text width=5.2cm] (markers) at (19.8, -9.0) {
-        \textbf{ImpactMarkers (Three.js Points)} \\
-        \hrulefill \\
-        + markerTexture: Texture \\
-        + markerArray: MarkerData[] \\
-        \hrulefill \\
-        + renderRippleAnimation(delta): void \\
-        + latLonToVector3(lat, lon): Vector3
-    };
+' Tier 1 to Tier 2 Relations
+Server ..> ZustandStore : "streams (SSE)"
+ThreatEvent ..> ZustandStore : "populates"
 
-    \node[class, text width=5.2cm] (outlines) at (26.4, -9.0) {
-        \textbf{CountryOutlines (GeoJSON)} \\
-        \hrulefill \\
-        + geoJsonData: Object \\
-        + borderMaterial: LineBasicMaterial \\
-        + hoveredCountry: String | null \\
-        \hrulefill \\
-        + renderBorders(): LineSegments \\
-        + highlightBorder(coCode): void
-    };
+' Tier 2 internal Relations
+ZustandStore --> RingBuffer : "aggregates"
+ZustandStore --> PerfTelemetry : "tracks"
 
-    % Relationships (Arrows)
-    % Row 1 Relationships
-    \draw[directed] (server) -- node[above, scale=0.8] {runs} (scraper);
-    \draw[directed] (server) -- node[above, scale=0.8] {uses} (enrich);
+' Tier 2 to Tier 3 Relations
+ZustandStore ..> DashboardPage : "binds"
+ZustandStore ..> HistoryPage : "binds"
+ZustandStore ..> AnalyticsPage : "binds"
+ZustandStore ..> StixVisualizerPage : "binds"
+ZustandStore ..> CountryDashboard : "binds"
 
-    % Row 1 to Row 2 Relationships
-    \draw[directed] (server.south west) -- node[left, pos=0.7, scale=0.8] {persists} (model.north east);
-    \draw[dependency] (server.south) -- node[right, scale=0.8] {streams (SSE)} (store.north);
-    \draw[dependency] (enrich.south west) -- node[below, sloped, pos=0.8, scale=0.8] {returns} (model.north east);
-
-    % Row 2 Relationships
-    \draw[directed] (store) -- node[above, scale=0.8] {aggregates} (ring);
-    \draw[directed] (store.east) -- node[above, scale=0.8] {tracks} (telemetry.west);
-    \draw[dependency] (model) -- node[above, scale=0.8] {populates} (store);
-
-    % Row 2 to Row 3 Relationships
-    \draw[dependency] (store.south west) -- node[left, pos=0.4, scale=0.8] {binds} (dash.north east);
-    \draw[dependency] (store.south) -- node[right, pos=0.4, scale=0.8] {binds} (hist.north);
-    \draw[dependency] (store.south east) -- node[right, pos=0.4, scale=0.8] {binds} (anal.north west);
-    \draw[dependency] (store.south east) -- node[right, pos=0.6, scale=0.8] {binds} (stix.north west);
-    \draw[dependency] (store.south east) -- node[right, pos=0.8, scale=0.8] {binds} (country.north west);
-
-    % Row 3 to Row 4 Relationships
-    \draw[dependency] (dash.south) -- node[left, scale=0.8] {overlays} (globe.north);
-    \draw[dependency] (country.south) -- node[right, scale=0.8] {overlays} (outlines.north);
-
-    % Row 4 internal Relationships (Globe Scene composition)
-    \draw[directed] (globe) -- node[above, scale=0.8] {contains} (earth);
-    \draw[directed] (globe.south east) -- node[below, sloped, scale=0.8] {contains} (arcs.north west);
-    \draw[directed] (globe.south east) -- node[below, sloped, scale=0.8] {contains} (markers.north west);
-    \draw[directed] (globe.south east) -- node[below, sloped, scale=0.8] {contains} (outlines.north west);
-\end{tikzpicture}
+@endum
+\end{plantuml}
 \caption{UML Global Class diagram of the Predictra CTI system.}
 \label{fig:global_class_diagram}
 \end{figure}
 
-The structural design modeled in Figure~\ref{fig:global_class_diagram} highlights several key object-oriented associations, compositions, and structural dependencies across the four main tiers of our application:
+The structural design modeled in Figure~\ref{fig:global_class_diagram} highlights several key object-oriented associations, compositions, and structural dependencies across the three main tiers of our application:
 \begin{itemize}
     \item \textbf{Backend Ingestion \& Persistence Tier:} The central \texttt{Express Server} instantiates and schedules multiple concurrent \texttt{ScraperService} instances (e.g. \texttt{Urlhaus}, \texttt{AlienVault}, \texttt{MispGalaxy}, \texttt{Ransomwatch}). As threat telemetry is gathered, it is processed via the \texttt{EnrichmentService} which resolves network organizations and classifies critical infrastructure sectors. The server then persists the resulting dataset using the Mongoose \texttt{ThreatEvent} data model, maintaining standard index rules.
     \item \texttt{Zustand Store} and performance utilities: The client-side \texttt{useStreamStore} acts as a real-time reactive state manager. To handle incoming threat stream data without memory leaks or high garbage collection cycles, the store encapsulates a circular \texttt{RingBuffer} class structure and tracks performance through the custom instrumented \texttt{perfTelemetry} class.
     \item \textbf{React Views Tier:} React pages and tab elements represent the core view controllers. The \texttt{DashboardPage}, \texttt{HistoryPage}, \texttt{AnalyticsPage}, \texttt{StixVisualizerPage}, and \texttt{CountryDashboard} subscribe to the Zustand store state slices and bind to specific endpoints (like \texttt{/api/history} and \texttt{/api/stats}) to drive layout changes and charts.
-    \item \textbf{3D Rendering Pipeline:} The \texttt{GlobeScene} component acts as the parent WebGL container. It coordinates and composes the nested three.js modules: the \texttt{Earth} sphere, the GPU instanced \texttt{AttackArcs}, the animated ripple \texttt{ImpactMarkers}, and the \texttt{CountryOutlines} boundary outlines.
 \end{itemize}
 
 ---
