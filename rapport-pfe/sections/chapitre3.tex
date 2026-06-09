@@ -173,208 +173,384 @@ Below, we catalog and detail the architectural specifications, raw payload schem
 
 \subsubsection{1. Checkpoint Scraper (\texttt{checkpoint.js})}
 \begin{itemize}
-    \item \textbf{Source Endpoint \& Protocol:} Establishes a direct, long-lived, secure Server-Sent Events (SSE) HTTP stream connection to Checkpoint's corporate live threat telemetry server:
-    \begin{verbatim}
-    Protocol: HTTP/1.1 SSE (Streaming GET)
-    Endpoint: https://threatmap.checkpoint.com/feed/live
-    Security: TLS 1.3 Transport Encryption
-    \end{verbatim}
-    \item \textbf{Raw Response Format:} The scraper receives newline-separated SSE packets, containing real-time corporate firewall records:
-    \begin{verbatim}
-    event: threat
-    data: {
-      "srcIp": "194.26.135.8",
-      "dstIp": "74.125.19.103",
-      "attackName": "Phishing Link Access",
-      "attackType": "phishing",
-      "severity": "high",
-      "srcCountry": "RU",
-      "dstCountry": "US"
-    }
-    \end{verbatim}
+    \item \textbf{Source Endpoint \& Protocol:} Establishes a direct, long-lived, secure Server-Sent Events (SSE) HTTP stream connection to Checkpoint's corporate live threat telemetry server (summarized in Table~\ref{tab:spec_checkpoint}).
+    \begin{table}[h!]
+    \centering
+    \small
+    \begin{tabular}{ll}
+    \toprule
+    \textbf{Specification Parameter} & \textbf{Configuration Value} \\
+    \midrule
+    Protocol & HTTP/1.1 Server-Sent Events (SSE) \\
+    Endpoint URL & \url{https://threatmap.checkpoint.com/feed/live} \\
+    Transport Security & TLS 1.3 Encryption \\
+    Connection Mode & Active Persistent Client Stream \\
+    \bottomrule
+    \end{tabular}
+    \caption{Checkpoint Scraper Endpoint Specifications.}
+    \label{tab:spec_checkpoint}
+    \end{table}
+
+    \item \textbf{Expected Payload Schema:} The stream broadcasts newline-separated SSE threat packets. The parsed JSON data attributes are defined in Table~\ref{tab:payload_checkpoint} (with the raw payload example detailed in Appendix I.1).
+    \begin{table}[h!]
+    \centering
+    \small
+    \begin{tabular}{lll}
+    \toprule
+    \textbf{JSON Attribute} & \textbf{Data Type} & \textbf{Description / Constraints} \\
+    \midrule
+    \texttt{srcIp} & String & Source IPv4 or IPv6 Address \\
+    \texttt{dstIp} & String & Target/Destination IP Address \\
+    \texttt{attackName} & String & Exploit name or signature identifier \\
+    \texttt{attackType} & String & Threat class category (e.g. \texttt{phishing}) \\
+    \texttt{severity} & String & Threat severity level string \\
+    \texttt{srcCountry} & String & Origin ISO two-letter country code \\
+    \texttt{dstCountry} & String & Target ISO two-letter country code \\
+    \bottomrule
+    \end{tabular}
+    \caption{Checkpoint Raw Threat Payload Schema.}
+    \label{tab:payload_checkpoint}
+    \end{table}
+
     \item \textbf{Operation Mechanism:} The scraper operates as an active, persistent client listener. Upon establishing the socket, it parses incoming chunks line-by-line, validating that the packet contains valid \texttt{srcIp} and \texttt{dstIp} parameters.
     \item \textbf{Data Normalization \& Error Handling:} Evaluates incoming event keys and maps them directly into our BSON schema. Phishing indicators are routed to the \texttt{phishing} category. If Checkpoint's stream is disconnected, the module initiates an automated reconnect routine with a 5-second backoff delay, logging a warning to the central controller.
 \end{itemize}
 
 \subsubsection{2. Bitdefender Live Telemetry Scraper (\texttt{bitdefender.js})}
 \begin{itemize}
-    \item \textbf{Source Endpoint \& Protocol:} Establishes a real-time Web Socket connection using the \texttt{socket.io-client} protocol to Bitdefender's global threat intelligence sharing hub:
-    \begin{verbatim}
-    Protocol: WebSocket (ws-transport)
-    Endpoint: wss://hub.bitdefender.com/threat-telemetry
-    Channels: 13 Active Threat Vector Channels
-    \end{verbatim}
-    \item \textbf{Raw Response Format:} The WebSocket channel broadcasts binary encoded payloads, which are converted by the socket client into structured JSON frames:
-    \begin{verbatim}
-    {
-      "event": "detection",
-      "channel": "ransomware",
-      "ip": "103.24.15.2",
-      "country": "CN",
-      "malwareName": "WannaCry.B.Ransomware",
-      "port": 445
-    }
-    \end{verbatim}
+    \item \textbf{Source Endpoint \& Protocol:} Establishes a real-time Web Socket connection using the \texttt{socket.io-client} protocol to Bitdefender's global threat intelligence sharing hub (summarized in Table~\ref{tab:spec_bitdefender}).
+    \begin{table}[h!]
+    \centering
+    \small
+    \begin{tabular}{ll}
+    \toprule
+    \textbf{Specification Parameter} & \textbf{Configuration Value} \\
+    \midrule
+    Protocol & WebSocket (socket.io Transport) \\
+    Endpoint URL & \url{wss://hub.bitdefender.com/threat-telemetry} \\
+    Active Channels & 13 Threat Channels (e.g. ransomware, botnet) \\
+    Connection Mode & Bidirectional Event Socket \\
+    \bottomrule
+    \end{tabular}
+    \caption{Bitdefender Scraper Endpoint Specifications.}
+    \label{tab:spec_bitdefender}
+    \end{table}
+
+    \item \textbf{Expected Payload Schema:} The WebSocket channel broadcasts binary frames converted into JSON. The attributes are listed in Table~\ref{tab:payload_bitdefender} (with the raw payload example detailed in Appendix I.2).
+    \begin{table}[h!]
+    \centering
+    \small
+    \begin{tabular}{lll}
+    \toprule
+    \textbf{JSON Attribute} & \textbf{Data Type} & \textbf{Description / Constraints} \\
+    \midrule
+    \texttt{event} & String & Event action classifier (e.g. \texttt{detection}) \\
+    \texttt{channel} & String & Source channel name mapped to threat vector \\
+    \texttt{ip} & String & Intercepted source IP address string \\
+    \texttt{country} & String & Origin country code (ISO Alpha-2) \\
+    \texttt{malwareName} & String & Specific malware signature family name \\
+    \texttt{port} & Number & Target connection port (used for sector mapping) \\
+    \bottomrule
+    \end{tabular}
+    \caption{Bitdefender Raw Threat Payload Schema.}
+    \label{tab:payload_bitdefender}
+    \end{table}
+
     \item \textbf{Operation Mechanism:} Subscribes to 13 distinct active channels representing diverse attack vectors (e.g. ransomware, malicious URLs, botnets). The socket interface receives live notifications.
     \item \textbf{Data Normalization:} The channel name determines the target threat class mapping. If the event is received on the \texttt{ransomware} channel, the scraper sets \texttt{a\_t = "malware"} and maps the target sector using port-based heuristics (port 445 maps to "Enterprise Technology").
 \end{itemize}
 
 \subsubsection{3. Fortinet FortiGuard Scraper (\texttt{fortinet.js})}
 \begin{itemize}
-    \item \textbf{Source Endpoint \& Protocol:} Polls Fortinet's active exploit telemetry API using standard stateless HTTP queries:
-    \begin{verbatim}
-    Protocol: HTTP/1.1 REST (GET)
-    Endpoint: https://fortiguard.com/api/threats/active
-    Headers: User-Agent: Predictra-Ingestion-Agent/1.0
-    \end{verbatim}
-    \item \textbf{Raw Response Format:} Fetches structured JSON arrays containing active exploit campaigns:
-    \begin{verbatim}
-    [
-      {
-        "srcCountry": "Germany",
-        "dstCountry": "United States",
-        "signatureName": "Apache.Log4j.RCE.Exploit",
-        "attackCount": 45,
-        "victimSubnet": "198.51.100.0/24"
-      }
-    ]
-    \end{verbatim}
+    \item \textbf{Source Endpoint \& Protocol:} Polls Fortinet's active exploit telemetry API using standard stateless HTTP queries (summarized in Table~\ref{tab:spec_fortinet}).
+    \begin{table}[h!]
+    \centering
+    \small
+    \begin{tabular}{ll}
+    \toprule
+    \textbf{Specification Parameter} & \textbf{Configuration Value} \\
+    \midrule
+    Protocol & HTTP/1.1 REST API (GET) \\
+    Endpoint URL & \url{https://fortiguard.com/api/threats/active} \\
+    Custom Headers & \texttt{User-Agent: Predictra-Ingestion-Agent/1.0} \\
+    Polling Frequency & Every 4 seconds \\
+    \bottomrule
+    \end{tabular}
+    \caption{Fortinet Scraper Endpoint Specifications.}
+    \label{tab:spec_fortinet}
+    \end{table}
+
+    \item \textbf{Expected Payload Schema:} The API returns a structured JSON array of exploit records. The schema fields are defined in Table~\ref{tab:payload_fortinet} (with the raw payload example detailed in Appendix I.3).
+    \begin{table}[h!]
+    \centering
+    \small
+    \begin{tabular}{lll}
+    \toprule
+    \textbf{JSON Attribute} & \textbf{Data Type} & \textbf{Description / Constraints} \\
+    \midrule
+    \texttt{srcCountry} & String & Full country name of attacker origin \\
+    \texttt{dstCountry} & String & Full country name of victim target \\
+    \texttt{signatureName} & String & Specific exploit name (e.g. Apache Log4j) \\
+    \texttt{attackCount} & Number & Aggregated count of attack occurrences \\
+    \texttt{victimSubnet} & String & Masked network subnet of victim \\
+    \bottomrule
+    \end{tabular}
+    \caption{Fortinet Raw Threat Payload Schema.}
+    \label{tab:payload_fortinet}
+    \end{table}
+
     \item \textbf{Operation Mechanism:} Evaluates recent active exploit campaigns on a 4-second polling schedule. The scraper iterates through the returned array, parses the country strings into ISO two-letter country codes (e.g. "Germany" to "DE"), and extracts the attack name.
     \item \textbf{Data Normalization:} Since Fortinet records reflect active intrusion attempts, threat events are registered under \texttt{a\_t = "exploit"}, and \texttt{a\_c} is mapped directly to the \texttt{attackCount} parameter.
 \end{itemize}
 
 \subsubsection{4. URLhaus Malware Scraper (\texttt{urlhaus.js})}
 \begin{itemize}
-    \item \textbf{Source Endpoint \& Protocol:} Queries abuse.ch's URLhaus API to retrieve newly identified malicious URL distribution nodes:
-    \begin{verbatim}
-    Protocol: HTTP/1.1 REST (POST)
-    Endpoint: https://urlhaus-api.abuse.ch/v1/urls/recent/
-    Frequency: Polls every 90 seconds
-    \end{verbatim}
-    \item \textbf{Raw Response Format:} Returns a JSON dictionary containing a list of online, active malware hosting endpoints:
-    \begin{verbatim}
-    {
-      "query_status": "ok",
-      "urls": [
-        {
-          "id": "2810394",
-          "url": "http://185.220.101.5/payloads/cobalt.exe",
-          "url_status": "online",
-          "threat": "malware_download",
-          "reporter": "abuse_ch_bot",
-          "tags": ["CobaltStrike", "exe"]
-        }
-      ]
-    }
-    \end{verbatim}
+    \item \textbf{Source Endpoint \& Protocol:} Queries abuse.ch's URLhaus API to retrieve newly identified malicious URL distribution nodes (summarized in Table~\ref{tab:spec_urlhaus}).
+    \begin{table}[h!]
+    \centering
+    \small
+    \begin{tabular}{ll}
+    \toprule
+    \textbf{Specification Parameter} & \textbf{Configuration Value} \\
+    \midrule
+    Protocol & HTTP/1.1 REST API (POST) \\
+    Endpoint URL & \url{https://urlhaus-api.abuse.ch/v1/urls/recent/} \\
+    Polling Frequency & Every 90 seconds \\
+    \bottomrule
+    \end{tabular}
+    \caption{URLhaus Scraper Endpoint Specifications.}
+    \label{tab:spec_urlhaus}
+    \end{table}
+
+    \item \textbf{Expected Payload Schema:} Returns a dictionary containing a list of active threat URLs. The schema fields for each item are defined in Table~\ref{tab:payload_urlhaus} (with the raw payload example detailed in Appendix I.4).
+    \begin{table}[h!]
+    \centering
+    \small
+    \begin{tabular}{lll}
+    \toprule
+    \textbf{JSON Attribute} & \textbf{Data Type} & \textbf{Description / Constraints} \\
+    \midrule
+    \texttt{id} & String & Unique integer identifier for URL block \\
+    \texttt{url} & String & Full HTTP/HTTPS address serving malware payload \\
+    \texttt{url\_status} & String & Online/offline reachability flag \\
+    \texttt{threat} & String & Threat class label (e.g. \texttt{malware\_download}) \\
+    \texttt{reporter} & String & Name of threat researcher or bot submitter \\
+    \texttt{tags} & Array & Threat signature list tags (e.g. CobaltStrike) \\
+    \bottomrule
+    \end{tabular}
+    \caption{URLhaus Raw Threat Payload Schema.}
+    \label{tab:payload_urlhaus}
+    \end{table}
+
     \item \textbf{Operation Mechanism:} The scraper parses the \texttt{urls} list, filtering for entries where \texttt{url\_status} is \texttt{"online"}. It uses regex queries to isolate the IP address or domain name from the raw \texttt{url} string (e.g., extracting \texttt{"185.220.101.5"} as the source IP).
     \item \textbf{Data Normalization:} Since these represent active malware distribution files, all events are registered under \texttt{a\_t = "malware"}. The first entry in the \texttt{tags} array is assigned to \texttt{a\_n}.
 \end{itemize}
 
 \subsubsection{5. Kaspersky Feodo Botnet Tracker (\texttt{kaspersky.js})}
 \begin{itemize}
-    \item \textbf{Source Endpoint \& Protocol:} Polls abuse.ch's Feodo Tracker database of active Botnet command-and-control (C2) servers:
-    \begin{verbatim}
-    Protocol: HTTP/1.1 REST (GET)
-    Endpoint: https://feodotracker.abuse.ch/
-              downloads/ipblocklist.csv
-    Frequency: Polls every 60 seconds
-    \end{verbatim}
-    \item \textbf{Raw Response Format:} The Feodo feed returns raw CSV data blocks. Lines prefixed with \texttt{\#} are comment lines. Active lines represent active botnet nodes:
-    \begin{verbatim}
-    # Firstseen,DstIP,DstPort,Malware,Asname
-    2026-05-21,103.5.8.12,443,Qakbot,Chinanet,Active
-    \end{verbatim}
+    \item \textbf{Source Endpoint \& Protocol:} Polls abuse.ch's Feodo Tracker database of active Botnet command-and-control (C2) servers (summarized in Table~\ref{tab:spec_kaspersky}).
+    \begin{table}[h!]
+    \centering
+    \small
+    \begin{tabular}{ll}
+    \toprule
+    \textbf{Specification Parameter} & \textbf{Configuration Value} \\
+    \midrule
+    Protocol & HTTP/1.1 REST (GET) \\
+    Endpoint URL & \url{https://feodotracker.abuse.ch/downloads/ipblocklist.csv} \\
+    Polling Frequency & Every 60 seconds \\
+    \bottomrule
+    \end{tabular}
+    \caption{Kaspersky Feodo Scraper Endpoint Specifications.}
+    \label{tab:spec_kaspersky}
+    \end{table}
+
+    \item \textbf{Expected Payload Schema:} The feed returns CSV formatted text lines. The schema fields mapping to the CSV headers are defined in Table~\ref{tab:payload_kaspersky} (with the raw payload example detailed in Appendix I.5).
+    \begin{table}[h!]
+    \centering
+    \small
+    \begin{tabular}{lll}
+    \toprule
+    \textbf{CSV Attribute} & \textbf{Data Type} & \textbf{Description / Constraints} \\
+    \midrule
+    \texttt{Firstseen} & Date String & Date/time the node was first registered \\
+    \texttt{DstIP} & String & Destination Command \& Control IP address \\
+    \texttt{DstPort} & Number & Listening port of the C2 framework \\
+    \texttt{Malware} & String & Name of active botnet malware (e.g. Qakbot) \\
+    \texttt{Asname} & String & Autonomous System (AS) network ISP name \\
+    \bottomrule
+    \end{tabular}
+    \caption{Kaspersky Feodo Raw Threat Payload Schema.}
+    \label{tab:payload_kaspersky}
+    \end{table}
+
     \item \textbf{Operation Mechanism:} The scraper retrieves the CSV string, splits it by newline characters, ignores comment lines, and splits each data line by commas. It extracts the destination IP (\texttt{DstIP}), destination port (\texttt{DstPort}), and the specific malware family (\texttt{Malware}).
     \item \textbf{Data Normalization:} Botnet controller nodes are mapped to \texttt{a\_t = "malware"}. The source IP is assigned to \texttt{DstIP}, and target sectors are mapped based on the listening port (port 443 defaults to "Enterprise Services").
 \end{itemize}
 
 \subsubsection{6. AlienVault OTX Pulse Scraper (\texttt{alienvault.js})}
 \begin{itemize}
-    \item \textbf{Source Endpoint \& Protocol:} Queries the AlienVault Open Threat Exchange REST API, utilizing custom developer API authentication tokens:
-    \begin{verbatim}
-    Protocol: HTTP/1.1 REST (GET)
-    Endpoint: https://otx.alienvault.com/api/v1/pulses/subscribed
-    Headers: X-OTX-API-KEY: <custom_otx_api_token>
-    \end{verbatim}
-    \item \textbf{Raw Response Format:} Returns complex, nested threat "pulses" containing clusters of related Indicators of Compromise (IOCs):
-    \begin{verbatim}
-    {
-      "count": 1,
-      "results": [
-        {
-          "name": "APT28 Sednit Infrastructure",
-          "description": "Active C2 targeting gov.",
-          "indicators": [
-            {
-              "indicator": "194.26.135.12",
-              "type": "IPv4",
-              "title": "C2 Server"
-            }
-          ]
-        }
-      ]
-    }
-    \end{verbatim}
-    \item \textbf{Operation Mechanism:} Polls every 5 minutes, pulling recent indicators of compromise (IOCs) from subscribed threat pulses. It parses IP addresses, hashes, and vulnerability details.
+    \item \textbf{Source Endpoint \& Protocol:} Queries the AlienVault Open Threat Exchange REST API, utilizing custom developer API authentication tokens (summarized in Table~\ref{tab:spec_alienvault}).
+    \begin{table}[h!]
+    \centering
+    \small
+    \begin{tabular}{ll}
+    \toprule
+    \textbf{Specification Parameter} & \textbf{Configuration Value} \\
+    \midrule
+    Protocol & HTTP/1.1 REST (GET) \\
+    Endpoint URL & \url{https://otx.alienvault.com/api/v1/pulses/subscribed} \\
+    Custom Headers & \texttt{X-OTX-API-KEY: <custom\_otx\_api\_token>} \\
+    Polling Frequency & Every 5 minutes \\
+    \bottomrule
+    \end{tabular}
+    \caption{AlienVault Scraper Endpoint Specifications.}
+    \label{tab:spec_alienvault}
+    \end{table}
+
+    \item \textbf{Expected Payload Schema:} Returns nested threat pulses. The parsed schema attributes are described in Table~\ref{tab:payload_alienvault} (with the raw payload example detailed in Appendix I.6).
+    \begin{table}[h!]
+    \centering
+    \small
+    \begin{tabular}{lll}
+    \toprule
+    \textbf{JSON Attribute} & \textbf{Data Type} & \textbf{Description / Constraints} \\
+    \midrule
+    \texttt{count} & Number & Count of pulse objects returned in response \\
+    \texttt{name} & String & Threat intelligence pulse campaign name \\
+    \texttt{description} & String & Text summary details of adversary activities \\
+    \texttt{indicator} & String & Specific indicator string (IP address or hash) \\
+    \texttt{type} & String & IOC type tag indicator (e.g. \texttt{IPv4}, \texttt{FileHash}) \\
+    \bottomrule
+    \end{tabular}
+    \caption{AlienVault Raw Threat Payload Schema.}
+    \label{tab:payload_alienvault}
+    \end{table}
+
+    \item \textbf{Operation Mechanism:} Polls every 5 minutes, pulling recent indicators of compromise (IOC) from subscribed threat pulses. It parses IP addresses, hashes, and vulnerability details.
     \item \textbf{Data Normalization:} The scraper iterates through the nested \texttt{indicators} array. Only indicators of type \texttt{IPv4} are geolocated. The threat name \texttt{a\_n} is derived from the main pulse \texttt{name}.
 \end{itemize}
 
 \subsubsection{7. Ransomwatch Extortion Scraper (\texttt{ransomwatch.js})}
 \begin{itemize}
-    \item \textbf{Source Endpoint \& Protocol:} Polls the Ransomlook.io API endpoint monitoring active ransomware extortion leak sites:
-    \begin{verbatim}
-    Protocol: HTTP/1.1 REST (GET)
-    Endpoint: https://ransomlook.io/api/posts/recent
-    Frequency: Polls every 10 minutes
-    \end{verbatim}
-    \item \textbf{Raw Response Format:} Fetches ransomware extortion listings:
-    \begin{verbatim}
-    [
-      {
-        "group": "LockBit 3.0",
-        "post_title": "Texas Medical Center Inc",
-        "discovered": "2026-05-21T12:00:00.000Z",
-        "website": "lockbitapt...onion"
-      }
-    ]
-    \end{verbatim}
+    \item \textbf{Source Endpoint \& Protocol:} Polls the Ransomlook.io API endpoint monitoring active ransomware extortion leak sites (summarized in Table~\ref{tab:spec_ransomwatch}).
+    \begin{table}[h!]
+    \centering
+    \small
+    \begin{tabular}{ll}
+    \toprule
+    \textbf{Specification Parameter} & \textbf{Configuration Value} \\
+    \midrule
+    Protocol & HTTP/1.1 REST (GET) \\
+    Endpoint URL & \url{https://ransomlook.io/api/posts/recent} \\
+    Polling Frequency & Every 10 minutes \\
+    \bottomrule
+    \end{tabular}
+    \caption{Ransomwatch Scraper Endpoint Specifications.}
+    \label{tab:spec_ransomwatch}
+    \end{table}
+
+    \item \textbf{Expected Payload Schema:} Returns a list of dark web leak site posts. The metadata attributes are defined in Table~\ref{tab:payload_ransomwatch} (with the raw payload example detailed in Appendix I.7).
+    \begin{table}[h!]
+    \centering
+    \small
+    \begin{tabular}{lll}
+    \toprule
+    \textbf{JSON Attribute} & \textbf{Data Type} & \textbf{Description / Constraints} \\
+    \midrule
+    \texttt{group} & String & Name of ransomware developer group (e.g. LockBit) \\
+    \texttt{post\_title} & String & Title containing victim corporation name string \\
+    \texttt{discovered} & Date String & Timestamp when post was first indexed \\
+    \texttt{website} & String & Darknet onion address of the extortion site \\
+    \bottomrule
+    \end{tabular}
+    \caption{Ransomwatch Raw Threat Payload Schema.}
+    \label{tab:payload_ransomwatch}
+    \end{table}
+
     \item \textbf{Operation Mechanism:} Ransomware attacks target organizations rather than specific IP addresses. When a new post is parsed, the scraper extracts the victim name from \texttt{post\_title} ("Texas Medical Center Inc"). It geolocates the victim based on target location keywords ("Texas" to United States coordinates).
     \item \textbf{Data Normalization:} All events are registered as ransomware indicators under \texttt{a\_t = "malware"}. The target business sector is resolved using our 5-layer classification engine (matching "Medical" to "Healthcare").
 \end{itemize}
 
 \subsubsection{8. MontySecurity C2 Tracker (\texttt{c2tracker.js})}
 \begin{itemize}
-    \item \textbf{Source Endpoint \& Protocol:} Polls the MontySecurity command-and-control tracker endpoint to monitor active listener framework IPs:
-    \begin{verbatim}
-    Protocol: HTTP/1.1 REST (GET)
-    Endpoint: https://github.com/c2/active/c2.json
-    Frequency: Polls every 15 minutes
-    \end{verbatim}
-    \item \textbf{Raw Response Format:} Fetches JSON arrays listing active command framework installations:
-    \begin{verbatim}
-    [
-      {
-        "ip": "185.220.101.9",
-        "framework": "Cobalt Strike",
-        "port": 50050,
-        "first_seen": "2026-05-21"
-      }
-    ]
-    \end{verbatim}
+    \item \textbf{Source Endpoint \& Protocol:} Polls the MontySecurity command-and-control tracker endpoint to monitor active listener framework IPs (summarized in Table~\ref{tab:spec_c2tracker}).
+    \begin{table}[h!]
+    \centering
+    \small
+    \begin{tabular}{ll}
+    \toprule
+    \textbf{Specification Parameter} & \textbf{Configuration Value} \\
+    \midrule
+    Protocol & HTTP/1.1 REST (GET) \\
+    Endpoint URL & \url{https://github.com/c2/active/c2.json} \\
+    Polling Frequency & Every 15 minutes \\
+    \bottomrule
+    \end{tabular}
+    \caption{MontySecurity C2 Scraper Endpoint Specifications.}
+    \label{tab:spec_c2tracker}
+    \end{table}
+
+    \item \textbf{Expected Payload Schema:} Returns active command host framework arrays. The JSON fields are described in Table~\ref{tab:payload_c2tracker} (with the raw payload example detailed in Appendix I.8).
+    \begin{table}[h!]
+    \centering
+    \small
+    \begin{tabular}{lll}
+    \toprule
+    \textbf{JSON Attribute} & \textbf{Data Type} & \textbf{Description / Constraints} \\
+    \midrule
+    \texttt{ip} & String & Public IP address of the listening C2 server \\
+    \texttt{framework} & String & C2 framework software name (e.g. Cobalt Strike) \\
+    \texttt{port} & Number & Server listening port number \\
+    \texttt{first\_seen} & String & Date string of initial detection \\
+    \bottomrule
+    \end{tabular}
+    \caption{MontySecurity C2 Raw Threat Payload Schema.}
+    \label{tab:payload_c2tracker}
+    \end{table}
+
     \item \textbf{Operation Mechanism:} The scraper parses active C2 servers. The parser extracts host IPs, listening ports, and malware families (e.g. Cobalt Strike, Mythic).
     \item \textbf{Data Normalization:} Since these servers control bots, threat events map to \texttt{a\_t = "malware"}. The indicator name is formatted as \texttt{a\_n = "Cobalt Strike C2 Node"}.
 \end{itemize}
 
 \subsubsection{9. MISP Galaxy Synthetic Scraper (\texttt{misp-galaxy.js})}
 \begin{itemize}
-    \item \textbf{Source Endpoint \& Protocol:} Accesses local JSON data structures cached inside the backend configuration folder:
-    \begin{verbatim}
-    Protocol: In-Memory JSON Parsing (File Read)
-    Cache Directory: backend/config/misp-galaxy/
-    Frequency: Reloads cache every 6 hours
-    \end{verbatim}
-    \item \textbf{Raw Response Format:} Loads detailed threat clusters, mapping groups like APT29 or APT28.
+    \item \textbf{Source Endpoint \& Protocol:} Accesses local JSON data structures cached inside the backend configuration folder (summarized in Table~\ref{tab:spec_misp_galaxy}).
+    \begin{table}[h!]
+    \centering
+    \small
+    \begin{tabular}{ll}
+    \toprule
+    \textbf{Specification Parameter} & \textbf{Configuration Value} \\
+    \midrule
+    Protocol & Local In-Memory JSON Parsing (File Read) \\
+    Cache Directory & \texttt{backend/config/misp-galaxy/} \\
+    Refresh Interval & Every 6 hours \\
+    Synthetic Emission & Random interval of 20 seconds \\
+    \bottomrule
+    \end{tabular}
+    \caption{MISP Galaxy Scraper Endpoint Specifications.}
+    \label{tab:spec_misp_galaxy}
+    \end{table}
+
+    \item \textbf{Expected Payload Schema:} Evaluates cached MISP JSON metadata templates. The main template structures are defined in Table~\ref{tab:payload_misp_galaxy} (with the raw payload format referenced in Appendix I.9).
+    \begin{table}[h!]
+    \centering
+    \small
+    \begin{tabular}{lll}
+    \toprule
+    \textbf{JSON Attribute} & \textbf{Data Type} & \textbf{Description / Constraints} \\
+    \midrule
+    \texttt{galaxy} & String & Galaxy class name identifier (e.g. threat-actor) \\
+    \texttt{name} & String & Name of the threat actor cluster or malware family \\
+    \texttt{description} & String & Detailed narrative of target profiling and CVEs \\
+    \texttt{uuid} & String & Unique OASIS STIX-compliant entity UUID \\
+    \bottomrule
+    \end{tabular}
+    \caption{MISP Galaxy Raw Threat Payload Schema.}
+    \label{tab:payload_misp_galaxy}
+    \end{table}
+
     \item \textbf{Operation Mechanism:} Caches massive threat actor clusters and malware family metadata locally every 6 hours, emitting geocoded synthetic events every 20 seconds to populate visual screens.
     \item \textbf{Data Normalization:} Derives attributes from MISP actor and target metadata files.
 \end{itemize}
@@ -534,30 +710,27 @@ Our primary globe mesh in \texttt{globe/Earth.tsx} implements a highly performan
 \begin{itemize}
     \item \textbf{Custom GLSL Shaders:} To create a premium visual experience, the globe mesh avoids standard flat image textures. Instead, we wrote custom WebGL vertex and fragment shaders using OpenGL Shading Language (GLSL). The vertex shader passes surface normals to the fragment shader, which computes a real-time \textbf{Fresnel atmospheric glow} based on the relationship between the surface normal vector and the camera's line-of-sight view vector. Specifically, the shader calculates the vector dot product of the surface normal and the camera view direction, restricts this value to a non-negative range, subtracts it from a maximum intensity unit, and raises the result to a power falloff factor (typically set to a factor of 4.0). This creates a high-fidelity glowing border around the outer silhouette of the globe that fades smoothly towards the center.
     
-    To illustrate this shader logic, our active GLSL implementation is detailed below:
-    
-    \textbf{GLSL Vertex Shader (\texttt{atmosphereVertex.glsl}):}
-    \begin{verbatim}
-    varying vec3 vNormal;
-    void main() {
-      vNormal = normalize(normalMatrix * normal);
-      vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
-      gl_Position = projectionMatrix * mvPosition;
-    }
-    \end{verbatim}
-    
-    \textbf{GLSL Fragment Shader (\texttt{atmosphereFragment.glsl}):}
-    \begin{verbatim}
-    varying vec3 vNormal;
-    void main() {
-      // Calculate atmospheric scattering glow strength
-      float dotProd = dot(vNormal, vec3(0, 0, 1.0));
-      float intensity = pow(0.6 - dotProd, 2.0);
-      // Neon Cyberblue color
-      vec3 atmosphericColor = vec3(0.23, 0.51, 0.96);
-      gl_FragColor = vec4(atmosphericColor, 0.4) * intensity;
-    }
-    \end{verbatim}
+    To illustrate this shader logic, Table~\ref{tab:glow_shader_vars} outlines the shader attributes and parameters passed between the rendering passes, with the complete source code detailed in Appendix H.1:
+
+    \begin{table}[h!]
+    \centering
+    \small
+    \begin{tabular}{lll}
+    \toprule
+    \textbf{Variable Name} & \textbf{GLSL Type} & \textbf{Role / Computational Purpose} \\
+    \midrule
+    \texttt{vNormal} & \texttt{varying vec3} & Surface normal vector passed from vertex to fragment shader \\
+    \texttt{normalMatrix} & \texttt{uniform mat3} & Standard WebGL transformation matrix mapping normals \\
+    \texttt{mvPosition} & \texttt{vec4} & Model-View matrix mapping physical coordinates on sphere \\
+    \texttt{dotProd} & \texttt{float} & Dot product measuring normal cosine angle relative to camera \\
+    \texttt{intensity} & \texttt{float} & Power-scaled intensity falloff function for Fresnel scattering \\
+    \texttt{atmosphericColor} & \texttt{vec3} & Neon Cyberblue color vector (\texttt{0.23, 0.51, 0.96}) \\
+    \texttt{gl\_FragColor} & \texttt{vec4} & Output pixel color vector containing transparency blending \\
+    \bottomrule
+    \end{tabular}
+    \caption{Atmospheric Glow Shader Parameters and Interpolated Variables.}
+    \label{tab:glow_shader_vars}
+    \end{table}
     
     \item \textbf{TopoJSON Country Outlines:} Loads a lightweight TopoJSON land coordinate file (\texttt{land-110m.json}) and projects the land boundaries as vector lines.
     \item \textbf{Neon Glow Borders:} Renders country borders using \textbf{5 overlapping vector line layers} at microscopic scale increases (from $R=1.002$ to $R=1.010$) with decreasing opacities, creating a beautiful neon outline glow effect without needing heavy blur shaders.

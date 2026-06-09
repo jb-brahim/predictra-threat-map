@@ -679,3 +679,424 @@ void main() {
 }
 \end{verbatim}
 
+---
+
+\section*{Appendix I: Raw Scraper Payload Samples}
+To assist in integration testing, this section catalogs the raw JSON and CSV payloads returned by the external scrapers before normalization.
+
+\subsection*{I.1 Checkpoint Scraper Raw Payload Example}
+\begin{verbatim}
+event: threat
+data: {
+  "srcIp": "194.26.135.8",
+  "dstIp": "74.125.19.103",
+  "attackName": "Phishing Link Access",
+  "attackType": "phishing",
+  "severity": "high",
+  "srcCountry": "RU",
+  "dstCountry": "US"
+}
+\end{verbatim}
+
+\subsection*{I.2 Bitdefender Scraper Raw Payload Example}
+\begin{verbatim}
+{
+  "event": "detection",
+  "channel": "ransomware",
+  "ip": "103.24.15.2",
+  "country": "CN",
+  "malwareName": "WannaCry.B.Ransomware",
+  "port": 445
+}
+\end{verbatim}
+
+\subsection*{I.3 Fortinet Scraper Raw Payload Example}
+\begin{verbatim}
+[
+  {
+    "srcCountry": "Germany",
+    "dstCountry": "United States",
+    "signatureName": "Apache.Log4j.RCE.Exploit",
+    "attackCount": 45,
+    "victimSubnet": "198.51.100.0/24"
+  }
+]
+\end{verbatim}
+
+\subsection*{I.4 URLhaus Malware Scraper Raw Payload Example}
+\begin{verbatim}
+{
+  "query_status": "ok",
+  "urls": [
+    {
+      "id": "2810394",
+      "url": "http://185.220.101.5/payloads/cobalt.exe",
+      "url_status": "online",
+      "threat": "malware_download",
+      "reporter": "abuse_ch_bot",
+      "tags": ["CobaltStrike", "exe"]
+    }
+  ]
+}
+\end{verbatim}
+
+\subsection*{I.5 Kaspersky Feodo Botnet Tracker Raw Payload Example}
+\begin{verbatim}
+# Firstseen,DstIP,DstPort,Malware,Asname
+2026-05-21,103.5.8.12,443,Qakbot,Chinanet,Active
+\end{verbatim}
+
+\subsection*{I.6 AlienVault OTX Pulse Scraper Raw Payload Example}
+\begin{verbatim}
+{
+  "count": 1,
+  "results": [
+    {
+      "name": "APT28 Sednit Infrastructure",
+      "description": "Active C2 targeting gov.",
+      "indicators": [
+        {
+          "indicator": "194.26.135.12",
+          "type": "IPv4",
+          "title": "C2 Server"
+        }
+      ]
+    }
+  ]
+}
+\end{verbatim}
+
+\subsection*{I.7 Ransomwatch Extortion Scraper Raw Payload Example}
+\begin{verbatim}
+[
+  {
+    "group": "LockBit 3.0",
+    "post_title": "Texas Medical Center Inc",
+    "discovered": "2026-05-21T12:00:00.000Z",
+    "website": "lockbitapt...onion"
+  }
+]
+\end{verbatim}
+
+\subsection*{I.8 MontySecurity C2 Tracker Raw Payload Example}
+\begin{verbatim}
+[
+  {
+    "ip": "185.220.101.9",
+    "framework": "Cobalt Strike",
+    "port": 50050,
+    "first_seen": "2026-05-21"
+  }
+]
+\end{verbatim}
+
+\subsection*{I.9 MISP Galaxy Synthetic Scraper Raw Payload Example}
+The MISP Galaxy synthetic scraper parses internal threat intelligence models and generates standard normalized events. An example of the input template metadata format is cached locally and parsed dynamically (see Appendix F.2 for the output structure details).
+
+\subsection*{I.10 SANS ISC DShield Raw Payload Example}
+\begin{verbatim}
+[
+  {
+    "ip": "185.220.101.5",
+    "port": 23,
+    "attacks": 1420,
+    "lastseen": "2026-05-21"
+  }
+]
+\end{verbatim}
+
+---
+
+\section*{Appendix J: Sample STIX 2.1 Threat Ingestion Bundle}
+This section contains the raw JSON structure of the STIX 2.1 intelligence bundle representing a nation-state campaign analyzed in Chapter 4:
+\begin{verbatim}
+{
+  "type": "bundle",
+  "id": "bundle--9d48721c-a3f1-4df2-8e10",
+  "spec_version": "2.1",
+  "objects": [
+    {
+      "type": "threat-actor",
+      "id": "threat-actor--8e0f66e0",
+      "created": "2026-05-21T12:00:00.000Z",
+      "modified": "2026-05-21T12:00:00.000Z",
+      "name": "Apex Spyder",
+      "description": "Nation-state cyber espionage active since 2018.",
+      "threat_actor_types": ["spy", "nation-state"],
+      "aliases": ["APT99", "RedHorizon"],
+      "roles": ["infrastructure-operator", "malware-author"],
+      "goals": ["espionage", "intellectual-property-theft"],
+      "sophistication": "innovator",
+      "resource_level": "government"
+    },
+    {
+      "type": "campaign",
+      "id": "campaign--4f32890b",
+      "created": "2026-05-21T12:00:00.000Z",
+      "modified": "2026-05-21T12:00:00.000Z",
+      "name": "Operation Silent Breach",
+      "description": "Targeted infiltration of telco networks.",
+      "first_seen": "2026-01-15T08:00:00Z",
+      "objective": "Establish persistence and tap fiber links."
+    },
+    {
+      "type": "malware",
+      "id": "malware--3b5f928e",
+      "created": "2026-05-21T12:00:00.000Z",
+      "modified": "2026-05-21T12:00:00.000Z",
+      "name": "SpectreShell",
+      "description": "Modular remote access trojan via encrypted DNS.",
+      "is_family": true,
+      "malware_types": ["remote-access-trojan", "exfiltration"],
+      "architecture_execution_envs": ["x86", "x64"],
+      "capabilities": ["anti-sandbox", "dns-exfil", "registry-persist"]
+    },
+    {
+      "type": "tool",
+      "id": "tool--e912b48a",
+      "created": "2026-05-21T12:00:00.000Z",
+      "modified": "2026-05-21T12:00:00.000Z",
+      "name": "SharpDump",
+      "description": "A C# tool to dump LSASS memory partitions.",
+      "tool_types": ["credential-exploitation"],
+      "aliases": ["LsassDumper"]
+    },
+    {
+      "type": "attack-pattern",
+      "id": "attack-pattern--7d29bc3b",
+      "created": "2026-05-21T12:00:00.000Z",
+      "modified": "2026-05-21T12:00:00.000Z",
+      "name": "LSASS Memory Dumping",
+      "description": "LSASS memory dumping for domain credentials.",
+      "kill_chain_phases": [
+        {
+          "kill_chain_name": "mitre-attack",
+          "phase_name": "credential-access"
+        }
+      ]
+    },
+    {
+      "type": "identity",
+      "id": "identity--8a39dfa2",
+      "created": "2026-05-21T12:00:00.000Z",
+      "modified": "2026-05-21T12:00:00.000Z",
+      "name": "TelcoGlobal Inc.",
+      "description": "International telco provider in EMEA.",
+      "identity_class": "organization",
+      "sectors": ["telecommunications", "technology"]
+    },
+    {
+      "type": "indicator",
+      "id": "indicator--bc3f829e",
+      "created": "2026-05-21T12:00:00.000Z",
+      "modified": "2026-05-21T12:00:00.000Z",
+      "name": "SpectreShell C2 Server Beacon",
+      "description": "Detects SpectreShell outbound DNS beaconing.",
+      "pattern": "[domain-name:value = 'c2.corp-updates.net']",
+      "pattern_type": "stix",
+      "valid_from": "2026-01-15T00:00:00Z"
+    },
+    {
+      "type": "relationship",
+      "id": "relationship--c112a9e8",
+      "created": "2026-05-21T12:00:00.000Z",
+      "modified": "2026-05-21T12:00:00.000Z",
+      "relationship_type": "attributed-to",
+      "source_ref": "campaign--4f32890b",
+      "target_ref": "threat-actor--8e0f66e0"
+    },
+    {
+      "type": "relationship",
+      "id": "relationship--a918bde2",
+      "created": "2026-05-21T12:00:00.000Z",
+      "modified": "2026-05-21T12:00:00.000Z",
+      "relationship_type": "uses",
+      "source_ref": "threat-actor--8e0f66e0",
+      "target_ref": "malware--3b5f928e"
+    },
+    {
+      "type": "relationship",
+      "id": "relationship--e018a1bc",
+      "created": "2026-05-21T12:00:00.000Z",
+      "modified": "2026-05-21T12:00:00.000Z",
+      "relationship_type": "uses",
+      "source_ref": "malware--3b5f928e",
+      "target_ref": "tool--e912b48a"
+    },
+    {
+      "type": "relationship",
+      "id": "relationship--103cdef1",
+      "created": "2026-05-21T12:00:00.000Z",
+      "modified": "2026-05-21T12:00:00.000Z",
+      "relationship_type": "targets",
+      "source_ref": "malware--3b5f928e",
+      "target_ref": "identity--8a39dfa2"
+    },
+    {
+      "type": "relationship",
+      "id": "relationship--d028e1bc",
+      "created": "2026-05-21T12:00:00.000Z",
+      "modified": "2026-05-21T12:00:00.000Z",
+      "relationship_type": "targets",
+      "source_ref": "campaign--4f32890b",
+      "target_ref": "identity--8a39dfa2"
+    },
+    {
+      "type": "relationship",
+      "id": "relationship--a03bf19a",
+      "created": "2026-05-21T12:00:00.000Z",
+      "modified": "2026-05-21T12:00:00.000Z",
+      "relationship_type": "indicates",
+      "source_ref": "indicator--bc3f829e",
+      "target_ref": "malware--3b5f928e"
+    }
+  ]
+}
+\end{verbatim}
+
+---
+
+\section*{Appendix K: Pre-allocated Circular Memory Buffer (RingBuffer.ts)}
+This section contains the complete TypeScript implementation of the pre-allocated circular RingBuffer class used for Garbage Collection protection:
+\begin{verbatim}
+export class RingBuffer<T> {
+  private capacity: number;
+  private buffer: T[];
+  private pointer: number = 0;
+  private size: number = 0;
+
+  constructor(capacity: number) {
+    this.capacity = capacity;
+    this.buffer = new Array<T>(capacity);
+  }
+
+  public push(item: T): void {
+    this.buffer[this.pointer] = item;
+    this.pointer = (this.pointer + 1) % this.capacity;
+    if (this.size < this.capacity) {
+      this.size++;
+    }
+  }
+
+  public getAll(): T[] {
+    const result: T[] = [];
+    const start = this.size === this.capacity ? this.pointer : 0;
+    for (let i = 0; i < this.size; i++) {
+      const idx = (start + i) % this.capacity;
+      result.push(this.buffer[idx]);
+    }
+    return result;
+  }
+
+  public getLength(): number {
+    return this.size;
+  }
+}
+\end{verbatim}
+
+---
+
+\section*{Appendix L: Browser-Side FPS Telemetry Hook (useFpsTelemetry.ts)}
+This hook gathers high-precision rendering latency telemetry by hook integration with the browser paint cycle:
+\begin{verbatim}
+import { useEffect, useRef } from 'react';
+import { useStreamStore } from '../stream/useStreamStore';
+
+export function useFpsTelemetry() {
+  const setFps = useStreamStore((s) => s.setFps);
+  const frameCountRef = useRef(0);
+  const lastTimeRef = useRef(performance.now());
+  const requestRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    const loop = () => {
+      frameCountRef.current++;
+      const now = performance.now();
+      const delta = now - lastTimeRef.current;
+
+      // Update telemetry average every 1 second
+      if (delta >= 1000) {
+        const calculatedFps = (frameCountRef.current * 1000) / delta;
+        setFps(Math.round(calculatedFps));
+        
+        // Reset counters
+        frameCountRef.current = 0;
+        lastTimeRef.current = now;
+      }
+      
+      requestRef.current = requestAnimationFrame(loop);
+    };
+
+    requestRef.current = requestAnimationFrame(loop);
+    return () => {
+      if (requestRef.current) {
+        cancelAnimationFrame(requestRef.current);
+      }
+    };
+  }, [setFps]);
+}
+\end{verbatim}
+
+---
+
+\section*{Appendix M: STIX Parser and Classification Utilities}
+This appendix provides the core Javascript methods executing STIX parsing, object categorization, and regular expression IOC pattern classification inside the React application:
+
+\subsection*{M.1 STIX 2.1 Object separation and MITRE compiler}
+\begin{verbatim}
+const objects = stixData.objects || [];
+const actors = objects.filter(o => o.type === 'threat-actor');
+const malwares = objects.filter(o => o.type === 'malware');
+const tools = objects.filter(o => o.type === 'tool');
+const indicators = objects.filter(o => o.type === 'indicator');
+const relationships = objects.filter(o => o.type === 'relationship');
+
+const phasesMap = new Map();
+attackPatterns.forEach(ap => {
+  (ap.kill_chain_phases || []).forEach(phase => {
+    if (phase.kill_chain_name === 'mitre-attack') {
+      const phaseName = phase.phase_name.replace(/-/g, ' ');
+      if (!phasesMap.has(phaseName)) {
+        phasesMap.set(phaseName, []);
+      }
+      phasesMap.get(phaseName).push(ap);
+    }
+  });
+});
+\end{verbatim}
+
+\subsection*{M.2 Regex-based Indicator Classification}
+\begin{verbatim}
+export function classifyIndicator(pattern: string): string {
+  if (/ipv4-addr:value/.test(pattern)) return 'IPv4 Address';
+  if (/file:hashes\.'SHA-256'/.test(pattern)) return 'SHA-256 Hash';
+  if (/domain-name:value/.test(pattern)) return 'Domain Name';
+  if (/url:value/.test(pattern)) return 'URL Endpoint';
+  return 'File/Mutex Pattern';
+}
+\end{verbatim}
+
+---
+
+\section*{Appendix N: D3 Force-Directed Canvas Rendering}
+This section documents the rendering code that loops through active simulation links to draw custom neon lines and animate flowing particle entities:
+\begin{verbatim}
+ctx.beginPath();
+ctx.strokeStyle = 'rgba(59, 130, 246, 0.15)';
+ctx.moveTo(link.source.x, link.source.y);
+ctx.lineTo(link.target.x, link.target.y);
+ctx.stroke();
+
+// Particle flow animation
+const time = Date.now() * 0.003;
+const progress = (time + (link.index * 0.1)) % 1.0;
+const dx = link.target.x - link.source.x;
+const dy = link.target.y - link.source.y;
+const px = link.source.x + dx * progress;
+const py = link.source.y + dy * progress;
+ctx.beginPath();
+ctx.arc(px, py, 2.5, 0, 2 * Math.PI);
+ctx.fillStyle = '#3B82F6';
+ctx.fill();
+\end{verbatim}
+
