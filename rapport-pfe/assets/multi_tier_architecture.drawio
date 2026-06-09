@@ -1,0 +1,58 @@
+<mxfile host="Electron" modified="2026-06-08T14:25:00.000Z" agent="Mozilla/5.0" version="21.6.8" type="device">
+  <diagram id="PredictraArchitecture" name="Logical Architecture">
+    <mxGraphModel dx="1100" dy="800" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
+      <root>
+        <!-- Layer 0 (Base) -->
+        <mxCell id="0" />
+        <!-- Layer 1 (Parent) -->
+        <mxCell id="1" parent="0" />
+
+        <!-- 1. Presentation Tier -->
+        <mxCell id="presentation" value="&lt;font face=&quot;Helvetica&quot; style=&quot;font-size: 15px;&quot;&gt;&lt;b&gt;Presentation Tier (Frontend - React 19 / WebGL)&lt;/b&gt;&lt;/font&gt;&lt;br&gt;&lt;font face=&quot;Helvetica&quot; style=&quot;font-size: 12px;&quot; color=&quot;#555555&quot;&gt;WebGL 3D Globe Scene (R3F) &amp;bull; STIX Force Graph &amp;bull; Analytics &amp;bull; Zustand State Store&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#333333;strokeWidth=1.5;gradientColor=none;shadow=0;arcSize=8;fontColor=#000000;align=center;" parent="1" vertex="1">
+          <mxGeometry x="100" y="50" width="520" height="70" as="geometry" />
+        </mxCell>
+
+        <!-- 2. Storage & Management Tier -->
+        <mxCell id="storage" value="&lt;font face=&quot;Helvetica&quot; style=&quot;font-size: 15px;&quot;&gt;&lt;b&gt;Storage &amp;amp; Management Tier (MongoDB)&lt;/b&gt;&lt;/font&gt;&lt;br&gt;&lt;font face=&quot;Helvetica&quot; style=&quot;font-size: 12px;&quot; color=&quot;#555555&quot;&gt;Mongoose Schemas &amp;bull; 30-Day TTL Indexes &amp;bull; 500MB DB Quota Monitor&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#333333;strokeWidth=1.5;gradientColor=none;shadow=0;arcSize=8;fontColor=#000000;align=center;" parent="1" vertex="1">
+          <mxGeometry x="100" y="170" width="520" height="70" as="geometry" />
+        </mxCell>
+
+        <!-- 3. Processing & Enrichment Tier -->
+        <mxCell id="processing" value="&lt;font face=&quot;Helvetica&quot; style=&quot;font-size: 15px;&quot;&gt;&lt;b&gt;Processing &amp;amp; Enrichment Tier (Node.js)&lt;/b&gt;&lt;/font&gt;&lt;br&gt;&lt;font face=&quot;Helvetica&quot; style=&quot;font-size: 12px;&quot; color=&quot;#555555&quot;&gt;5-Layer Sector Classifier &amp;bull; GeoIP Geocoder &amp;bull; RDAP In-Memory Cache&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#333333;strokeWidth=1.5;gradientColor=none;shadow=0;arcSize=8;fontColor=#000000;align=center;" parent="1" vertex="1">
+          <mxGeometry x="100" y="290" width="520" height="70" as="geometry" />
+        </mxCell>
+
+        <!-- 4. Data Ingestion Tier -->
+        <mxCell id="ingestion" value="&lt;font face=&quot;Helvetica&quot; style=&quot;font-size: 15px;&quot;&gt;&lt;b&gt;Data Ingestion Tier (Scrapers)&lt;/b&gt;&lt;/font&gt;&lt;br&gt;&lt;font face=&quot;Helvetica&quot; style=&quot;font-size: 12px;&quot; color=&quot;#555555&quot;&gt;9+ Multi-Source APIs &amp;bull; Real-Time SSE/WebSockets &amp;bull; 300ms Batch Queue&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#333333;strokeWidth=1.5;gradientColor=none;shadow=0;arcSize=8;fontColor=#000000;align=center;" parent="1" vertex="1">
+          <mxGeometry x="100" y="410" width="520" height="70" as="geometry" />
+        </mxCell>
+
+        <!-- Upward Arrow 1: Ingestion -> Processing -->
+        <mxCell id="arrow1" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=0;exitDx=0;exitDy=0;entryX=0.5;entryY=1;entryDx=0;entryDy=0;strokeColor=#333333;strokeWidth=1.5;endArrow=block;" parent="1" source="ingestion" target="processing" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- Upward Arrow 2: Processing -> Storage -->
+        <mxCell id="arrow2" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=0;exitDx=0;exitDy=0;entryX=0.5;entryY=1;entryDx=0;entryDy=0;strokeColor=#333333;strokeWidth=1.5;endArrow=block;" parent="1" source="processing" target="storage" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- Upward Arrow 3: Storage -> Presentation -->
+        <mxCell id="arrow3" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=0;exitDx=0;exitDy=0;entryX=0.5;entryY=1;entryDx=0;entryDy=0;strokeColor=#333333;strokeWidth=1.5;endArrow=block;" parent="1" source="storage" target="presentation" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- Real-Time SSE Feed (Curved Direct Line on the Right) -->
+        <mxCell id="sse_feed" value="&lt;font color=&quot;#333333&quot;&gt;&lt;b&gt;Real-Time SSE Feed&lt;/b&gt;&lt;/font&gt;" style="edgeStyle=orthogonalEdgeStyle;curved=1;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=1;entryY=0.5;entryDx=0;entryDy=0;strokeColor=#333333;strokeWidth=1.5;endArrow=block;dashed=1;labelBackgroundColor=#FFFFFF;spacingLeft=10;" parent="1" source="ingestion" target="presentation" edge="1">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="680" y="445" />
+              <mxPoint x="680" y="85" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

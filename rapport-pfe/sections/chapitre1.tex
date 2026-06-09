@@ -19,16 +19,17 @@ To support its mission of providing real-time global intelligence, Predictra is 
 
 \begin{figure}[h!]
 \centering
-\begin{tikzpicture}[
-    sibling distance=4.5cm,
-    level distance=1.8cm,
-    every node/.style={draw=charcoal, top color=white, bottom color=cyberblue!15, drop shadow, thick, rounded corners, align=center, minimum width=3.8cm, minimum height=1cm, font=\small}
-]
-    \node[fill=cyberblue!20] {Predictra Board}
-        child { node {Threat Research\\Department} }
-        child { node {Security Engineering\\Department} }
-        child { node {Sales \& Operations\\Department} };
-\end{tikzpicture}
+% \begin{tikzpicture}[
+%     sibling distance=4.5cm,
+%     level distance=1.8cm,
+%     every node/.style={draw=charcoal, top color=white, bottom color=cyberblue!15, drop shadow, thick, rounded corners, align=center, minimum width=3.8cm, minimum height=1cm, font=\small}
+% ]
+%     \node[fill=cyberblue!20] {Predictra Board}
+%         child { node {Threat Research\\Department} }
+%         child { node {Security Engineering\\Department} }
+%         child { node {Sales \& Operations\\Department} };
+% \end{tikzpicture}
+\includegraphics[width=0.9\textwidth]{assets/predictra_org.pdf}
 \caption{Organizational structure of Predictra.}
 \label{fig:predictra_org}
 \end{figure}
@@ -143,29 +144,30 @@ We implemented the \textbf{Agile Scrum framework} to pilot the development proce
 
 \begin{figure}[h!]
 \centering
-\begin{tikzpicture}[
-    node distance=1.2cm,
-    box/.style={draw=charcoal, top color=white, bottom color=cyberblue!15, drop shadow, thick, rounded corners, minimum width=3.8cm, minimum height=0.8cm, align=center, font=\small},
-    arrow/.style={-latex, thick, color=cyberblue}
-]
-    \node (product) [box] {Product Backlog};
-    \node (planning) [box, below=of product] {Sprint Planning};
-    \node (sprint) [box, below=of planning] {Sprint Execution\\(2-3 Weeks Sprints)};
-    \node (scrum) [box, right=2.5cm of sprint] {Daily Scrum\\(15 Min Standup)};
-    \node (review) [box, below=of sprint] {Sprint Review\\(Working Demo)};
-    \node (retro) [box, below=of review] {Sprint Retrospective};
-    \node (increment) [box, below=of retro, fill=cyberblue!20] {Shippable Increment};
-
-    \draw [arrow] (product) -- (planning);
-    \draw [arrow] (planning) -- (sprint);
-    \draw [arrow] (sprint) -- (review);
-    \draw [arrow] (review) -- (retro);
-    \draw [arrow] (retro) -- (increment);
-    
-    \draw [arrow] (sprint) -- (scrum);
-    \draw [arrow] (scrum) -- (sprint);
-    \draw [arrow, bend left=45] (retro.west) to node[left, pos=0.5, color=charcoal] {Iterative Feed} (planning.west);
-\end{tikzpicture}
+% \begin{tikzpicture}[
+%     node distance=1.2cm,
+%     box/.style={draw=charcoal, top color=white, bottom color=cyberblue!15, drop shadow, thick, rounded corners, minimum width=3.8cm, minimum height=0.8cm, align=center, font=\small},
+%     arrow/.style={-latex, thick, color=cyberblue}
+% ]
+%     \node (product) [box] {Product Backlog};
+%     \node (planning) [box, below=of product] {Sprint Planning};
+%     \node (sprint) [box, below=of planning] {Sprint Execution\\(2-3 Weeks Sprints)};
+%     \node (scrum) [box, right=2.5cm of sprint] {Daily Scrum\\(15 Min Standup)};
+%     \node (review) [box, below=of sprint] {Sprint Review\\(Working Demo)};
+%     \node (retro) [box, below=of review] {Sprint Retrospective};
+%     \node (increment) [box, below=of retro, fill=cyberblue!20] {Shippable Increment};
+% 
+%     \draw [arrow] (product) -- (planning);
+%     \draw [arrow] (planning) -- (sprint);
+%     \draw [arrow] (sprint) -- (review);
+%     \draw [arrow] (review) -- (retro);
+%     \draw [arrow] (retro) -- (increment);
+%     
+%     \draw [arrow] (sprint) -- (scrum);
+%     \draw [arrow] (scrum) -- (sprint);
+%     \draw [arrow, bend left=45] (retro.west) to node[left, pos=0.5, color=charcoal] {Iterative Feed} (planning.west);
+% \end{tikzpicture}
+\includegraphics[width=0.9\textwidth]{assets/scrum_lifecycle.pdf}
 \caption{Agile Scrum development lifecycle flowchart.}
 \label{fig:scrum_lifecycle}
 \end{figure}

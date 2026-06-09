@@ -1,0 +1,71 @@
+<mxfile host="Electron" modified="2026-06-08T14:41:00.000Z" agent="Mozilla/5.0" version="21.6.8" type="device">
+  <diagram id="ComponentDiagram" name="Component Diagram">
+    <mxGraphModel dx="1200" dy="900" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+
+        <!-- Scrapers Module -->
+        <mxCell id="scrapers" value="&lt;b&gt;Scrapers Module&lt;/b&gt;&lt;br&gt;(Checkpoint, Feodo, etc.)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#333333;strokeWidth=1.5;fontColor=#000000;fontSize=12;align=center;" parent="1" vertex="1">
+          <mxGeometry x="50" y="50" width="180" height="50" as="geometry" />
+        </mxCell>
+
+        <!-- Enrichment Module -->
+        <mxCell id="enrichment" value="&lt;b&gt;Enrichment Module&lt;/b&gt;&lt;br&gt;(Geocoding &amp;amp; Classifier)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#333333;strokeWidth=1.5;fontColor=#000000;fontSize=12;align=center;" parent="1" vertex="1">
+          <mxGeometry x="310" y="50" width="180" height="50" as="geometry" />
+        </mxCell>
+
+        <!-- Express Server -->
+        <mxCell id="server" value="&lt;b&gt;Express Server&lt;/b&gt;&lt;br&gt;(REST APIs &amp;amp; SSE Stream)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#333333;strokeWidth=1.5;fontColor=#000000;fontSize=12;align=center;" parent="1" vertex="1">
+          <mxGeometry x="310" y="170" width="180" height="50" as="geometry" />
+        </mxCell>
+
+        <!-- MongoDB Atlas -->
+        <mxCell id="database" value="&lt;b&gt;MongoDB Atlas&lt;/b&gt;&lt;br&gt;(ThreatEvent Model)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#333333;strokeWidth=1.5;fontColor=#000000;fontSize=12;align=center;" parent="1" vertex="1">
+          <mxGeometry x="50" y="170" width="180" height="50" as="geometry" />
+        </mxCell>
+
+        <!-- Zustand Store -->
+        <mxCell id="store" value="&lt;b&gt;Zustand Store&lt;/b&gt;&lt;br&gt;(State &amp;amp; Adaptive Engine)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#333333;strokeWidth=1.5;fontColor=#000000;fontSize=12;align=center;" parent="1" vertex="1">
+          <mxGeometry x="310" y="290" width="180" height="50" as="geometry" />
+        </mxCell>
+
+        <!-- 3D WebGL Globe -->
+        <mxCell id="globe" value="&lt;b&gt;3D WebGL Globe&lt;/b&gt;&lt;br&gt;(React Three Fiber)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#333333;strokeWidth=1.5;fontColor=#000000;fontSize=12;align=center;" parent="1" vertex="1">
+          <mxGeometry x="50" y="290" width="180" height="50" as="geometry" />
+        </mxCell>
+
+        <!-- STIX Workspace -->
+        <mxCell id="stix" value="&lt;b&gt;STIX Workspace&lt;/b&gt;&lt;br&gt;(D3 Force Graph)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#333333;strokeWidth=1.5;fontColor=#000000;fontSize=12;align=center;" parent="1" vertex="1">
+          <mxGeometry x="570" y="290" width="180" height="50" as="geometry" />
+        </mxCell>
+
+        <!-- Dependencies -->
+        <mxCell id="dep1" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#333333;strokeWidth=1.5;dashed=1;endArrow=open;endSize=8;" parent="1" source="scrapers" target="enrichment" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <mxCell id="dep2" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#333333;strokeWidth=1.5;dashed=1;endArrow=open;endSize=8;" parent="1" source="enrichment" target="server" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <mxCell id="dep3" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#333333;strokeWidth=1.5;dashed=1;endArrow=open;endSize=8;" parent="1" source="server" target="database" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <mxCell id="dep4" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#333333;strokeWidth=1.5;dashed=1;endArrow=open;endSize=8;" parent="1" source="server" target="store" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <mxCell id="dep5" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#333333;strokeWidth=1.5;dashed=1;endArrow=open;endSize=8;" parent="1" source="store" target="globe" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <mxCell id="dep6" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#333333;strokeWidth=1.5;dashed=1;endArrow=open;endSize=8;" parent="1" source="store" target="stix" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

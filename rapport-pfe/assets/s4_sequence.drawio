@@ -1,0 +1,104 @@
+<mxfile host="Electron" modified="2026-06-08T14:52:00.000Z" agent="Mozilla/5.0" version="21.6.8" type="device">
+  <diagram id="S4Sequence" name="Sprint 4 Sequence Diagram">
+    <mxGraphModel dx="1000" dy="800" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+
+        <!-- Headers -->
+        <mxCell id="h1_analyst" value="" style="shape=umlActor;verticalLabelPosition=bottom;verticalAlign=top;html=1;outlineConnect=0;strokeColor=#333333;strokeWidth=1.5;fillColor=#FFFFFF;" parent="1" vertex="1">
+          <mxGeometry x="85" y="40" width="30" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="h1_label" value="&lt;b&gt;Security Analyst&lt;/b&gt;" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;fontSize=10;fontColor=#333333;" parent="1" vertex="1">
+          <mxGeometry x="50" y="90" width="100" height="20" as="geometry" />
+        </mxCell>
+
+        <mxCell id="h2" value="&lt;b&gt;HistoryPage UI&lt;/b&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#333333;strokeWidth=1.5;fontColor=#000000;" parent="1" vertex="1">
+          <mxGeometry x="200" y="50" width="100" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="h3" value="&lt;b&gt;Express Server&lt;/b&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#333333;strokeWidth=1.5;fontColor=#000000;" parent="1" vertex="1">
+          <mxGeometry x="350" y="50" width="100" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="h4" value="&lt;b&gt;MongoDB Atlas&lt;/b&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#333333;strokeWidth=1.5;fontColor=#000000;" parent="1" vertex="1">
+          <mxGeometry x="500" y="50" width="110" height="40" as="geometry" />
+        </mxCell>
+
+        <!-- Vertical Lifelines -->
+        <mxCell id="l1" value="" style="endArrow=none;dashed=1;html=1;strokeColor=#666666;strokeWidth=1.5;" parent="1" edge="1">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="100" y="380" />
+            <mxPoint x="100" y="110" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="l2" value="" style="endArrow=none;dashed=1;html=1;strokeColor=#666666;strokeWidth=1.5;" parent="1" edge="1">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="250" y="380" />
+            <mxPoint x="250" y="90" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="l3" value="" style="endArrow=none;dashed=1;html=1;strokeColor=#666666;strokeWidth=1.5;" parent="1" edge="1">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="400" y="380" />
+            <mxPoint x="400" y="90" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="l4" value="" style="endArrow=none;dashed=1;html=1;strokeColor=#666666;strokeWidth=1.5;" parent="1" edge="1">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="555" y="380" />
+            <mxPoint x="555" y="90" />
+          </mxGeometry>
+        </mxCell>
+
+        <!-- Messages -->
+        <!-- Msg 1: Click "Target My IP" -->
+        <mxCell id="msg1" value="Click &quot;Target My IP&quot;" style="endArrow=block;html=1;strokeColor=#333333;strokeWidth=1.5;labelBackgroundColor=#FFFFFF;fontSize=11;fontColor=#333333;" parent="1" edge="1">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="100" y="130" />
+            <mxPoint x="250" y="130" />
+          </mxGeometry>
+        </mxCell>
+
+        <!-- Msg 2: GET /api/history?ip=... -->
+        <mxCell id="msg2" value="GET /api/history?ip=..." style="endArrow=block;html=1;strokeColor=#333333;strokeWidth=1.5;labelBackgroundColor=#FFFFFF;fontSize=11;fontColor=#333333;" parent="1" edge="1">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="250" y="180" />
+            <mxPoint x="400" y="180" />
+          </mxGeometry>
+        </mxCell>
+
+        <!-- Msg 3: Mongoose: find({s_ip: ...}) -->
+        <mxCell id="msg3" value="Mongoose: find({s_ip: ...})" style="endArrow=block;html=1;strokeColor=#333333;strokeWidth=1.5;labelBackgroundColor=#FFFFFF;fontSize=11;fontColor=#333333;" parent="1" edge="1">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="400" y="230" />
+            <mxPoint x="555" y="230" />
+          </mxGeometry>
+        </mxCell>
+
+        <!-- Msg 4: Return filtered documents (dashed return) -->
+        <mxCell id="msg4" value="Return filtered documents" style="endArrow=open;dashed=1;html=1;strokeColor=#333333;strokeWidth=1.5;labelBackgroundColor=#FFFFFF;fontSize=11;fontColor=#333333;endFill=0;" parent="1" edge="1">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="555" y="280" />
+            <mxPoint x="400" y="280" />
+          </mxGeometry>
+        </mxCell>
+
+        <!-- Msg 5: Return JSON threat logs array (dashed return) -->
+        <mxCell id="msg5" value="Return JSON threat logs array" style="endArrow=open;dashed=1;html=1;strokeColor=#333333;strokeWidth=1.5;labelBackgroundColor=#FFFFFF;fontSize=11;fontColor=#333333;endFill=0;" parent="1" edge="1">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="400" y="320" />
+            <mxPoint x="250" y="320" />
+          </mxGeometry>
+        </mxCell>
+
+        <!-- Msg 6: Render custom threat rows -->
+        <mxCell id="msg6" value="Render custom threat rows" style="endArrow=block;html=1;strokeColor=#333333;strokeWidth=1.5;labelBackgroundColor=#FFFFFF;fontSize=11;fontColor=#333333;" parent="1" edge="1">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="250" y="350" />
+            <mxPoint x="100" y="350" />
+          </mxGeometry>
+        </mxCell>
+
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
