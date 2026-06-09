@@ -1,99 +1,192 @@
-<mxfile host="Electron" modified="2026-06-08T14:39:00.000Z" agent="Mozilla/5.0" version="21.6.8" type="device">
+<mxfile host="Electron" modified="2026-06-09T10:15:49.750Z" agent="Mozilla/5.0" version="21.6.8" type="device">
   <diagram id="GlobalUseCase" name="Global Use Case">
-    <mxGraphModel dx="1200" dy="900" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
+    <mxGraphModel dx="1200" dy="1100" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1169" pageHeight="827" math="0" shadow="0">
       <root>
         <mxCell id="0" />
         <mxCell id="1" parent="0" />
-
         <!-- System Boundary Box -->
         <mxCell id="boundary" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#333333;strokeWidth=1.5;align=center;verticalAlign=top;fontStyle=1;spacingTop=10;arcSize=4;" parent="1" vertex="1">
-          <mxGeometry x="170" y="30" width="460" height="470" as="geometry" />
+          <mxGeometry x="230" y="60" width="910" height="950" as="geometry" />
         </mxCell>
         <mxCell id="boundary_label" value="&lt;b&gt;Predictra Threat Map System Boundary&lt;/b&gt;" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;fontSize=13;fontColor=#333333;" parent="1" vertex="1">
-          <mxGeometry x="270" y="40" width="260" height="30" as="geometry" />
+          <mxGeometry x="550" y="70" width="270" height="30" as="geometry" />
         </mxCell>
-
-        <!-- Actor 1: External Threat APIs -->
+        <!-- Actors -->
+        <!-- External Threat APIs -->
         <mxCell id="actor_api" value="&lt;b&gt;External Threat&lt;br&gt;APIs &amp;amp; Feeds&lt;/b&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#333333;strokeWidth=1.5;fontColor=#333333;align=center;shadow=0;" parent="1" vertex="1">
-          <mxGeometry x="10" y="100" width="130" height="50" as="geometry" />
+          <mxGeometry x="30" y="210" width="150" height="60" as="geometry" />
         </mxCell>
 
-        <!-- Actor 2: Security Analyst (Stickman) -->
+        <!-- Security Analyst -->
         <mxCell id="actor_analyst" value="" style="shape=umlActor;verticalLabelPosition=bottom;verticalAlign=top;html=1;outlineConnect=0;strokeColor=#333333;strokeWidth=1.5;fillColor=#FFFFFF;" parent="1" vertex="1">
-          <mxGeometry x="60" y="270" width="30" height="60" as="geometry" />
+          <mxGeometry x="90" y="600" width="30" height="60" as="geometry" />
         </mxCell>
         <mxCell id="actor_analyst_label" value="&lt;b&gt;Security&lt;br&gt;Analyst&lt;/b&gt;" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;fontSize=12;fontColor=#333333;" parent="1" vertex="1">
-          <mxGeometry x="40" y="340" width="70" height="40" as="geometry" />
+          <mxGeometry x="70" y="670" width="70" height="40" as="geometry" />
         </mxCell>
-
-        <!-- Actor 3: MongoDB Database -->
-        <mxCell id="actor_db" value="&lt;b&gt;MongoDB&lt;br&gt;Database&lt;/b&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#333333;strokeWidth=1.5;fontColor=#333333;align=center;shadow=0;" parent="1" vertex="1">
-          <mxGeometry x="680" y="220" width="130" height="50" as="geometry" />
-        </mxCell>
-
         <!-- Use Cases -->
-        <mxCell id="uc1" value="Stream Live Threat Events" style="ellipse;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#333333;strokeWidth=1.5;fontColor=#000000;align=center;" parent="1" vertex="1">
-          <mxGeometry x="300" y="80" width="200" height="45" as="geometry" />
+        <mxCell id="ucMap" value="View Live Map" style="ellipse;whiteSpace=wrap;html=1;fillColor=#F2F9FF;strokeColor=#2980B9;strokeWidth=1.5;fontColor=#2C3E50;fontStyle=1;align=center;fontSize=11;" parent="1" vertex="1">
+          <mxGeometry x="280" y="200" width="190" height="55" as="geometry" />
         </mxCell>
-
-        <mxCell id="uc2" value="Enrich &amp; Geocode Log" style="ellipse;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#333333;strokeWidth=1.5;fontColor=#000000;align=center;" parent="1" vertex="1">
-          <mxGeometry x="300" y="140" width="200" height="45" as="geometry" />
+        <mxCell id="ucDash" value="View Dashboard" style="ellipse;whiteSpace=wrap;html=1;fillColor=#F2F9FF;strokeColor=#2980B9;strokeWidth=1.5;fontColor=#2C3E50;fontStyle=1;align=center;fontSize=11;" parent="1" vertex="1">
+          <mxGeometry x="280" y="330" width="190" height="55" as="geometry" />
         </mxCell>
-
-        <mxCell id="uc3" value="Render 3D Interactive Map" style="ellipse;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#333333;strokeWidth=1.5;fontColor=#000000;align=center;" parent="1" vertex="1">
-          <mxGeometry x="300" y="200" width="200" height="45" as="geometry" />
+        <mxCell id="ucHist" value="Browse Threat History" style="ellipse;whiteSpace=wrap;html=1;fillColor=#F2F9FF;strokeColor=#2980B9;strokeWidth=1.5;fontColor=#2C3E50;fontStyle=1;align=center;fontSize=11;" parent="1" vertex="1">
+          <mxGeometry x="280" y="460" width="190" height="55" as="geometry" />
         </mxCell>
-
-        <mxCell id="uc4" value="Query Historical Log" style="ellipse;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#333333;strokeWidth=1.5;fontColor=#000000;align=center;" parent="1" vertex="1">
-          <mxGeometry x="300" y="260" width="200" height="45" as="geometry" />
+        <mxCell id="ucAnal" value="Analyze CTI<br>(Threat Analytics)" style="ellipse;whiteSpace=wrap;html=1;fillColor=#F2F9FF;strokeColor=#2980B9;strokeWidth=1.5;fontColor=#2C3E50;fontStyle=1;align=center;fontSize=11;" parent="1" vertex="1">
+          <mxGeometry x="280" y="620" width="190" height="55" as="geometry" />
         </mxCell>
-
-        <mxCell id="uc5" value="Export to Excel / CSV" style="ellipse;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#333333;strokeWidth=1.5;fontColor=#000000;align=center;" parent="1" vertex="1">
-          <mxGeometry x="300" y="320" width="200" height="45" as="geometry" />
+        <mxCell id="ucStix" value="Manage STIX Intel" style="ellipse;whiteSpace=wrap;html=1;fillColor=#F2F9FF;strokeColor=#2980B9;strokeWidth=1.5;fontColor=#2C3E50;fontStyle=1;align=center;fontSize=11;" parent="1" vertex="1">
+          <mxGeometry x="280" y="780" width="190" height="55" as="geometry" />
         </mxCell>
-
-        <mxCell id="uc6" value="Upload STIX 2.1 Bundle" style="ellipse;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#333333;strokeWidth=1.5;fontColor=#000000;align=center;" parent="1" vertex="1">
-          <mxGeometry x="300" y="380" width="200" height="45" as="geometry" />
+        <mxCell id="ucEnrich" value="Enrich &amp; Geocode Log" style="ellipse;whiteSpace=wrap;html=1;fillColor=#FFF2F2;strokeColor=#C0392B;strokeWidth=1.5;fontColor=#2C3E50;fontStyle=1;align=center;fontSize=11;" parent="1" vertex="1">
+          <mxGeometry x="570" y="100" width="190" height="55" as="geometry" />
         </mxCell>
-
-        <mxCell id="uc7" value="Explore Threat Network Graph" style="ellipse;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#333333;strokeWidth=1.5;fontColor=#000000;align=center;" parent="1" vertex="1">
-          <mxGeometry x="300" y="440" width="200" height="45" as="geometry" />
+        <mxCell id="ucStream" value="Stream Live Threat Events" style="ellipse;whiteSpace=wrap;html=1;fillColor=#FFF2F2;strokeColor=#C0392B;strokeWidth=1.5;fontColor=#2C3E50;fontStyle=1;align=center;fontSize=11;" parent="1" vertex="1">
+          <mxGeometry x="570" y="180" width="190" height="55" as="geometry" />
         </mxCell>
-
+        <mxCell id="ucGlobe" value="Render 3D Globe" style="ellipse;whiteSpace=wrap;html=1;fillColor=#FFF2F2;strokeColor=#C0392B;strokeWidth=1.5;fontColor=#2C3E50;fontStyle=1;align=center;fontSize=11;" parent="1" vertex="1">
+          <mxGeometry x="570" y="260" width="190" height="55" as="geometry" />
+        </mxCell>
+        <mxCell id="ucFlat" value="Render 2D Flat Map" style="ellipse;whiteSpace=wrap;html=1;fillColor=#FFF2F2;strokeColor=#C0392B;strokeWidth=1.5;fontColor=#2C3E50;fontStyle=1;align=center;fontSize=11;" parent="1" vertex="1">
+          <mxGeometry x="570" y="340" width="190" height="55" as="geometry" />
+        </mxCell>
+        <mxCell id="ucQueryH" value="Query Historical Logs" style="ellipse;whiteSpace=wrap;html=1;fillColor=#FFF2F2;strokeColor=#C0392B;strokeWidth=1.5;fontColor=#2C3E50;fontStyle=1;align=center;fontSize=11;" parent="1" vertex="1">
+          <mxGeometry x="570" y="440" width="190" height="55" as="geometry" />
+        </mxCell>
+        <mxCell id="ucQueryG" value="Query MISP Galaxy Intel" style="ellipse;whiteSpace=wrap;html=1;fillColor=#FFF2F2;strokeColor=#C0392B;strokeWidth=1.5;fontColor=#2C3E50;fontStyle=1;align=center;fontSize=11;" parent="1" vertex="1">
+          <mxGeometry x="570" y="620" width="190" height="55" as="geometry" />
+        </mxCell>
+        <mxCell id="ucParseS" value="Parse STIX 2.1 Data" style="ellipse;whiteSpace=wrap;html=1;fillColor=#FFF2F2;strokeColor=#C0392B;strokeWidth=1.5;fontColor=#2C3E50;fontStyle=1;align=center;fontSize=11;" parent="1" vertex="1">
+          <mxGeometry x="570" y="780" width="190" height="55" as="geometry" />
+        </mxCell>
+        <mxCell id="ucProj" value="Toggle 2D/3D Projection" style="ellipse;whiteSpace=wrap;html=1;fillColor=#FFFDF2;strokeColor=#D35400;strokeWidth=1.5;fontColor=#2C3E50;fontStyle=1;align=center;fontSize=11;" parent="1" vertex="1">
+          <mxGeometry x="860" y="140" width="210" height="55" as="geometry" />
+        </mxCell>
+        <mxCell id="ucQual" value="Configure Map Quality" style="ellipse;whiteSpace=wrap;html=1;fillColor=#FFFDF2;strokeColor=#D35400;strokeWidth=1.5;fontColor=#2C3E50;fontStyle=1;align=center;fontSize=11;" parent="1" vertex="1">
+          <mxGeometry x="860" y="205" width="210" height="55" as="geometry" />
+        </mxCell>
+        <mxCell id="ucMeta" value="Inspect Incident Metadata" style="ellipse;whiteSpace=wrap;html=1;fillColor=#FFFDF2;strokeColor=#D35400;strokeWidth=1.5;fontColor=#2C3E50;fontStyle=1;align=center;fontSize=11;" parent="1" vertex="1">
+          <mxGeometry x="860" y="270" width="210" height="55" as="geometry" />
+        </mxCell>
+        <mxCell id="ucFiltD" value="Filter Dashboard Stream" style="ellipse;whiteSpace=wrap;html=1;fillColor=#FFFDF2;strokeColor=#D35400;strokeWidth=1.5;fontColor=#2C3E50;fontStyle=1;align=center;fontSize=11;" parent="1" vertex="1">
+          <mxGeometry x="860" y="345" width="210" height="55" as="geometry" />
+        </mxCell>
+        <mxCell id="ucDrillC" value="Drill-down Country Stats" style="ellipse;whiteSpace=wrap;html=1;fillColor=#FFFDF2;strokeColor=#D35400;strokeWidth=1.5;fontColor=#2C3E50;fontStyle=1;align=center;fontSize=11;" parent="1" vertex="1">
+          <mxGeometry x="860" y="410" width="210" height="55" as="geometry" />
+        </mxCell>
+        <mxCell id="ucExport" value="Export Threat Logs<br>(Excel, JSON, CSV)" style="ellipse;whiteSpace=wrap;html=1;fillColor=#FFFDF2;strokeColor=#D35400;strokeWidth=1.5;fontColor=#2C3E50;fontStyle=1;align=center;fontSize=11;" parent="1" vertex="1">
+          <mxGeometry x="860" y="480" width="210" height="55" as="geometry" />
+        </mxCell>
+        <mxCell id="ucTargetIP" value="Target My IP" style="ellipse;whiteSpace=wrap;html=1;fillColor=#FFFDF2;strokeColor=#D35400;strokeWidth=1.5;fontColor=#2C3E50;fontStyle=1;align=center;fontSize=11;" parent="1" vertex="1">
+          <mxGeometry x="860" y="545" width="210" height="55" as="geometry" />
+        </mxCell>
+        <mxCell id="ucActors" value="Browse Threat Actors" style="ellipse;whiteSpace=wrap;html=1;fillColor=#FFFDF2;strokeColor=#D35400;strokeWidth=1.5;fontColor=#2C3E50;fontStyle=1;align=center;fontSize=11;" parent="1" vertex="1">
+          <mxGeometry x="860" y="610" width="210" height="55" as="geometry" />
+        </mxCell>
+        <mxCell id="ucMalware" value="Browse Malware Registry" style="ellipse;whiteSpace=wrap;html=1;fillColor=#FFFDF2;strokeColor=#D35400;strokeWidth=1.5;fontColor=#2C3E50;fontStyle=1;align=center;fontSize=11;" parent="1" vertex="1">
+          <mxGeometry x="860" y="675" width="210" height="55" as="geometry" />
+        </mxCell>
+        <mxCell id="ucRiskC" value="Browse Country Risk" style="ellipse;whiteSpace=wrap;html=1;fillColor=#FFFDF2;strokeColor=#D35400;strokeWidth=1.5;fontColor=#2C3E50;fontStyle=1;align=center;fontSize=11;" parent="1" vertex="1">
+          <mxGeometry x="860" y="740" width="210" height="55" as="geometry" />
+        </mxCell>
+        <mxCell id="ucUploadS" value="Upload STIX 2.1 Bundle" style="ellipse;whiteSpace=wrap;html=1;fillColor=#FFFDF2;strokeColor=#D35400;strokeWidth=1.5;fontColor=#2C3E50;fontStyle=1;align=center;fontSize=11;" parent="1" vertex="1">
+          <mxGeometry x="860" y="805" width="210" height="55" as="geometry" />
+        </mxCell>
+        <mxCell id="ucMitre" value="Map MITRE ATT&amp;CK" style="ellipse;whiteSpace=wrap;html=1;fillColor=#FFFDF2;strokeColor=#D35400;strokeWidth=1.5;fontColor=#2C3E50;fontStyle=1;align=center;fontSize=11;" parent="1" vertex="1">
+          <mxGeometry x="860" y="870" width="210" height="55" as="geometry" />
+        </mxCell>
+        <mxCell id="ucGraph" value="Explore Threat Graph" style="ellipse;whiteSpace=wrap;html=1;fillColor=#FFFDF2;strokeColor=#D35400;strokeWidth=1.5;fontColor=#2C3E50;fontStyle=1;align=center;fontSize=11;" parent="1" vertex="1">
+          <mxGeometry x="860" y="935" width="210" height="55" as="geometry" />
+        </mxCell>
         <!-- Connections -->
-        <!-- API to uc1, uc2 -->
-        <mxCell id="link1" style="strokeColor=#333333;strokeWidth=1.5;endArrow=none;" parent="1" source="actor_api" target="uc1" edge="1">
+        <mxCell id="actor_link_1" style="strokeColor=#333333;strokeWidth=1.5;endArrow=none;edgeStyle=orthogonalEdgeStyle;curved=1;" parent="1" source="actor_api" target="ucStream" edge="1">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="link2" style="strokeColor=#333333;strokeWidth=1.5;endArrow=none;" parent="1" source="actor_api" target="uc2" edge="1">
+        <mxCell id="actor_link_2" style="strokeColor=#333333;strokeWidth=1.5;endArrow=none;edgeStyle=orthogonalEdgeStyle;curved=1;" parent="1" source="actor_analyst" target="ucMap" edge="1">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-
-        <!-- Analyst to uc3-uc7 -->
-        <mxCell id="link3" style="strokeColor=#333333;strokeWidth=1.5;endArrow=none;" parent="1" source="actor_analyst" target="uc3" edge="1">
+        <mxCell id="actor_link_3" style="strokeColor=#333333;strokeWidth=1.5;endArrow=none;edgeStyle=orthogonalEdgeStyle;curved=1;" parent="1" source="actor_analyst" target="ucDash" edge="1">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="link4" style="strokeColor=#333333;strokeWidth=1.5;endArrow=none;" parent="1" source="actor_analyst" target="uc4" edge="1">
+        <mxCell id="actor_link_4" style="strokeColor=#333333;strokeWidth=1.5;endArrow=none;edgeStyle=orthogonalEdgeStyle;curved=1;" parent="1" source="actor_analyst" target="ucHist" edge="1">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="link5" style="strokeColor=#333333;strokeWidth=1.5;endArrow=none;" parent="1" source="actor_analyst" target="uc5" edge="1">
+        <mxCell id="actor_link_5" style="strokeColor=#333333;strokeWidth=1.5;endArrow=none;edgeStyle=orthogonalEdgeStyle;curved=1;" parent="1" source="actor_analyst" target="ucAnal" edge="1">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="link6" style="strokeColor=#333333;strokeWidth=1.5;endArrow=none;" parent="1" source="actor_analyst" target="uc6" edge="1">
+        <mxCell id="actor_link_6" style="strokeColor=#333333;strokeWidth=1.5;endArrow=none;edgeStyle=orthogonalEdgeStyle;curved=1;" parent="1" source="actor_analyst" target="ucStix" edge="1">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="link7" style="strokeColor=#333333;strokeWidth=1.5;endArrow=none;" parent="1" source="actor_analyst" target="uc7" edge="1">
+        <!-- Includes Relationships -->
+        <mxCell id="inc_link_7" value="&amp;lt;&amp;lt;include&amp;gt;&amp;gt;" style="strokeColor=#34495E;strokeWidth=1.2;dashed=1;endArrow=open;endSize=8;labelBackgroundColor=#FFFFFF;fontStyle=0;fontSize=10;fontColor=#34495E;edgeStyle=orthogonalEdgeStyle;curved=1;" parent="1" source="ucStream" target="ucEnrich" edge="1">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-
-        <!-- uc2, uc4 to DB -->
-        <mxCell id="link8" style="strokeColor=#333333;strokeWidth=1.5;endArrow=none;" parent="1" source="uc2" target="actor_db" edge="1">
+        <mxCell id="inc_link_8" value="&amp;lt;&amp;lt;include&amp;gt;&amp;gt;" style="strokeColor=#34495E;strokeWidth=1.2;dashed=1;endArrow=open;endSize=8;labelBackgroundColor=#FFFFFF;fontStyle=0;fontSize=10;fontColor=#34495E;edgeStyle=orthogonalEdgeStyle;curved=1;" parent="1" source="ucMap" target="ucStream" edge="1">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="link9" style="strokeColor=#333333;strokeWidth=1.5;endArrow=none;" parent="1" source="uc4" target="actor_db" edge="1">
+        <mxCell id="inc_link_9" value="&amp;lt;&amp;lt;include&amp;gt;&amp;gt;" style="strokeColor=#34495E;strokeWidth=1.2;dashed=1;endArrow=open;endSize=8;labelBackgroundColor=#FFFFFF;fontStyle=0;fontSize=10;fontColor=#34495E;edgeStyle=orthogonalEdgeStyle;curved=1;" parent="1" source="ucMap" target="ucGlobe" edge="1">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-
+        <mxCell id="inc_link_10" value="&amp;lt;&amp;lt;include&amp;gt;&amp;gt;" style="strokeColor=#34495E;strokeWidth=1.2;dashed=1;endArrow=open;endSize=8;labelBackgroundColor=#FFFFFF;fontStyle=0;fontSize=10;fontColor=#34495E;edgeStyle=orthogonalEdgeStyle;curved=1;" parent="1" source="ucDash" target="ucStream" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="inc_link_11" value="&amp;lt;&amp;lt;include&amp;gt;&amp;gt;" style="strokeColor=#34495E;strokeWidth=1.2;dashed=1;endArrow=open;endSize=8;labelBackgroundColor=#FFFFFF;fontStyle=0;fontSize=10;fontColor=#34495E;edgeStyle=orthogonalEdgeStyle;curved=1;" parent="1" source="ucDash" target="ucFlat" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="inc_link_12" value="&amp;lt;&amp;lt;include&amp;gt;&amp;gt;" style="strokeColor=#34495E;strokeWidth=1.2;dashed=1;endArrow=open;endSize=8;labelBackgroundColor=#FFFFFF;fontStyle=0;fontSize=10;fontColor=#34495E;edgeStyle=orthogonalEdgeStyle;curved=1;" parent="1" source="ucHist" target="ucQueryH" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="inc_link_13" value="&amp;lt;&amp;lt;include&amp;gt;&amp;gt;" style="strokeColor=#34495E;strokeWidth=1.2;dashed=1;endArrow=open;endSize=8;labelBackgroundColor=#FFFFFF;fontStyle=0;fontSize=10;fontColor=#34495E;edgeStyle=orthogonalEdgeStyle;curved=1;" parent="1" source="ucAnal" target="ucQueryG" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="inc_link_14" value="&amp;lt;&amp;lt;include&amp;gt;&amp;gt;" style="strokeColor=#34495E;strokeWidth=1.2;dashed=1;endArrow=open;endSize=8;labelBackgroundColor=#FFFFFF;fontStyle=0;fontSize=10;fontColor=#34495E;edgeStyle=orthogonalEdgeStyle;curved=1;" parent="1" source="ucStix" target="ucParseS" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <!-- Extends Relationships -->
+        <mxCell id="ext_link_15" value="&amp;lt;&amp;lt;extend&amp;gt;&amp;gt;" style="strokeColor=#34495E;strokeWidth=1.2;dashed=1;endArrow=open;endSize=8;labelBackgroundColor=#FFFFFF;fontStyle=0;fontSize=10;fontColor=#34495E;edgeStyle=orthogonalEdgeStyle;curved=1;" parent="1" source="ucProj" target="ucMap" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="ext_link_16" value="&amp;lt;&amp;lt;extend&amp;gt;&amp;gt;" style="strokeColor=#34495E;strokeWidth=1.2;dashed=1;endArrow=open;endSize=8;labelBackgroundColor=#FFFFFF;fontStyle=0;fontSize=10;fontColor=#34495E;edgeStyle=orthogonalEdgeStyle;curved=1;" parent="1" source="ucQual" target="ucMap" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="ext_link_17" value="&amp;lt;&amp;lt;extend&amp;gt;&amp;gt;" style="strokeColor=#34495E;strokeWidth=1.2;dashed=1;endArrow=open;endSize=8;labelBackgroundColor=#FFFFFF;fontStyle=0;fontSize=10;fontColor=#34495E;edgeStyle=orthogonalEdgeStyle;curved=1;" parent="1" source="ucMeta" target="ucMap" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="ext_link_18" value="&amp;lt;&amp;lt;extend&amp;gt;&amp;gt;" style="strokeColor=#34495E;strokeWidth=1.2;dashed=1;endArrow=open;endSize=8;labelBackgroundColor=#FFFFFF;fontStyle=0;fontSize=10;fontColor=#34495E;edgeStyle=orthogonalEdgeStyle;curved=1;" parent="1" source="ucFiltD" target="ucDash" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="ext_link_19" value="&amp;lt;&amp;lt;extend&amp;gt;&amp;gt;" style="strokeColor=#34495E;strokeWidth=1.2;dashed=1;endArrow=open;endSize=8;labelBackgroundColor=#FFFFFF;fontStyle=0;fontSize=10;fontColor=#34495E;edgeStyle=orthogonalEdgeStyle;curved=1;" parent="1" source="ucDrillC" target="ucDash" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="ext_link_20" value="&amp;lt;&amp;lt;extend&amp;gt;&amp;gt;" style="strokeColor=#34495E;strokeWidth=1.2;dashed=1;endArrow=open;endSize=8;labelBackgroundColor=#FFFFFF;fontStyle=0;fontSize=10;fontColor=#34495E;edgeStyle=orthogonalEdgeStyle;curved=1;" parent="1" source="ucExport" target="ucDash" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="ext_link_21" value="&amp;lt;&amp;lt;extend&amp;gt;&amp;gt;" style="strokeColor=#34495E;strokeWidth=1.2;dashed=1;endArrow=open;endSize=8;labelBackgroundColor=#FFFFFF;fontStyle=0;fontSize=10;fontColor=#34495E;edgeStyle=orthogonalEdgeStyle;curved=1;" parent="1" source="ucExport" target="ucHist" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="ext_link_22" value="&amp;lt;&amp;lt;extend&amp;gt;&amp;gt;" style="strokeColor=#34495E;strokeWidth=1.2;dashed=1;endArrow=open;endSize=8;labelBackgroundColor=#FFFFFF;fontStyle=0;fontSize=10;fontColor=#34495E;edgeStyle=orthogonalEdgeStyle;curved=1;" parent="1" source="ucTargetIP" target="ucHist" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="ext_link_23" value="&amp;lt;&amp;lt;extend&amp;gt;&amp;gt;" style="strokeColor=#34495E;strokeWidth=1.2;dashed=1;endArrow=open;endSize=8;labelBackgroundColor=#FFFFFF;fontStyle=0;fontSize=10;fontColor=#34495E;edgeStyle=orthogonalEdgeStyle;curved=1;" parent="1" source="ucActors" target="ucAnal" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="ext_link_24" value="&amp;lt;&amp;lt;extend&amp;gt;&amp;gt;" style="strokeColor=#34495E;strokeWidth=1.2;dashed=1;endArrow=open;endSize=8;labelBackgroundColor=#FFFFFF;fontStyle=0;fontSize=10;fontColor=#34495E;edgeStyle=orthogonalEdgeStyle;curved=1;" parent="1" source="ucMalware" target="ucAnal" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="ext_link_25" value="&amp;lt;&amp;lt;extend&amp;gt;&amp;gt;" style="strokeColor=#34495E;strokeWidth=1.2;dashed=1;endArrow=open;endSize=8;labelBackgroundColor=#FFFFFF;fontStyle=0;fontSize=10;fontColor=#34495E;edgeStyle=orthogonalEdgeStyle;curved=1;" parent="1" source="ucRiskC" target="ucAnal" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="ext_link_26" value="&amp;lt;&amp;lt;extend&amp;gt;&amp;gt;" style="strokeColor=#34495E;strokeWidth=1.2;dashed=1;endArrow=open;endSize=8;labelBackgroundColor=#FFFFFF;fontStyle=0;fontSize=10;fontColor=#34495E;edgeStyle=orthogonalEdgeStyle;curved=1;" parent="1" source="ucUploadS" target="ucStix" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="ext_link_27" value="&amp;lt;&amp;lt;extend&amp;gt;&amp;gt;" style="strokeColor=#34495E;strokeWidth=1.2;dashed=1;endArrow=open;endSize=8;labelBackgroundColor=#FFFFFF;fontStyle=0;fontSize=10;fontColor=#34495E;edgeStyle=orthogonalEdgeStyle;curved=1;" parent="1" source="ucMitre" target="ucStix" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="ext_link_28" value="&amp;lt;&amp;lt;extend&amp;gt;&amp;gt;" style="strokeColor=#34495E;strokeWidth=1.2;dashed=1;endArrow=open;endSize=8;labelBackgroundColor=#FFFFFF;fontStyle=0;fontSize=10;fontColor=#34495E;edgeStyle=orthogonalEdgeStyle;curved=1;" parent="1" source="ucGraph" target="ucStix" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
       </root>
     </mxGraphModel>
   </diagram>
