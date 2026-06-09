@@ -1,0 +1,45 @@
+@startuml
+skinparam BackgroundColor #FFFFFF
+skinparam TitleFontColor #1E293B
+skinparam ArrowColor #2980B9
+skinparam SequenceLifeLineBorderColor #475569
+skinparam SequenceLifeLineBackgroundColor #F8FAFC
+skinparam SequenceParticipantBorderColor #475569
+skinparam SequenceParticipantBackgroundColor #F2F9FF
+skinparam SequenceParticipantFontColor #1E293B
+skinparam SequenceParticipantFontSize 12
+skinparam SequenceParticipantFontStyle bold
+
+title Sprint 1 - Data Ingestion & Enrichment Loop Sequence Diagram
+
+participant "External Threat Feed\n(API / Stream)" as Feed
+participant "Scraper Service\n(scrapers/)" as Scraper
+participant "Enrichment Service\n(enrichment.js)" as Enrichment
+participant "Server Queue\n(server.js)" as Server
+database "MongoDB Atlas\n(Database)" as DB
+
+Feed -> Scraper : Poll / Stream Raw Event
+activate Scraper
+
+Scraper -> Enrichment : getIpOrganization(ip) / geolocateIp()
+activate Enrichment
+Enrichment --> Scraper : Return geolocation coordinates
+deactivate Enrichment
+
+Scraper -> Scraper : getEnrichedSector() (5-Layer Heuristics)
+
+Scraper -> Server : broadcast("attack", enrichedData)
+activate Server
+
+Server -> Server : Add to pendingBatch queue
+
+alt Queue count >= 25 or flush interval (300ms)
+    Server -> DB : insertMany(batch)
+    activate DB
+    DB --> Server : Write Acknowledged
+    deactivate DB
+end
+
+deactivate Server
+deactivate Scraper
+@enduml

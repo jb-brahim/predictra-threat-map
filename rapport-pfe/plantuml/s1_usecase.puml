@@ -1,0 +1,52 @@
+@startuml
+skinparam actorStyle awesome
+skinparam linetype ortho
+left to right direction
+
+!define BASE_COLOR #F2F9FF
+!define BASE_BORDER 2980B9
+!define INC_COLOR #FFF2F2
+!define INC_BORDER C0392B
+!define EXT_COLOR #FFFDF2
+!define EXT_BORDER D35400
+
+skinparam BackgroundColor #FFFFFF
+skinparam TitleFontColor #1E293B
+skinparam ActorBorderColor #1E293B
+skinparam ActorBackgroundColor #FFFFFF
+skinparam ActorFontSize 12
+skinparam ActorFontStyle bold
+
+skinparam RectangleBorderColor #475569
+skinparam RectangleBackgroundColor #F8FAFC
+skinparam RectangleFontSize 12
+skinparam RectangleFontStyle bold
+
+skinparam ArrowColor #475569
+skinparam ArrowFontSize 9
+skinparam ArrowFontColor #475569
+
+title Sprint 1 - Core Data Ingestion & Scraper Pipeline Use Cases
+
+actor "External API Feed" as api
+actor "Express Server" as server
+
+rectangle "Sprint 1: Harvester System Boundary" {
+    usecase "Fetch Threat Feed" as uc1 BASE_COLOR;line:BASE_BORDER;line.bold
+    usecase "Enrich & Store Payload" as uc2 BASE_COLOR;line:BASE_BORDER;line.bold
+    
+    usecase "Query External API Endpoint" as ucQuery INC_COLOR;line:INC_BORDER
+    usecase "Resolve IP Geolocation\n(geoip-lite)" as ucGeo INC_COLOR;line:INC_BORDER
+    usecase "Classify Target Sector\n(5-Layer Heuristics)" as ucSector INC_COLOR;line:INC_BORDER
+    usecase "Bulk Insert to MongoDB" as ucStore INC_COLOR;line:INC_BORDER
+
+    uc1 ..> ucQuery : <<include>>
+    uc2 ..> ucGeo : <<include>>
+    uc2 ..> ucSector : <<include>>
+    uc2 ..> ucStore : <<include>>
+}
+
+api --> uc1
+server --> uc1
+server --> uc2
+@enduml

@@ -24,29 +24,7 @@ The analyst's interactions with the STIX workspace are captured in Figure~\ref{f
 
 \begin{figure}[h!]
 \centering
-% \begin{tikzpicture}[node distance=2cm, scale=0.85, every node/.style={transform shape}]
-%     % Boundary
-%     \draw[draw=charcoal, fill=charcoal!2, thick, rounded corners] (0,-3) rectangle (8.5,3.5);
-%     \node at (4.25,3.1) {\textbf{Sprint 3: STIX Workspace Boundary}};
-% 
-%     % Actors
-%     \coordinate (analyst) at (-2.5, 0.4);
-%     \pic at (analyst) {actor};
-%     \node[align=center, below=0.7cm of analyst, font=\small\bfseries] {Security\\Analyst};
-% 
-%     % Use Cases
-%     \node[draw, ellipse, top color=white, bottom color=cyberblue!15, drop shadow, minimum width=3.8cm, minimum height=0.8cm] (uc1) at (4.25, 2) {Upload STIX 2.1 Bundle};
-%     \node[draw, ellipse, top color=white, bottom color=cyberblue!15, drop shadow, minimum width=3.8cm, minimum height=0.8cm] (uc2) at (4.25, 0.7) {Analyze MITRE Kill Chain};
-%     \node[draw, ellipse, top color=white, bottom color=cyberblue!15, drop shadow, minimum width=3.8cm, minimum height=0.8cm] (uc3) at (4.25, -0.6) {Navigate Relationship Graph};
-%     \node[draw, ellipse, top color=white, bottom color=cyberblue!15, drop shadow, minimum width=3.8cm, minimum height=0.8cm] (uc4) at (4.25, -1.9) {Filter Indicator IOCs};
-% 
-%     % Links
-%     \draw[thick, -] (analyst) -- (uc1);
-%     \draw[thick, -] (analyst) -- (uc2);
-%     \draw[thick, -] (analyst) -- (uc3);
-%     \draw[thick, -] (analyst) -- (uc4);
-% \end{tikzpicture}
-\includegraphics[width=0.95\textwidth]{assets/s3_usecase.pdf}
+\includegraphics[width=0.95\textwidth]{assets/s3_usecase.png}
 \caption{Sprint 3: Use Case diagram for the STIX 2.1 dashboard.}
 \label{fig:s3_usecase}
 \end{figure}
@@ -147,39 +125,7 @@ The structural layout of our client-side parser services, data models, and visua
 
 \begin{figure}[h!]
 \centering
-% \begin{tikzpicture}[scale=0.85, every node/.style={transform shape}]
-%     % StixDashboard Page
-%     \node[draw, rectangle, top color=white, bottom color=cyberblue!5, drop shadow, rounded corners=2pt, text width=6.5cm, align=left] (stixDash) at (0,0) {
-%         \textbf{StixDashboard (UI)} \\
-%         \hrulefill \\
-%         + bundleData : STIXBundle | null \\
-%         + activeTab : String \\
-%         + selectedObject : STIXObject | null \\
-%         + indicatorsList : STIXIndicator[] \\
-%         \hrulefill \\
-%         + parseBundle(jsonText : String) : void \\
-%         + extractIndicators(objects) : List \\
-%         + mapToKillChain(objects) : Map \\
-%         + exportIOCsToCSV() : void
-%     };
-%     
-%     % StixVisualizerPage
-%     \node[draw, rectangle, top color=white, bottom color=cyberblue!5, drop shadow, rounded corners=2pt, text width=6.2cm, align=left] (stixVis) at (9,0) {
-%         \textbf{StixVisualizerPage} \\
-%         \hrulefill \\
-%         + graphNodes : GraphNode[] \\
-%         + graphLinks : GraphLink[] \\
-%         + hoverNode : GraphNode | null \\
-%         - d3Simulation : Object \\
-%         \hrulefill \\
-%         + buildGraphData(objects) : void \\
-%         + renderCustomNode(node, ctx) : void \\
-%         + applyD3ForceLaws() : void
-%     };
-% 
-%     \draw[thick, -latex] (stixDash) -- node[above, scale=0.8] {passes objects} (stixVis);
-% \end{tikzpicture}
-\includegraphics[width=0.95\textwidth]{assets/s3_class.pdf}
+\includegraphics[width=0.95\textwidth]{assets/s3_class.png}
 \caption{Sprint 3: Conception Class diagram.}
 \label{fig:s3_class}
 \end{figure}
@@ -189,38 +135,7 @@ The asynchronous parsing and graph building lifecycle triggered when an investig
 
 \begin{figure}[h!]
 \centering
-% \begin{tikzpicture}[scale=0.85, every node/.style={transform shape}]
-%     % Lifelines
-%     \draw[dashed, thick] (0,0) -- (0,-6.5) node[below] {Security Analyst};
-%     \draw[dashed, thick] (3.8,0) -- (3.8,-6.5) node[below] {StixDashboard};
-%     \draw[dashed, thick] (7.5,0) -- (7.5,-6.5) node[below] {parseBundle()};
-%     \draw[dashed, thick] (11.2,0) -- (11.2,-6.5) node[below] {ForceGraph Canvas};
-% 
-%     % Headers
-%     \coordinate (analyst) at (0,0);
-%     \pic at (0,0.4) {actor};
-% 
-%     \coordinate (dash) at (3.8,0);
-%     \node[draw=charcoal, top color=white, bottom color=cyberblue!15, thick, drop shadow, rounded corners, align=center, minimum width=2.2cm, minimum height=0.6cm] at (3.8,0.3) {Dashboard};
-% 
-%     \coordinate (parser) at (7.5,0);
-%     \node[draw=charcoal, top color=white, bottom color=cyberblue!15, thick, drop shadow, rounded corners, align=center, minimum width=2.2cm, minimum height=0.6cm] at (7.5,0.3) {Parser Service};
-% 
-%     \coordinate (d3) at (11.2,0);
-%     \node[draw=charcoal, top color=white, bottom color=cyberblue!15, thick, drop shadow, rounded corners, align=center, minimum width=2.2cm, minimum height=0.6cm] at (11.2,0.3) {D3 Canvas};
-% 
-%     % Sequence Messages
-%     \draw[-latex, thick] (0,-1) -- node[above, scale=0.8] {Upload JSON Bundle File} (3.8,-1);
-%     \draw[-latex, thick] (3.8,-1.8) -- node[above, scale=0.8] {Trigger: parseBundle(json)} (7.5,-1.8);
-%     
-%     \draw[-latex, thick] (7.5,-2.6) -- node[above, xshift=1.2cm, scale=0.8] {Map Kill Chain \& Extract IOCs} (7.5,-3.1);
-%     \draw[dashed] (7.5,-3.1) -- (7.5,-3.3);
-% 
-%     \draw[-latex, thick] (7.5,-3.8) -- node[above, scale=0.8] {Compile Nodes \& Links Array} (11.2,-3.8);
-%     \draw[-latex, thick] (11.2,-4.5) -- node[above, scale=0.8] {Draw Force Graph (particle physics)} (11.2,-5);
-%     \draw[dashed, -latex] (11.2,-5.5) -- node[above, scale=0.8] {Render Completed} (3.8,-5.5);
-% \end{tikzpicture}
-\includegraphics[width=0.95\textwidth]{assets/s3_sequence.pdf}
+\includegraphics[width=0.95\textwidth]{assets/s3_sequence.png}
 \caption{Sprint 3: Sequence diagram of STIX bundle parsing and graph rendering.}
 \label{fig:s3_sequence}
 \end{figure}
@@ -330,27 +245,7 @@ The investigator's search and performance diagnostics use cases are captured in 
 
 \begin{figure}[h!]
 \centering
-% \begin{tikzpicture}[node distance=2cm, scale=0.85, every node/.style={transform shape}]
-%     % Boundary
-%     \draw[draw=charcoal, fill=charcoal!2, thick, rounded corners] (0,-3) rectangle (8.5,3);
-%     \node at (4.25,2.6) {\textbf{Sprint 4: Search \& Performance Boundary}};
-% 
-%     % Actors
-%     \coordinate (analyst) at (-2.5, 0.4);
-%     \pic at (analyst) {actor};
-%     \node[align=center, below=0.7cm of analyst, font=\small\bfseries] {Security\\Analyst};
-% 
-%     % Use Cases
-%     \node[draw, ellipse, top color=white, bottom color=cyberblue!15, drop shadow, minimum width=3.8cm, minimum height=0.8cm] (uc1) at (4.25, 1.5) {Search History Logs};
-%     \node[draw, ellipse, top color=white, bottom color=cyberblue!15, drop shadow, minimum width=3.8cm, minimum height=0.8cm] (uc2) at (4.25, 0) {Trigger Target My IP};
-%     \node[draw, ellipse, top color=white, bottom color=cyberblue!15, drop shadow, minimum width=3.8cm, minimum height=0.8cm] (uc3) at (4.25, -1.5) {Monitor Performance HUD};
-% 
-%     % Links
-%     \draw[thick, -] (analyst) -- (uc1);
-%     \draw[thick, -] (analyst) -- (uc2);
-%     \draw[thick, -] (analyst) -- (uc3);
-% \end{tikzpicture}
-\includegraphics[width=0.95\textwidth]{assets/s4_usecase.pdf}
+\includegraphics[width=0.95\textwidth]{assets/s4_usecase.png}
 \caption{Sprint 4: Use Case diagram for database browsing and performance monitoring.}
 \label{fig:s4_usecase}
 \end{figure}
@@ -380,38 +275,7 @@ The structural layout of our historical logs queries, circular memory buffers, a
 
 \begin{figure}[h!]
 \centering
-% \begin{tikzpicture}[scale=0.85, every node/.style={transform shape}]
-%     % HistoryPage Page
-%     \node[draw, rectangle, top color=white, bottom color=cyberblue!5, drop shadow, rounded corners=2pt, text width=6.8cm, align=left] (history) at (0,0) {
-%         \textbf{HistoryPage (UI)} \\
-%         \hrulefill \\
-%         + filterQuery : String \\
-%         + threatLogs : ThreatLog[] \\
-%         + isTargetingMe : Boolean \\
-%         + totalPages : Number \\
-%         \hrulefill \\
-%         + fetchHistory(page, size, query) : void \\
-%         + exportToExcelFile() : void \\
-%         + executeTargetMyIP() : void
-%     };
-%     
-%     % RingBuffer Class
-%     \node[draw, rectangle, top color=white, bottom color=cyberblue!5, drop shadow, rounded corners=2pt, text width=5.5cm, align=left] (ring) at (8.5,0) {
-%         \textbf{RingBuffer<T> (perf.ts)} \\
-%         \hrulefill \\
-%         - capacity : Number \\
-%         - buffer : T[] \\
-%         - pointer : Number \\
-%         \hrulefill \\
-%         + push(item : T) : void \\
-%         + getAll() : T[] \\
-%         + clear() : void \\
-%         + getLength() : Number
-%     };
-% 
-%     \draw[thick, -latex] (history) -- node[above, scale=0.8] {queries} (ring);
-% \end{tikzpicture}
-\includegraphics[width=0.95\textwidth]{assets/s4_class.pdf}
+\includegraphics[width=0.95\textwidth]{assets/s4_class.png}
 \caption{Sprint 4: Conception Class diagram.}
 \label{fig:s4_class}
 \end{figure}
@@ -421,35 +285,7 @@ The paginated network round-trip tracing query submissions, backend mongoose fil
 
 \begin{figure}[h!]
 \centering
-% \begin{tikzpicture}[scale=0.85, every node/.style={transform shape}]
-%     % Lifelines
-%     \draw[dashed, thick] (0,0) -- (0,-5.5) node[below] {Security Analyst};
-%     \draw[dashed, thick] (3.8,0) -- (3.8,-5.5) node[below] {HistoryPage UI};
-%     \draw[dashed, thick] (7.5,0) -- (7.5,-5.5) node[below] {Express Server};
-%     \draw[dashed, thick] (11.2,0) -- (11.2,-5.5) node[below] {MongoDB Atlas};
-% 
-%     % Headers
-%     \coordinate (analyst) at (0,0);
-%     \pic at (0,0.4) {actor};
-% 
-%     \coordinate (dash) at (3.8,0);
-%     \node[draw=charcoal, top color=white, bottom color=cyberblue!15, thick, drop shadow, rounded corners, align=center, minimum width=2.2cm, minimum height=0.6cm] at (3.8,0.3) {History UI};
-% 
-%     \coordinate (server) at (7.5,0);
-%     \node[draw=charcoal, top color=white, bottom color=cyberblue!15, thick, drop shadow, rounded corners, align=center, minimum width=2.2cm, minimum height=0.6cm] at (7.5,0.3) {Express Server};
-% 
-%     \coordinate (db) at (11.2,0);
-%     \node[draw=charcoal, top color=white, bottom color=cyberblue!15, thick, drop shadow, rounded corners, align=center, minimum width=2.2cm, minimum height=0.6cm] at (11.2,0.3) {MongoDB};
-% 
-%     % Messages
-%     \draw[-latex, thick] (0,-1) -- node[above, scale=0.8] {Click "Target My IP"} (3.8,-1);
-%     \draw[-latex, thick] (3.8,-1.8) -- node[above, scale=0.8] {GET /api/history?ip=...} (7.5,-1.8);
-%     \draw[-latex, thick] (7.5,-2.6) -- node[above, scale=0.8] {Mongoose: find(\{s\_ip: ...\})} (11.2,-2.6);
-%     \draw[dashed, -latex] (11.2,-3.5) -- node[above, scale=0.8] {Return filtered documents} (7.5,-3.5);
-%     \draw[dashed, -latex] (7.5,-4.3) -- node[above, scale=0.8] {Return JSON threat logs array} (3.8,-4.3);
-%     \draw[-latex, thick] (3.8,-5) -- node[above, xshift=-1cm, scale=0.8] {Render custom threat rows} (0,-5);
-% \end{tikzpicture}
-\includegraphics[width=0.95\textwidth]{assets/s4_sequence.pdf}
+\includegraphics[width=0.95\textwidth]{assets/s4_sequence.png}
 \caption{Sprint 4: Sequence diagram of paginated historical threat search.}
 \label{fig:s4_sequence}
 \end{figure}

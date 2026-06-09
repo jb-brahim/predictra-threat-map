@@ -1,0 +1,41 @@
+@startuml
+skinparam BackgroundColor #FFFFFF
+skinparam TitleFontColor #1E293B
+skinparam ArrowColor #2980B9
+skinparam SequenceLifeLineBorderColor #475569
+skinparam SequenceLifeLineBackgroundColor #F8FAFC
+skinparam SequenceParticipantBorderColor #475569
+skinparam SequenceParticipantBackgroundColor #F2F9FF
+skinparam SequenceParticipantFontColor #1E293B
+skinparam SequenceParticipantFontSize 12
+skinparam SequenceParticipantFontStyle bold
+
+title Sprint 4 - Historical Search & Target My IP Sequence Diagram
+
+actor "Security Analyst" as Analyst
+participant "History UI\n(HistoryPage.tsx)" as UI
+participant "Express Server\n(server.js)" as Server
+database "MongoDB Atlas\n(Database)" as DB
+
+Analyst -> UI : Click "Target My IP" helper
+activate UI
+
+UI -> UI : Query public IP API (jsonip.com)
+UI --> UI : Resolve client public IP address
+
+UI -> Server : GET /api/history?ip=clientIp&page=1
+activate Server
+
+Server -> DB : Mongoose: find({s_ip: clientIp}) with pagination
+activate DB
+DB --> Server : Return BSON threat documents
+deactivate DB
+
+Server --> UI : Return JSON threat logs array
+deactivate Server
+
+UI -> UI : Render paginated threat data table rows
+
+UI --> Analyst : Display target matches list
+deactivate UI
+@enduml

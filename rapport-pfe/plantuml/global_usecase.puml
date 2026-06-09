@@ -1,0 +1,126 @@
+@startuml
+skinparam actorStyle awesome
+skinparam linetype ortho
+left to right direction
+
+' Color Palette Definitions (no # for line border hex codes)
+!define BASE_COLOR #F2F9FF
+!define BASE_BORDER 2980B9
+!define INC_COLOR #FFF2F2
+!define INC_BORDER C0392B
+!define EXT_COLOR #FFFDF2
+!define EXT_BORDER D35400
+
+' Style Customizations
+skinparam BackgroundColor #FFFFFF
+skinparam TitleFontColor #1E293B
+skinparam ActorBorderColor #1E293B
+skinparam ActorBackgroundColor #FFFFFF
+skinparam ActorFontSize 12
+skinparam ActorFontStyle bold
+
+skinparam RectangleBorderColor #475569
+skinparam RectangleBackgroundColor #F8FAFC
+skinparam RectangleFontSize 12
+skinparam RectangleFontStyle bold
+
+skinparam ArrowColor #475569
+skinparam ArrowFontSize 9
+skinparam ArrowFontColor #475569
+
+title Predictra Threat Map - Functional Use Cases by Module
+
+' Actors
+actor "External Threat\nAPIs & Feeds" as api
+actor "Security Analyst" as analyst
+
+rectangle "Predictra Threat Map System Boundary" {
+
+    rectangle "Module 1: Real-Time Threat Visualization" {
+        usecase "View Live Map" as ucMap BASE_COLOR;line:BASE_BORDER;line.bold
+        usecase "Stream Live Threat Events" as ucStream INC_COLOR;line:INC_BORDER
+        usecase "Render 3D Globe" as ucGlobe INC_COLOR;line:INC_BORDER
+        usecase "Enrich & Geocode Log" as ucEnrich INC_COLOR;line:INC_BORDER
+        
+        usecase "Toggle 2D/3D Projection" as ucProj EXT_COLOR;line:EXT_BORDER
+        usecase "Configure Map Quality" as ucQual EXT_COLOR;line:EXT_BORDER
+        usecase "Inspect Incident Metadata" as ucMeta EXT_COLOR;line:EXT_BORDER
+
+        ' Connections inside Module 1
+        ucMap ..> ucStream : <<include>>
+        ucMap ..> ucGlobe : <<include>>
+        ucStream ..> ucEnrich : <<include>>
+        
+        ucMap <.. ucProj : <<extend>>
+        ucMap <.. ucQual : <<extend>>
+        ucMap <.. ucMeta : <<extend>>
+    }
+
+    rectangle "Module 2: Analytical Dashboard & History" {
+        usecase "View Dashboard" as ucDash BASE_COLOR;line:BASE_BORDER;line.bold
+        usecase "Browse Threat History" as ucHist BASE_COLOR;line:BASE_BORDER;line.bold
+        
+        usecase "Render 2D Flat Map" as ucFlat INC_COLOR;line:INC_BORDER
+        usecase "Query Historical Logs" as ucQueryH INC_COLOR;line:INC_BORDER
+        
+        usecase "Filter Dashboard Stream" as ucFiltD EXT_COLOR;line:EXT_BORDER
+        usecase "Drill-down Country Stats" as ucDrillC EXT_COLOR;line:EXT_BORDER
+        usecase "Export Threat Logs\n(Excel, JSON, CSV)" as ucExport EXT_COLOR;line:EXT_BORDER
+        usecase "Target My IP" as ucTargetIP EXT_COLOR;line:EXT_BORDER
+
+        ' Connections inside Module 2
+        ucDash ..> ucFlat : <<include>>
+        ucHist ..> ucQueryH : <<include>>
+        
+        ucDash <.. ucFiltD : <<extend>>
+        ucDash <.. ucDrillC : <<extend>>
+        ucDash <.. ucExport : <<extend>>
+        ucHist <.. ucExport : <<extend>>
+        ucHist <.. ucTargetIP : <<extend>>
+    }
+
+    rectangle "Module 3: Cyber Threat Intelligence (CTI)" {
+        usecase "Analyze CTI\n(Threat Analytics)" as ucAnal BASE_COLOR;line:BASE_BORDER;line.bold
+        usecase "Query MISP Galaxy Intel" as ucQueryG INC_COLOR;line:INC_BORDER
+        
+        usecase "Browse Threat Actors" as ucActors EXT_COLOR;line:EXT_BORDER
+        usecase "Browse Malware Registry" as ucMalware EXT_COLOR;line:EXT_BORDER
+        usecase "Browse Country Risk" as ucRiskC EXT_COLOR;line:EXT_BORDER
+
+        ' Connections inside Module 3
+        ucAnal ..> ucQueryG : <<include>>
+        
+        ucAnal <.. ucActors : <<extend>>
+        ucAnal <.. ucMalware : <<extend>>
+        ucAnal <.. ucRiskC : <<extend>>
+    }
+
+    rectangle "Module 4: STIX Analysis Workspace" {
+        usecase "Manage STIX Intel" as ucStix BASE_COLOR;line:BASE_BORDER;line.bold
+        usecase "Parse STIX 2.1 Data" as ucParseS INC_COLOR;line:INC_BORDER
+        
+        usecase "Upload STIX 2.1 Bundle" as ucUploadS EXT_COLOR;line:EXT_BORDER
+        usecase "Map MITRE ATT&CK" as ucMitre EXT_COLOR;line:EXT_BORDER
+        usecase "Explore Threat Graph" as ucGraph EXT_COLOR;line:EXT_BORDER
+
+        ' Connections inside Module 4
+        ucStix ..> ucParseS : <<include>>
+        
+        ucStix <.. ucUploadS : <<extend>>
+        ucStix <.. ucMitre : <<extend>>
+        ucStix <.. ucGraph : <<extend>>
+    }
+}
+
+' External Connections (Solid Lines)
+analyst --> ucMap
+analyst --> ucDash
+analyst --> ucHist
+analyst --> ucAnal
+analyst --> ucStix
+
+' Shared Threat Feed Connections
+api --> ucStream
+ucDash ..> ucStream : <<include>>
+
+@enduml

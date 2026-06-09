@@ -1,0 +1,50 @@
+@startuml
+skinparam classAttributeIconSize 0
+skinparam linetype ortho
+left to right direction
+
+' Style Customizations
+skinparam BackgroundColor #FFFFFF
+skinparam TitleFontColor #1E293B
+skinparam ArrowColor #475569
+skinparam ArrowFontSize 10
+skinparam ArrowFontColor #475569
+
+skinparam PackageBorderColor #64748B
+skinparam PackageBackgroundColor #F8FAFC
+skinparam PackageFontSize 13
+skinparam PackageFontStyle bold
+
+!define UI_COLOR #FFFDF2
+!define UI_BORDER D35400
+
+title Sprint 3 - STIX 2.1 Dashboard & Visualizer Class Diagram
+
+package "React STIX Workspace Components" {
+
+    class "StixDashboard (StixDashboard.tsx)" as StixDashboard UI_COLOR;line:UI_BORDER;line.bold {
+        + bundleData : STIXBundle | null
+        + activeTab : String
+        + selectedObject : STIXObject | null
+        + indicatorsList : STIXIndicator[]
+        --
+        + parseBundle(jsonText : String) : void
+        + extractIndicators(objects : any[]) : void
+        + mapToKillChain(objects : any[]) : void
+        + exportIOCsToCSV() : void
+    }
+
+    class "StixVisualizerPage (StixVisualizerPage.tsx)" as StixVisualizerPage UI_COLOR;line:UI_BORDER;line.bold {
+        + graphNodes : GraphNode[]
+        + graphLinks : GraphLink[]
+        + hoverNode : GraphNode | null
+        - d3Simulation : ForceSimulation
+        --
+        + buildGraphData(objects : any[]) : void
+        + renderCustomNode(node : GraphNode, ctx : CanvasRenderingContext2D) : void
+        + applyD3ForceLaws() : void
+    }
+
+    StixDashboard --> StixVisualizerPage : "passes parsed objects to"
+}
+@enduml

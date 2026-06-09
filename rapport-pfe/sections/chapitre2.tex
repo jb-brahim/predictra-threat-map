@@ -137,138 +137,11 @@ We identified two main actors interacting with our system:
 \end{itemize}
 
 \subsection{Global Use Case Diagram}
-The global interactions are illustrated in the UML Use Case diagram in Figure~\ref{fig:global_usecase}, rendered natively in vector format using LaTeX TikZ.
+The global interactions are illustrated in the UML Use Case diagram in Figure~\ref{fig:global_usecase}.
 
-\\begin{figure}[h!]
+\begin{figure}[h!]
 \centering
-\begin{plantuml}
-@startuml
-skinparam actorStyle awesome
-skinparam linetype ortho
-left to right direction
-
-' Color Palette Definitions (no # for line border hex codes)
-!define BASE_COLOR #F2F9FF
-!define BASE_BORDER 2980B9
-!define INC_COLOR #FFF2F2
-!define INC_BORDER C0392B
-!define EXT_COLOR #FFFDF2
-!define EXT_BORDER D35400
-
-' Style Customizations
-skinparam BackgroundColor #FFFFFF
-skinparam TitleFontColor #1E293B
-skinparam ActorBorderColor #1E293B
-skinparam ActorBackgroundColor #FFFFFF
-skinparam ActorFontSize 12
-skinparam ActorFontStyle bold
-
-skinparam RectangleBorderColor #475569
-skinparam RectangleBackgroundColor #F8FAFC
-skinparam RectangleFontSize 12
-skinparam RectangleFontStyle bold
-
-skinparam ArrowColor #475569
-skinparam ArrowFontSize 9
-skinparam ArrowFontColor #475569
-
-title Predictra Threat Map - Functional Use Cases by Module
-
-' Actors
-actor "External Threat\nAPIs & Feeds" as api
-actor "Security Analyst" as analyst
-
-rectangle "Predictra Threat Map System Boundary" {
-
-    rectangle "Module 1: Real-Time Threat Visualization" {
-        usecase "View Live Map" as ucMap BASE_COLOR;line:BASE_BORDER;line.bold
-        usecase "Stream Live Threat Events" as ucStream INC_COLOR;line:INC_BORDER
-        usecase "Render 3D Globe" as ucGlobe INC_COLOR;line:INC_BORDER
-        usecase "Enrich & Geocode Log" as ucEnrich INC_COLOR;line:INC_BORDER
-        
-        usecase "Toggle 2D/3D Projection" as ucProj EXT_COLOR;line:EXT_BORDER
-        usecase "Configure Map Quality" as ucQual EXT_COLOR;line:EXT_BORDER
-        usecase "Inspect Incident Metadata" as ucMeta EXT_COLOR;line:EXT_BORDER
-
-        ' Connections inside Module 1
-        ucMap ..> ucStream : <<include>>
-        ucMap ..> ucGlobe : <<include>>
-        ucStream ..> ucEnrich : <<include>>
-        
-        ucMap <.. ucProj : <<extend>>
-        ucMap <.. ucQual : <<extend>>
-        ucMap <.. ucMeta : <<extend>>
-    }
-
-    rectangle "Module 2: Analytical Dashboard & History" {
-        usecase "View Dashboard" as ucDash BASE_COLOR;line:BASE_BORDER;line.bold
-        usecase "Browse Threat History" as ucHist BASE_COLOR;line:BASE_BORDER;line.bold
-        
-        usecase "Render 2D Flat Map" as ucFlat INC_COLOR;line:INC_BORDER
-        usecase "Query Historical Logs" as ucQueryH INC_COLOR;line:INC_BORDER
-        
-        usecase "Filter Dashboard Stream" as ucFiltD EXT_COLOR;line:EXT_BORDER
-        usecase "Drill-down Country Stats" as ucDrillC EXT_COLOR;line:EXT_BORDER
-        usecase "Export Threat Logs\n(Excel, JSON, CSV)" as ucExport EXT_COLOR;line:EXT_BORDER
-        usecase "Target My IP" as ucTargetIP EXT_COLOR;line:EXT_BORDER
-
-        ' Connections inside Module 2
-        ucDash ..> ucFlat : <<include>>
-        ucHist ..> ucQueryH : <<include>>
-        
-        ucDash <.. ucFiltD : <<extend>>
-        ucDash <.. ucDrillC : <<extend>>
-        ucDash <.. ucExport : <<extend>>
-        ucHist <.. ucExport : <<extend>>
-        ucHist <.. ucTargetIP : <<extend>>
-    }
-
-    rectangle "Module 3: Cyber Threat Intelligence (CTI)" {
-        usecase "Analyze CTI\n(Threat Analytics)" as ucAnal BASE_COLOR;line:BASE_BORDER;line.bold
-        usecase "Query MISP Galaxy Intel" as ucQueryG INC_COLOR;line:INC_BORDER
-        
-        usecase "Browse Threat Actors" as ucActors EXT_COLOR;line:EXT_BORDER
-        usecase "Browse Malware Registry" as ucMalware EXT_COLOR;line:EXT_BORDER
-        usecase "Browse Country Risk" as ucRiskC EXT_COLOR;line:EXT_BORDER
-
-        ' Connections inside Module 3
-        ucAnal ..> ucQueryG : <<include>>
-        
-        ucAnal <.. ucActors : <<extend>>
-        ucAnal <.. ucMalware : <<extend>>
-        ucAnal <.. ucRiskC : <<extend>>
-    }
-
-    rectangle "Module 4: STIX Analysis Workspace" {
-        usecase "Manage STIX Intel" as ucStix BASE_COLOR;line:BASE_BORDER;line.bold
-        usecase "Parse STIX 2.1 Data" as ucParseS INC_COLOR;line:INC_BORDER
-        
-        usecase "Upload STIX 2.1 Bundle" as ucUploadS EXT_COLOR;line:EXT_BORDER
-        usecase "Map MITRE ATT&CK" as ucMitre EXT_COLOR;line:EXT_BORDER
-        usecase "Explore Threat Graph" as ucGraph EXT_COLOR;line:EXT_BORDER
-
-        ' Connections inside Module 4
-        ucStix ..> ucParseS : <<include>>
-        
-        ucStix <.. ucUploadS : <<extend>>
-        ucStix <.. ucMitre : <<extend>>
-        ucStix <.. ucGraph : <<extend>>
-    }
-}
-
-' External Connections (Solid Lines)
-analyst --> ucMap
-analyst --> ucDash
-analyst --> ucHist
-analyst --> ucAnal
-analyst --> ucStix
-
-' Shared Threat Feed Connections
-api --> ucStream
-ucDash ..> ucStream : <<include>>
-
-@endum
-\end{plantuml}
+\includegraphics[width=0.95\textwidth]{assets/global_usecase.png}
 \caption{UML Global Use Case diagram for the Predictra CTI platform.}
 \label{fig:global_usecase}
 \end{figure}
@@ -331,36 +204,35 @@ Our chronological sprint schedule is modeled in Figure~\ref{fig:gantt_chart} usi
 
 \begin{figure}[h!]
 \centering
-% \begin{tikzpicture}[scale=0.9, every node/.style={transform shape}]
-%     % Grid lines representing weeks
-%     \draw[very thin, gray!30] (0,-0.5) grid (12,4.5);
-%     
-%     % Timeline weeks header
-%     \foreach \w in {1,2,...,12} {
-%         \node at (\w - 0.5, 4.2) {\small W\w};
-%     }
-%     
-%     % Sprints
-%     % Sprint 1: Weeks 1-3
-%     \draw[draw=charcoal, fill=cyberblue!20, thick, rounded corners] (0,3) rectangle (3,3.6);
-%     \node at (1.5, 3.3) {\small Sprint 1: Harvester};
-%     
-%     % Sprint 2: Weeks 4-6
-%     \draw[draw=charcoal, fill=cyberblue!40, thick, rounded corners] (3,2) rectangle (6,2.6);
-%     \node at (4.5, 2.3) {\small Sprint 2: Visualizer};
-%     
-%     % Sprint 3: Weeks 7-9
-%     \draw[draw=charcoal, fill=cyberblue!60, thick, rounded corners] (6,1) rectangle (9,1.6);
-%     \node at (7.5, 1.3) {\small Sprint 3: STIX Graph};
-%     
-%     % Sprint 4: Weeks 10-12
-%     \draw[draw=charcoal, fill=cyberblue!80, thick, rounded corners] (9,0) rectangle (12,0.6);
-%     \node at (10.5, 0.3) {\small Sprint 4: Polish};
-%     
-%     % Project timeline axis
-%     \draw[thick, ->, color=charcoal] (0,-0.2) -- (12.5,-0.2) node[right] {\small Timeline};
-% \end{tikzpicture}
-\includegraphics[width=0.95\textwidth]{assets/gantt_chart.pdf}
+\begin{tikzpicture}[scale=0.9, every node/.style={transform shape}]
+    % Grid lines representing weeks
+    \draw[very thin, gray!30] (0,-0.5) grid (12,4.5);
+    
+    % Timeline weeks header
+    \foreach \w in {1,2,...,12} {
+        \node at (\w - 0.5, 4.2) {\small W\w};
+    }
+    
+    % Sprints
+    % Sprint 1: Weeks 1-3
+    \draw[draw=charcoal, fill=cyberblue!20, thick, rounded corners] (0,3) rectangle (3,3.6);
+    \node at (1.5, 3.3) {\small Sprint 1: Harvester};
+    
+    % Sprint 2: Weeks 4-6
+    \draw[draw=charcoal, fill=cyberblue!40, thick, rounded corners] (3,2) rectangle (6,2.6);
+    \node at (4.5, 2.3) {\small Sprint 2: Visualizer};
+    
+    % Sprint 3: Weeks 7-9
+    \draw[draw=charcoal, fill=cyberblue!60, thick, rounded corners] (6,1) rectangle (9,1.6);
+    \node at (7.5, 1.3) {\small Sprint 3: STIX Graph};
+    
+    % Sprint 4: Weeks 10-12
+    \draw[draw=charcoal, fill=cyberblue!80, thick, rounded corners] (9,0) rectangle (12,0.6);
+    \node at (10.5, 0.3) {\small Sprint 4: Polish};
+    
+    % Project timeline axis
+    \draw[thick, ->, color=charcoal] (0,-0.2) -- (12.5,-0.2) node[right] {\small Timeline};
+\end{tikzpicture}
 \caption{Previsional Gantt Chart of development sprints.}
 \label{fig:gantt_chart}
 \end{figure}
@@ -479,29 +351,7 @@ To ensure clean separation of concerns, our physical system is organized into de
 
 \begin{figure}[h!]
 \centering
-% \begin{tikzpicture}[
-%     node distance=1.8cm and 1.2cm,
-%     component/.style={draw=charcoal, top color=white, bottom color=cyberblue!15, drop shadow, thick, rectangle, minimum width=3.8cm, minimum height=1cm, align=center, font=\small},
-%     dependency/.style={-latex, dashed, thick, color=cyberblue}
-% ]
-%     % Component nodes
-%     \node (scrapers) [component] {Scrapers Module\\(Checkpoint, Feodo, etc.)};
-%     \node (enrichment) [component, right=of scrapers] {Enrichment Module\\(Geocoding \& Classifier)};
-%     \node (server) [component, below=of enrichment] {Express Server\\(REST APIs \& SSE Stream)};
-%     \node (database) [component, left=of server] {MongoDB Atlas\\(ThreatEvent Model)};
-%     \node (store) [component, below=of server] {Zustand Store\\(State \& Adaptive Engine)};
-%     \node (globe) [component, left=of store] {3D WebGL Globe\\(React Three Fiber)};
-%     \node (stix) [component, right=of store] {STIX Workspace\\(D3 Force Graph)};
-% 
-%     % Core relationships
-%     \draw [dependency] (scrapers) -- (enrichment);
-%     \draw [dependency] (enrichment) -- (server);
-%     \draw [dependency] (server) -- (database);
-%     \draw [dependency] (server) -- (store);
-%     \draw [dependency] (store) -- (globe);
-%     \draw [dependency] (store) -- (stix);
-% \end{tikzpicture}
-\includegraphics[width=0.95\textwidth]{assets/component_diagram.pdf}
+\includegraphics[width=0.95\textwidth]{assets/component_diagram.png}
 \caption{UML Component diagram of the Predictra CTI system.}
 \label{fig:component_diagram}
 \end{figure}
@@ -511,27 +361,7 @@ The Predictra Threat Map's internal logic is partitioned into 4 distinct tiers, 
 
 \begin{figure}[h!]
 \centering
-% \begin{tikzpicture}[
-%     node distance=1.5cm,
-%     layer/.style={rectangle, draw=charcoal, top color=white, bottom color=gray!15, drop shadow, thick, rounded corners, minimum width=12.2cm, text width=11.8cm, minimum height=1.2cm, align=center},
-%     arrow/.style={-latex, thick, color=cyberblue}
-% ]
-%     % Layers
-%     \node (presentation) [layer] {\textbf{Presentation Tier (Frontend - React 19 / WebGL)} \\ WebGL 3D Globe Scene (R3F) $\cdot$ STIX Force Graph $\cdot$ Analytics $\cdot$ Zustand State Store};
-%     \node (storage) [layer, below=of presentation] {\textbf{Storage \& Management Tier (MongoDB)} \\ Mongoose Schemas $\cdot$ 30-Day TTL Indexes $\cdot$ 500MB DB Quota Monitor};
-%     \node (processing) [layer, below=of storage] {\textbf{Processing \& Enrichment Tier (Node.js)} \\ 5-Layer Sector Classifier $\cdot$ GeoIP Geocoder $\cdot$ RDAP In-Memory Cache};
-%     \node (ingestion) [layer, below=of processing] {\textbf{Data Ingestion Tier (Scrapers)} \\ 9+ Multi-Source APIs $\cdot$ Real-Time SSE/WebSockets $\cdot$ 300ms Batch Queue};
-% 
-%     % Arrows
-%     \draw [arrow] (ingestion) -- (processing);
-%     \draw [arrow] (processing) -- (storage);
-%     \draw [arrow] (storage) -- (presentation);
-%     
-%     % Flow back to presentation (direct stream)
-%     \draw [arrow, bend left=45] (ingestion.east) to node[right, pos=0.5, color=charcoal] {Real-Time SSE Feed} (presentation.east);
-% 
-% \end{tikzpicture}
-\includegraphics[width=0.95\textwidth]{assets/multi_tier_architecture.pdf}
+\includegraphics[width=0.95\textwidth]{assets/multi_tier_architecture.png}
 \caption{Predictra platform multi-tier layered application architecture.}
 \label{fig:logical_architecture}
 \end{figure}
@@ -543,217 +373,11 @@ This multi-tier structure enforces strict data-flow boundaries:
 \end{itemize}
 
 \subsection{Global Class Diagram}
-To model the static structure of the Predictra CTI system, we designed a Global Class Diagram that illustrates the key logical modules, their core attributes, operational methods, and structural relationships. The diagram is rendered natively in vector format using LaTeX TikZ in Figure~\ref{fig:global_class_diagram}.
+To model the static structure of the Predictra CTI system, we designed a Global Class Diagram that illustrates the key logical modules, their core attributes, operational methods, and structural relationships. The diagram is illustrated in Figure~\ref{fig:global_class_diagram}.
 
 \begin{figure}[p]
 \centering
-\begin{plantuml}
-@startuml
-skinparam classAttributeIconSize 0
-skinparam linetype ortho
-left to right direction
-
-' Style Customizations
-skinparam BackgroundColor #FFFFFF
-skinparam TitleFontColor #1E293B
-skinparam ArrowColor #475569
-skinparam ArrowFontSize 10
-skinparam ArrowFontColor #475569
-
-skinparam PackageBorderColor #64748B
-skinparam PackageBackgroundColor #F8FAFC
-skinparam PackageFontSize 13
-skinparam PackageFontStyle bold
-
-' Color Palette variables
-!define BACKEND_COLOR #F2F9FF
-!define BACKEND_BORDER 2980B9
-!define STATE_COLOR #F5EEF8
-!define STATE_BORDER 8E44AD
-!define UI_COLOR #FFFDF2
-!define UI_BORDER D35400
-
-title Predictra Threat Map - Global Class Diagram
-
-' ==========================================
-' TIER 1: Backend Ingestion & Persistence
-' ==========================================
-package "Backend Ingestion & Persistence Tier" {
-    
-    class "Express Server (server.js)" as Server BACKEND_COLOR;line:BACKEND_BORDER;line.bold {
-        - app: ExpressApp
-        - port: Number
-        - sseClients: Response[]
-        - activeScrapers: Scraper[]
-        --
-        + startServer(): void
-        + initDatabase(): void
-        + setupSSEFeed(req, res): void
-        + broadcastToClients(events): void
-    }
-
-    class EnrichmentService BACKEND_COLOR;line:BACKEND_BORDER;line.bold {
-        - rdapCache: Map
-        - keywordMap: Record
-        --
-        + getEnrichedSector(event): String
-        + getIpOrganization(ip): Promise<string>
-    }
-
-    class ScraperService BACKEND_COLOR;line:BACKEND_BORDER;line.bold {
-        - name: String
-        - frequency: Number
-        - isActive: Boolean
-        - apiUrl: String
-        --
-        + run(): Promise<void>
-        + fetchFeed(): Promise<rawJSON>
-        + normalize(raw): ThreatEvent[]
-    }
-
-    class "ThreatEvent (Mongoose Model)" as ThreatEvent BACKEND_COLOR;line:BACKEND_BORDER;line.bold {
-        + a_c: Number
-        + a_n: String
-        + a_t: 'exploit'|'malware'|'phishing'
-        + s_ip / d_ip: String
-        + source_api: String
-        + timestamp: Date
-    }
-
-    ' Compact 2x2 grid layout
-    Server -[hidden]right-> EnrichmentService
-    Server -[hidden]down-> ScraperService
-    EnrichmentService -[hidden]down-> ThreatEvent
-}
-
-' ==========================================
-' TIER 2: Client State & Performance Store
-' ==========================================
-package "Client State & Performance Store" {
-
-    class "Zustand Store (useStreamStore)" as ZustandStore STATE_COLOR;line:STATE_BORDER;line.bold {
-        + status: ConnectionStatus
-        + currentView: ViewType
-        + eventBuffer: RingBuffer
-        + recentEvents: ThreatEvent[]
-        + totalAttacks: Number
-        + attacksPerSecond: Number
-        + arcs: ArcData[]
-        + markers: MarkerData[]
-        + projectionMode: '3d' | '2d'
-        --
-        + addEvents(events): void
-        + updateCounter(data): void
-        + setProjectionMode(mode): void
-        + initStream(): void
-    }
-
-    class "RingBuffer<T>" as RingBuffer STATE_COLOR;line:STATE_BORDER;line.bold {
-        - capacity: Number
-        - buffer: T[]
-        --
-        + push(item: T): void
-        + getAll(): T[]
-        + getRecent(n): T[]
-    }
-
-    class "perfTelemetry" as PerfTelemetry STATE_COLOR;line:STATE_BORDER;line.bold {
-        - stats: Stats
-        --
-        + recordEvent(): void
-        + updateFps(fps): void
-        + getReport(): Object
-    }
-
-    ' Compact side-by-side and stacked layout
-    ZustandStore -[hidden]right-> RingBuffer
-    RingBuffer -[hidden]down-> PerfTelemetry
-}
-
-' ==========================================
-' TIER 3: React Dashboard & UI Pages
-' ==========================================
-package "React Dashboard & UI Pages" {
-
-    class DashboardPage UI_COLOR;line:UI_BORDER;line.bold {
-        + timeMode: 'live' | 'dvr'
-        + searchQuery: String
-        --
-        + filterDataBySource(src): void
-        + handleCountryDrillDown(co): void
-        + handleExportExcel(): void
-    }
-
-    class HistoryPage UI_COLOR;line:UI_BORDER;line.bold {
-        + events: ThreatEvent[]
-        + page: Number
-        + limit: Number
-        --
-        + fetchHistory(): Promise<void>
-        + handlePageChange(p): void
-        + handleExport(): void
-    }
-
-    class AnalyticsPage UI_COLOR;line:UI_BORDER;line.bold {
-        + timeframe: String
-        + chartType: ChartType
-        --
-        + renderTrendChart(): ReactNode
-        + renderSectorDistribution(): ReactNode
-    }
-
-    class StixVisualizerPage UI_COLOR;line:UI_BORDER;line.bold {
-        + parsedData: ParsedStixData
-        + activeTab: String
-        - d3Simulation: ForceSimulation
-        --
-        + parseBundle(jsonText): ParsedStixData
-        + mapAttackToPhase(apName): String[]
-        + applyForces(linkDist, strength): void
-    }
-
-    class CountryDashboard UI_COLOR;line:UI_BORDER;line.bold {
-        + countryData: Object
-        + activeThreatsCount: Number
-        --
-        + renderHologram(): ReactNode
-        + fetchCountryStats(): Promise<void>
-    }
-
-    ' Compact 2x3 grid layout
-    DashboardPage -[hidden]right-> HistoryPage
-    DashboardPage -[hidden]down-> AnalyticsPage
-    HistoryPage -[hidden]down-> StixVisualizerPage
-    AnalyticsPage -[hidden]down-> CountryDashboard
-}
-
-' ==========================================
-' RELATIONSHIPS & CONNECTIONS
-' ==========================================
-
-' Tier 1 Relationships
-Server --> ScraperService : "runs"
-Server --> EnrichmentService : "uses"
-Server --> ThreatEvent : "persists"
-EnrichmentService ..> ThreatEvent : "returns"
-
-' Tier 1 to Tier 2 Relations
-Server ..> ZustandStore : "streams (SSE)"
-ThreatEvent ..> ZustandStore : "populates"
-
-' Tier 2 internal Relations
-ZustandStore --> RingBuffer : "aggregates"
-ZustandStore --> PerfTelemetry : "tracks"
-
-' Tier 2 to Tier 3 Relations
-ZustandStore ..> DashboardPage : "binds"
-ZustandStore ..> HistoryPage : "binds"
-ZustandStore ..> AnalyticsPage : "binds"
-ZustandStore ..> StixVisualizerPage : "binds"
-ZustandStore ..> CountryDashboard : "binds"
-
-@endum
-\end{plantuml}
+\includegraphics[width=0.95\textwidth]{assets/global_class_diagram.png}
 \caption{UML Global Class diagram of the Predictra CTI system.}
 \label{fig:global_class_diagram}
 \end{figure}

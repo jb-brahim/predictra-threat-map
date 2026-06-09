@@ -1,0 +1,53 @@
+@startuml
+skinparam actorStyle awesome
+skinparam linetype ortho
+left to right direction
+
+!define BASE_COLOR #F2F9FF
+!define BASE_BORDER 2980B9
+!define INC_COLOR #FFF2F2
+!define INC_BORDER C0392B
+!define EXT_COLOR #FFFDF2
+!define EXT_BORDER D35400
+
+skinparam BackgroundColor #FFFFFF
+skinparam TitleFontColor #1E293B
+skinparam ActorBorderColor #1E293B
+skinparam ActorBackgroundColor #FFFFFF
+skinparam ActorFontSize 12
+skinparam ActorFontStyle bold
+
+skinparam RectangleBorderColor #475569
+skinparam RectangleBackgroundColor #F8FAFC
+skinparam RectangleFontSize 12
+skinparam RectangleFontStyle bold
+
+skinparam ArrowColor #475569
+skinparam ArrowFontSize 9
+skinparam ArrowFontColor #475569
+
+title Sprint 2 - Real-Time Streaming & 3D WebGL Globe Use Cases
+
+actor "Security Analyst" as analyst
+
+rectangle "Sprint 2: 3D Visualizer System Boundary" {
+    usecase "Monitor 3D Spatial Globe" as uc1 BASE_COLOR;line:BASE_BORDER;line.bold
+    usecase "Toggle 2D/3D Projection" as uc2 BASE_COLOR;line:BASE_BORDER;line.bold
+    
+    usecase "Establish SSE Feed Connection" as ucSSE INC_COLOR;line:INC_BORDER
+    usecase "Render Animated Fly-Arcs" as ucArcs INC_COLOR;line:INC_BORDER
+    usecase "Orbit / Zoom / Pan Globe" as ucOrbit EXT_COLOR;line:EXT_BORDER
+    usecase "Configure Map Quality" as ucQual EXT_COLOR;line:EXT_BORDER
+    usecase "Inspect Incident Metadata" as ucMeta EXT_COLOR;line:EXT_BORDER
+
+    uc1 ..> ucSSE : <<include>>
+    uc1 ..> ucArcs : <<include>>
+    
+    uc1 <.. ucOrbit : <<extend>>
+    uc1 <.. ucQual : <<extend>>
+    uc1 <.. ucMeta : <<extend>>
+}
+
+analyst --> uc1
+analyst --> uc2
+@enduml
