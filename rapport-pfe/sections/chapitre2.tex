@@ -130,11 +130,10 @@ The interface must implement a high-end, responsive dark theme design, utilizing
 To define the system boundary, we identified the primary actors and modeled their interactions with the global platform using a UML Use Case diagram.
 
 \subsection{Identification of Actors}
-We identified three main actors interacting with our system:
+We identified two main actors interacting with our system:
 \begin{itemize}
     \item \textbf{External Threat Feeds (System Actor):} Ingests raw cyber threat logs via HTTP REST APIs, SSE feeds, or WebSockets. It acts as the primary data supplier.
     \item \textbf{Security Analyst (Human Actor):} Interacts with the frontend dashboard to monitor geolocated threat vectors, explore history, export data, and upload/explore STIX 2.1 threat intelligence bundles.
-    \item \textbf{MongoDB Atlas Database (System Actor):} Persists and queries threat documents, acting as the long-term persistence vault.
 \end{itemize}
 
 \subsection{Global Use Case Diagram}
@@ -142,41 +141,100 @@ The global interactions are illustrated in the UML Use Case diagram in Figure~\r
 
 \begin{figure}[h!]
 \centering
-% \begin{tikzpicture}[node distance=2.2cm, scale=0.85, every node/.style={transform shape}]
-%     % Boundary Box
-%     \draw[draw=charcoal, fill=charcoal!2, thick, rounded corners] (-1,-6.5) rectangle (10.5,5.5);
-%     \node at (4.75,5.1) {\textbf{Predictra Threat Map System Boundary}};
-% 
-%     % Actors
-%     \node[draw=charcoal, top color=white, bottom color=gray!15, drop shadow, thick, rounded corners, minimum width=2.2cm, minimum height=1cm, align=center] (api) at (-3, 2) {\textbf{External Threat}\\\textbf{APIs \& Feeds}};
-%     \coordinate (analyst) at (-3, -2);
-%     \pic at (analyst) {actor};
-%     \node[align=center, below=0.7cm of analyst, font=\small\bfseries] {Security\\Analyst};
-%     \node[draw=charcoal, top color=white, bottom color=gray!15, drop shadow, thick, rounded corners, minimum width=2.2cm, minimum height=1cm, align=center] (db) at (12.5, 0) {\textbf{MongoDB}\\\textbf{Database}};
-% 
-%     % Use Cases inside Boundary
-%     \node[draw, ellipse, top color=white, bottom color=cyberblue!15, drop shadow, minimum width=4cm, minimum height=0.9cm, align=center] (uc1) at (4.75, 4) {Stream Live Threat Events};
-%     \node[draw, ellipse, top color=white, bottom color=cyberblue!15, drop shadow, minimum width=4cm, minimum height=0.9cm, align=center] (uc2) at (4.75, 2.5) {Enrich \& Geocode Log};
-%     \node[draw, ellipse, top color=white, bottom color=cyberblue!15, drop shadow, minimum width=4cm, minimum height=0.9cm, align=center] (uc3) at (4.75, 1) {Render 3D Interactive Map};
-%     \node[draw, ellipse, top color=white, bottom color=cyberblue!15, drop shadow, minimum width=4cm, minimum height=0.9cm, align=center] (uc4) at (4.75, -0.5) {Query Historical Log};
-%     \node[draw, ellipse, top color=white, bottom color=cyberblue!15, drop shadow, minimum width=4cm, minimum height=0.9cm, align=center] (uc5) at (4.75, -2) {Export to Excel / CSV};
-%     \node[draw, ellipse, top color=white, bottom color=cyberblue!15, drop shadow, minimum width=4cm, minimum height=0.9cm, align=center] (uc6) at (4.75, -3.5) {Upload STIX 2.1 Bundle};
-%     \node[draw, ellipse, top color=white, bottom color=cyberblue!15, drop shadow, minimum width=4cm, minimum height=0.9cm, align=center] (uc7) at (4.75, -5) {Explore Threat Network Graph};
-% 
-%     % Connections
-%     \draw[thick, -] (api) -- (uc1);
-%     \draw[thick, -] (api) -- (uc2);
-%     
-%     \draw[thick, -] (analyst) -- (uc3);
-%     \draw[thick, -] (analyst) -- (uc4);
-%     \draw[thick, -] (analyst) -- (uc5);
-%     \draw[thick, -] (analyst) -- (uc6);
-%     \draw[thick, -] (analyst) -- (uc7);
-% 
-%     \draw[thick, -] (uc2) -- (db);
-%     \draw[thick, -] (uc4) -- (db);
-% \end{tikzpicture}
-\includegraphics[width=0.95\textwidth]{assets/global_usecase.pdf}
+\begin{tikzpicture}[node distance=2.2cm, scale=0.75, every node/.style={transform shape}]
+    % Boundary Box
+    \draw[draw=charcoal, fill=charcoal!2, thick, rounded corners] (-0.5,-7.5) rectangle (13.8,6.8);
+    \node at (6.65,6.4) {\textbf{Predictra Threat Map System Boundary}};
+
+    % Actors
+    \node[draw=charcoal, top color=white, bottom color=gray!15, drop shadow, thick, rounded corners, minimum width=2.2cm, minimum height=1cm, align=center] (api) at (-3.5, 4.5) {\textbf{External Threat}\\\textbf{APIs \& Feeds}};
+    \coordinate (analyst) at (-3.5, -1.5);
+    \pic at (analyst) {actor};
+    \node[align=center, below=0.7cm of analyst, font=\small\bfseries] {Security\\Analyst};
+
+    % Styles for Use Cases
+    \tikzstyle{baseuc} = [draw=charcoal, ellipse, top color=white, bottom color=cyberblue!15, drop shadow, minimum width=3.2cm, minimum height=0.75cm, align=center, font=\small]
+    \tikzstyle{incuc} = [draw=charcoal, ellipse, top color=white, bottom color=cyberred!15, drop shadow, minimum width=3.2cm, minimum height=0.75cm, align=center, font=\small]
+    \tikzstyle{extuc} = [draw=charcoal, ellipse, top color=white, bottom color=cyberamber!15, drop shadow, minimum width=3.2cm, minimum height=0.75cm, align=center, font=\small]
+
+    % Column 1: Primary Tab Use Cases (X = 2.2)
+    \node[baseuc] (ucMap) at (2.2, 4.5) {View Live Map};
+    \node[baseuc] (ucDash) at (2.2, 2.5) {View Dashboard};
+    \node[baseuc] (ucHist) at (2.2, 0.5) {Browse Threat History};
+    \node[baseuc] (ucAnal) at (2.2, -2.0) {Analyze CTI\\(Threat Analytics)};
+    \node[baseuc] (ucStix) at (2.2, -4.5) {Manage STIX Intel};
+
+    % Column 2: Included Use Cases (X = 6.8)
+    \node[incuc] (ucEnrich) at (6.8, 6.0) {Enrich \& Geocode Log};
+    \node[incuc] (ucStream) at (6.8, 4.8) {Stream Live Threat Events};
+    \node[incuc] (ucGlobe) at (6.8, 3.6) {Render 3D Globe};
+    \node[incuc] (ucFlat) at (6.8, 2.4) {Render 2D Flat Map};
+    \node[incuc] (ucQueryH) at (6.8, 0.8) {Query Historical Logs};
+    \node[incuc] (ucQueryG) at (6.8, -2.0) {Query MISP Galaxy Intel};
+    \node[incuc] (ucParseS) at (6.8, -4.5) {Parse STIX 2.1 Data};
+
+    % Column 3: Extending Use Cases (X = 11.5)
+    % Live Map Extensions
+    \node[extuc] (ucProj) at (11.5, 5.4) {Toggle 2D/3D Projection};
+    \node[extuc] (ucQual) at (11.5, 4.4) {Configure Map Quality};
+    \node[extuc] (ucMeta) at (11.5, 3.4) {Inspect Incident Metadata};
+    % Dashboard Extensions
+    \node[extuc] (ucFiltD) at (11.5, 2.3) {Filter Dashboard Stream};
+    \node[extuc] (ucDrillC) at (11.5, 1.3) {Drill-down Country Stats};
+    % Shared / History / Export
+    \node[extuc] (ucExport) at (11.5, 0.2) {Export Threat Logs\\(Excel, JSON, CSV)};
+    \node[extuc] (ucTargetIP) at (11.5, -0.8) {Target My IP};
+    % Analytics Extensions
+    \node[extuc] (ucActors) at (11.5, -1.8) {Browse Threat Actors};
+    \node[extuc] (ucMalware) at (11.5, -2.8) {Browse Malware Registry};
+    \node[extuc] (ucRiskC) at (11.5, -3.8) {Browse Country Risk};
+    % STIX Extensions
+    \node[extuc] (ucUploadS) at (11.5, -4.8) {Upload STIX 2.1 Bundle};
+    \node[extuc] (ucMitre) at (11.5, -5.8) {Map MITRE ATT\&CK};
+    \node[extuc] (ucGraph) at (11.5, -6.8) {Explore Threat Graph};
+
+    % Actor Connections (Solid lines)
+    \draw[thick, -] (api) -- (ucStream);
+    
+    \draw[thick, -] (analyst) -- (ucMap);
+    \draw[thick, -] (analyst) -- (ucDash);
+    \draw[thick, -] (analyst) -- (ucHist);
+    \draw[thick, -] (analyst) -- (ucAnal);
+    \draw[thick, -] (analyst) -- (ucStix);
+
+    % Relationships (Dashed lines with arrowheads)
+    \tikzstyle{rel} = [dashed, -latex, thick, font=\scriptsize, color=charcoal]
+
+    % Include relations (Base -> Included)
+    \draw[rel] (ucStream) -- node[above, sloped] {\textless\textless include\textgreater\textgreater} (ucEnrich);
+    \draw[rel] (ucMap) -- node[above, sloped] {\textless\textless include\textgreater\textgreater} (ucStream);
+    \draw[rel] (ucMap) -- node[below, sloped] {\textless\textless include\textgreater\textgreater} (ucGlobe);
+    \draw[rel] (ucDash) -- node[above, sloped] {\textless\textless include\textgreater\textgreater} (ucStream);
+    \draw[rel] (ucDash) -- node[below, sloped] {\textless\textless include\textgreater\textgreater} (ucFlat);
+    \draw[rel] (ucHist) -- node[above, sloped] {\textless\textless include\textgreater\textgreater} (ucQueryH);
+    \draw[rel] (ucAnal) -- node[above, sloped] {\textless\textless include\textgreater\textgreater} (ucQueryG);
+    \draw[rel] (ucStix) -- node[above, sloped] {\textless\textless include\textgreater\textgreater} (ucParseS);
+
+    % Extend relations (Extension -> Base)
+    \draw[rel] (ucProj) -- node[above, sloped] {\textless\textless extend\textgreater\textgreater} (ucMap);
+    \draw[rel] (ucQual) -- node[above, sloped] {\textless\textless extend\textgreater\textgreater} (ucMap);
+    \draw[rel] (ucMeta) -- node[below, sloped] {\textless\textless extend\textgreater\textgreater} (ucMap);
+    
+    \draw[rel] (ucFiltD) -- node[above, sloped] {\textless\textless extend\textgreater\textgreater} (ucDash);
+    \draw[rel] (ucDrillC) -- node[below, sloped] {\textless\textless extend\textgreater\textgreater} (ucDash);
+    
+    \draw[rel] (ucExport) -- node[above, sloped] {\textless\textless extend\textgreater\textgreater} (ucDash);
+    \draw[rel] (ucExport) -- node[below, sloped] {\textless\textless extend\textgreater\textgreater} (ucHist);
+    \draw[rel] (ucTargetIP) -- node[below, sloped] {\textless\textless extend\textgreater\textgreater} (ucHist);
+    
+    \draw[rel] (ucActors) -- node[above, sloped] {\textless\textless extend\textgreater\textgreater} (ucAnal);
+    \draw[rel] (ucMalware) -- node[above, sloped] {\textless\textless extend\textgreater\textgreater} (ucAnal);
+    \draw[rel] (ucRiskC) -- node[below, sloped] {\textless\textless extend\textgreater\textgreater} (ucAnal);
+    
+    \draw[rel] (ucUploadS) -- node[above, sloped] {\textless\textless extend\textgreater\textgreater} (ucStix);
+    \draw[rel] (ucMitre) -- node[above, sloped] {\textless\textless extend\textgreater\textgreater} (ucStix);
+    \draw[rel] (ucGraph) -- node[below, sloped] {\textless\textless extend\textgreater\textgreater} (ucStix);
+\end{tikzpicture}
 \caption{UML Global Use Case diagram for the Predictra CTI platform.}
 \label{fig:global_usecase}
 \end{figure}
@@ -186,20 +244,37 @@ The specific functional workflows of these use cases are summarized in Table~\re
 \begin{table}[h!]
 \centering
 \small
-\begin{tabular}{>{\raggedright\arraybackslash}p{3.0cm}>{\raggedright\arraybackslash}p{5.5cm}>{\raggedright\arraybackslash}p{5.5cm}}
+\begin{tabular}{>{\raggedright\arraybackslash}p{3.2cm}>{\raggedright\arraybackslash}p{3.5cm}>{\raggedright\arraybackslash}p{7.3cm}}
 \toprule
-\textbf{Use Case} & \textbf{Actor/Trigger} & \textbf{Main Workflow} \\
+\textbf{Base Use Case} & \textbf{Included / Extending} & \textbf{Main Workflow \& Interaction Details} \\
 \midrule
-Stream Live Threat & External Threat APIs / Poll & The ingestion layer gathers active threat files and emits a continuous stream of events. \\
-Enrich \& Geocode & System Background / Data In & Geocodes coordinates, resolves target sectors, and persists to MongoDB Atlas. \\
-Render 3D Map & Security Analyst / Mounts Map & Initiates WebGL, queries live SSE feed, and renders 3D great-circle arcs. \\
-Query History & Security Analyst / Inputs Query & Submits filters (sectors, countries, IPs) and displays paged BSON records. \\
-Export to Excel & Security Analyst / Click Export & Converts the current query table into formatted spreadsheets client-side. \\
-Upload STIX 2.1 & Security Analyst / File Upload & Parses standard threat bundles, extracting indicators, actors, and TTP relationships. \\
-Explore Network & Security Analyst / Canvas Load & Renders an interactive D3 force-directed node-link visual graph. \\
+View Live Map &
+\textbf{Includes:} Stream Live Events, Render 3D Globe \newline
+\textbf{Extends:} Toggle 2D/3D Projection, Configure Map, Inspect Metadata &
+Security Analyst mounts the map view. The frontend initiates the WebGL globe render loop and hooks into the Server-Sent Events (SSE) client stream. Optional controls allow altering atmospheric/trail quality, flattening coordinates to 2D Mercator, and hovering over bezier arcs to see raw metadata. \\
+\midrule
+View Dashboard &
+\textbf{Includes:} Stream Live Events, Render 2D Flat Map \newline
+\textbf{Extends:} Filter Dashboard, Drill-down Country, Export Logs &
+Security Analyst opens the flat command center view. System displays grid panels containing real-time metrics, sparklines, and maps. Analyst can query events using regex, click countries to see drill-down reports, or export the active buffer to JSON, CSV, or formatted Excel sheets. \\
+\midrule
+Browse Threat History &
+\textbf{Includes:} Query Historical Logs \newline
+\textbf{Extends:} Target My IP, Export Logs &
+Security Analyst searches the persistent database. System queries MongoDB Atlas collections. Helper features allow automated public IP geolocation checks (Target My IP) to query matching subnet logs and client-side formatting for Excel spreadsheet exports. \\
+\midrule
+Analyze CTI \newline (Threat Analytics) &
+\textbf{Includes:} Query MISP Galaxy \newline
+\textbf{Extends:} Browse Actors, Browse Malware, Browse Country Risk &
+Security Analyst accesses the threat intelligence portal. The system retrieves stored MISP Galaxy templates. The analyst filters APT groups by country attribution or target sector, audits ransomware encryption details, and views geographical vulnerability heatmaps. \\
+\midrule
+Manage STIX Intel &
+\textbf{Includes:} Parse STIX 2.1 \newline
+\textbf{Extends:} Upload STIX, Map MITRE, Explore Threat Graph &
+Security Analyst mounts the STIX 2.1 analysis environment. The analyst uploads a JSON bundle, parsed client-side. The frontend compiles objects into an interactive D3 node-link force-directed graph and maps adversary patterns into the 12 phases of the MITRE ATT\&CK Cyber Kill Chain. \\
 \bottomrule
 \end{tabular}
-\caption{Global Use Case descriptions.}
+\caption{Detailed descriptions of the global primary use cases and their relationships.}
 \label{tab:global_uc_desc}
 \end{table}
 
