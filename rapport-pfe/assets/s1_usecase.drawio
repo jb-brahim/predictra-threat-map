@@ -1,0 +1,51 @@
+<mxfile host="Electron" modified="2026-06-08T14:42:00.000Z" agent="Mozilla/5.0" version="21.6.8" type="device">
+  <diagram id="S1UseCase" name="Sprint 1 Use Case">
+    <mxGraphModel dx="1000" dy="800" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+
+        <!-- System Boundary Box -->
+        <mxCell id="boundary" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#333333;strokeWidth=1.5;align=center;verticalAlign=top;fontStyle=1;spacingTop=10;arcSize=4;" parent="1" vertex="1">
+          <mxGeometry x="170" y="30" width="380" height="200" as="geometry" />
+        </mxCell>
+        <mxCell id="boundary_label" value="&lt;b&gt;Sprint 1: Harvester Boundary&lt;/b&gt;" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;fontSize=12;fontColor=#333333;" parent="1" vertex="1">
+          <mxGeometry x="270" y="40" width="180" height="30" as="geometry" />
+        </mxCell>
+
+        <!-- Actor 1: External API Feed -->
+        <mxCell id="actor_feed" value="&lt;b&gt;External API&lt;br&gt;Feed&lt;/b&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#333333;strokeWidth=1.5;fontColor=#333333;align=center;shadow=0;" parent="1" vertex="1">
+          <mxGeometry x="20" y="105" width="120" height="50" as="geometry" />
+        </mxCell>
+
+        <!-- Actor 2: Express Server -->
+        <mxCell id="actor_server" value="&lt;b&gt;Express&lt;br&gt;Server&lt;/b&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#333333;strokeWidth=1.5;fontColor=#333333;align=center;shadow=0;" parent="1" vertex="1">
+          <mxGeometry x="580" y="105" width="120" height="50" as="geometry" />
+        </mxCell>
+
+        <!-- Use Cases -->
+        <mxCell id="uc1" value="Fetch Threat Feed" style="ellipse;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#333333;strokeWidth=1.5;fontColor=#000000;align=center;" parent="1" vertex="1">
+          <mxGeometry x="260" y="80" width="200" height="45" as="geometry" />
+        </mxCell>
+
+        <mxCell id="uc2" value="Enrich &amp; Store Payload" style="ellipse;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#333333;strokeWidth=1.5;fontColor=#000000;align=center;" parent="1" vertex="1">
+          <mxGeometry x="260" y="150" width="200" height="45" as="geometry" />
+        </mxCell>
+
+        <!-- Connections -->
+        <mxCell id="link1" style="strokeColor=#333333;strokeWidth=1.5;endArrow=none;" parent="1" source="actor_feed" target="uc1" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <mxCell id="link2" style="strokeColor=#333333;strokeWidth=1.5;endArrow=none;" parent="1" source="actor_server" target="uc1" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <mxCell id="link3" style="strokeColor=#333333;strokeWidth=1.5;endArrow=none;" parent="1" source="actor_server" target="uc2" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

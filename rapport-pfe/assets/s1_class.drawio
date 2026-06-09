@@ -1,0 +1,26 @@
+<mxfile host="Electron" modified="2026-06-08T14:43:00.000Z" agent="Mozilla/5.0" version="21.6.8" type="device">
+  <diagram id="S1Class" name="Sprint 1 Class Diagram">
+    <mxGraphModel dx="1000" dy="800" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+
+        <!-- 1. Express Server Class Box -->
+        <mxCell id="express" value="&lt;table border=&quot;0&quot; cellPadding=&quot;4&quot; cellSpacing=&quot;0&quot; style=&quot;width: 100%; height: 100%; border-collapse: collapse; font-family: Helvetica; font-size: 12px;&quot;&gt;&lt;tr&gt;&lt;td align=&quot;center&quot; style=&quot;border-bottom: 1px solid #333333;&quot;&gt;&lt;b&gt;Express Server (/api/feed)&lt;/b&gt;&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td align=&quot;left&quot; style=&quot;border-bottom: 1px solid #333333;&quot;&gt;+ clients : Response[]&lt;br&gt;+ pendingBatch : ThreatEvent[]&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td align=&quot;left&quot;&gt;+ addClient(req, res) : void&lt;br&gt;+ broadcast(events) : void&lt;br&gt;- flushBatch() : void (every 300ms)&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#333333;strokeWidth=1.5;shadow=0;align=left;verticalAlign=top;" parent="1" vertex="1">
+          <mxGeometry x="50" y="50" width="240" height="130" as="geometry" />
+        </mxCell>
+
+        <!-- 2. Zustand Store Class Box -->
+        <mxCell id="zustand" value="&lt;table border=&quot;0&quot; cellPadding=&quot;4&quot; cellSpacing=&quot;0&quot; style=&quot;width: 100%; height: 100%; border-collapse: collapse; font-family: Helvetica; font-size: 12px;&quot;&gt;&lt;tr&gt;&lt;td align=&quot;center&quot; style=&quot;border-bottom: 1px solid #333333;&quot;&gt;&lt;b&gt;Zustand Store (streamStore)&lt;/b&gt;&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td align=&quot;left&quot; style=&quot;border-bottom: 1px solid #333333;&quot;&gt;+ activeArcs : ArcData[]&lt;br&gt;+ eventsBuffer : RingBuffer&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td align=&quot;left&quot;&gt;+ initStream() : void&lt;br&gt;+ addEvents(payload) : void&lt;br&gt;+ tick(now) : void (60fps)&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#333333;strokeWidth=1.5;shadow=0;align=left;verticalAlign=top;" parent="1" vertex="1">
+          <mxGeometry x="380" y="50" width="240" height="130" as="geometry" />
+        </mxCell>
+
+        <!-- Connection: sync arrow from Zustand to Express -->
+        <mxCell id="sync_arrow" value="sync" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;exitX=0;exitY=0.5;exitDx=0;exitDy=0;entryX=1;entryY=0.5;entryDx=0;entryDy=0;strokeColor=#333333;strokeWidth=1.5;endArrow=block;fontColor=#333333;fontSize=12;fontWeight=bold;labelBackgroundColor=#FFFFFF;" parent="1" source="zustand" target="express" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

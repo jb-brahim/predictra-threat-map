@@ -1,0 +1,44 @@
+<mxfile host="Electron" modified="2026-06-08T14:37:00.000Z" agent="Mozilla/5.0" version="21.6.8" type="device">
+  <diagram id="PredictraOrg" name="Predictra Organization">
+    <mxGraphModel dx="1000" dy="800" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+
+        <!-- Parent Node -->
+        <mxCell id="board" value="&lt;font face=&quot;Helvetica&quot; style=&quot;font-size: 14px;&quot;&gt;&lt;b&gt;Predictra Board&lt;/b&gt;&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#333333;strokeWidth=1.5;shadow=0;arcSize=8;fontColor=#000000;align=center;" parent="1" vertex="1">
+          <mxGeometry x="310" y="50" width="180" height="50" as="geometry" />
+        </mxCell>
+
+        <!-- Threat Research Department -->
+        <mxCell id="research" value="&lt;font face=&quot;Helvetica&quot; style=&quot;font-size: 13px;&quot;&gt;&lt;b&gt;Threat Research&lt;br&gt;Department&lt;/b&gt;&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#333333;strokeWidth=1.5;shadow=0;arcSize=8;fontColor=#000000;align=center;" parent="1" vertex="1">
+          <mxGeometry x="100" y="160" width="180" height="50" as="geometry" />
+        </mxCell>
+
+        <!-- Security Engineering Department -->
+        <mxCell id="engineering" value="&lt;font face=&quot;Helvetica&quot; style=&quot;font-size: 13px;&quot;&gt;&lt;b&gt;Security Engineering&lt;br&gt;Department&lt;/b&gt;&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#333333;strokeWidth=1.5;shadow=0;arcSize=8;fontColor=#000000;align=center;" parent="1" vertex="1">
+          <mxGeometry x="310" y="160" width="180" height="50" as="geometry" />
+        </mxCell>
+
+        <!-- Sales & Operations Department -->
+        <mxCell id="sales" value="&lt;font face=&quot;Helvetica&quot; style=&quot;font-size: 13px;&quot;&gt;&lt;b&gt;Sales &amp;amp; Operations&lt;br&gt;Department&lt;/b&gt;&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#333333;strokeWidth=1.5;shadow=0;arcSize=8;fontColor=#000000;align=center;" parent="1" vertex="1">
+          <mxGeometry x="520" y="160" width="180" height="50" as="geometry" />
+        </mxCell>
+
+        <!-- Connections -->
+        <mxCell id="line1" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;strokeColor=#333333;strokeWidth=1.5;endArrow=none;" parent="1" source="board" target="research" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <mxCell id="line2" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;strokeColor=#333333;strokeWidth=1.5;endArrow=none;" parent="1" source="board" target="engineering" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <mxCell id="line3" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;strokeColor=#333333;strokeWidth=1.5;endArrow=none;" parent="1" source="board" target="sales" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
