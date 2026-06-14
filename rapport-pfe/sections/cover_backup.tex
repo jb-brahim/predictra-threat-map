@@ -1,0 +1,223 @@
+\begin{titlepage}
+
+% Page-Specific Creative Background Overlay using TikZ
+\AddToShipoutPictureBG*{%
+  \begin{tikzpicture}[remember picture, overlay]
+    % 1. Global Page Border Frame
+    \draw[line width=1.5pt, color=navyblue]
+      ($(current page.south west)+(0.5cm,0.5cm)$)
+      rectangle
+      ($(current page.north east)-(0.5cm,0.5cm)$);
+      
+    % 2. Subtle Blueprint Grid
+    \draw[charcoal!3, step=0.5cm] 
+      ($(current page.south west)+(0.51cm,0.51cm)$) grid ($(current page.north east)-(0.51cm,0.51cm)$);
+    
+    % 4. Abstract Cyber Threat Map Network / Radar Pattern (light opacity)
+    \coordinate (N1) at ($(current page.south west)+(2.8cm, 6.2cm)$);
+    \coordinate (N2) at ($(current page.south west)+(14.5cm, 7.8cm)$);
+    \coordinate (N3) at ($(current page.south west)+(3.5cm, 14.8cm)$);
+    \coordinate (N4) at ($(current page.south west)+(14.8cm, 15.8cm)$);
+    \coordinate (N5) at ($(current page.south west)+(9.0cm, 11.2cm)$);
+    \coordinate (N6) at ($(current page.south west)+(2.2cm, 21.8cm)$);
+    \coordinate (N7) at ($(current page.south west)+(15.2cm, 21.8cm)$);
+    
+    % Connection lines (solid and dashed)
+    \draw[line width=0.8pt, cyberblue!8] (N1) -- (N5) -- (N2) (N3) -- (N5) -- (N4) (N6) -- (N3) -- (N1) (N7) -- (N4) -- (N2);
+    \draw[line width=0.5pt, dashed, navyblue!8] (N1) -- (N3) -- (N4) -- (N2) -- (N1) (N6) -- (N5) -- (N7);
+    
+    % Concentric radar/spatial analytics circles
+    \draw[line width=0.5pt, cyberblue!8] (N5) circle (1.6cm);
+    \draw[line width=0.4pt, dotted, cyberblue!12] (N5) circle (3.2cm);
+    \draw[line width=0.5pt, cyberblue!8] (N3) circle (1.0cm);
+    \draw[line width=0.5pt, cyberblue!8] (N4) circle (1.2cm);
+    
+    % Draw nodes
+    \foreach \pt in {N1,N2,N4,N6,N7} {
+        \fill[white] (\pt) circle (5.5pt);
+        \draw[line width=1.2pt, navyblue!15] (\pt) circle (5.5pt);
+        \fill[cyberblue!30] (\pt) circle (2.5pt);
+    }
+    
+    % Threat-Red Node (Alert Hub)
+    \fill[white] (N5) circle (5.5pt);
+    \draw[line width=1.2pt, cyberred!25] (N5) circle (5.5pt);
+    \fill[cyberred!60] (N5) circle (2.5pt);
+    
+    % Alert-Amber Node (Detection Node)
+    \fill[white] (N3) circle (5.5pt);
+    \draw[line width=1.2pt, cyberamber!35] (N3) circle (5.5pt);
+    \fill[cyberamber!75] (N3) circle (2.5pt);
+  \end{tikzpicture}
+}
+
+\begin{center}
+    \vspace*{-1.2cm}
+    
+    % Header Row with Arabic and English Institution details
+    \noindent
+    \begin{minipage}[t]{0.42\textwidth}
+        \begin{center}
+            \fontsize{9pt}{11pt}\selectfont
+            \color{charcoal}
+            \textbf{\color{navyblue}Republic of Tunisia}\\
+            Ministry of Higher Education and Scientific Research\\[0.15cm]
+            General Directorate\\
+            of Technological Studies\\[0.15cm]
+            \textbf{\color{navyblue}Higher Institute}\\
+            of Technological Studies of Gafsa
+        \end{center}
+    \end{minipage}%
+    \begin{minipage}[t]{0.16\textwidth}
+        \begin{center}
+            \vspace*{-0.1cm}
+            \includegraphics[height=0.7cm]{assets/logos/republic_of_tunisia_logo_crop.png}\\[0.1cm]
+            \includegraphics[height=0.45cm]{assets/logos/dget_logo.png}\\[0.1cm]
+            \includegraphics[height=0.6cm]{assets/logos/iset_gafsa_logo_crop.png}
+        \end{center}
+    \end{minipage}%
+    \begin{minipage}[t]{0.42\textwidth}
+        \begin{center}
+            \selectlanguage{arabic}
+            \fontsize{9pt}{11pt}\selectfont
+            \color{charcoal}
+            \textbf{\color{navyblue}الجمهورية التونسية}\\
+            \textbf{وزارة التعليم العالي والبحث العلمي}\\[0.15cm]
+            \textbf{الإدارة العامة للدراسات التكنولوجية}\\[0.15cm]
+            \textbf{\color{navyblue}المعهد العالي للدراسات التكنولوجية}\\
+            \textbf{بقفصة}
+        \end{center}
+    \end{minipage}
+    
+    \selectlanguage{english}
+    \vspace{0.1cm}
+    \textcolor{navyblue!40}{\hrule height 0.5pt}
+    \vspace{0.1cm}
+    
+    % Department and Reference Row
+    \noindent
+    \begin{minipage}[c]{0.42\textwidth}
+        \begin{flushleft}
+            \fontsize{8.5pt}{10pt}\selectfont
+            \color{charcoal!80}\textbf{\textit{Department of Information Technology}}
+        \end{flushleft}
+    \end{minipage}%
+    \begin{minipage}[c]{0.42\textwidth}
+        \begin{flushright}
+            \selectlanguage{arabic}
+            \fontsize{8.5pt}{10pt}\selectfont
+            \color{charcoal!80}\textbf{قسم تكنولوجيات الإعلامية}
+        \end{flushright}
+    \end{minipage}
+    
+    \selectlanguage{english}
+    \vspace{0.15cm}
+    \textcolor{navyblue}{\hrule height 1.5pt}
+    \vspace{1.5pt}
+    \textcolor{cyberblue}{\hrule height 0.5pt}
+    
+    \vspace{0.8cm}
+    
+    % Modern academic degree/specialization text
+    {\fontsize{10pt}{12pt}\selectfont\bfseries\color{charcoal!70}\textit{Graduation Project Report In order to obtain the}}\\[0.15cm]
+    {\fontsize{12pt}{14pt}\selectfont\bfseries\color{navyblue}\textsf{Bachelor's Degree in Information Technology}}\\[0.1cm]
+    {\fontsize{11pt}{13pt}\selectfont\bfseries\color{cyberblue}\textsf{Option: Computer System Development}}\\[0.6cm]
+    
+    % Split-Colored Premium Title Card
+    \begin{tikzpicture}
+        % Manual shadow
+        \fill[black!8, rounded corners=8pt] (1.5pt, -1.5pt) rectangle (\linewidth-4pt+1.5pt, 3.8cm-1.5pt);
+        % Outer border
+        \draw[fill=white, rounded corners=8pt, line width=1.5pt, draw=navyblue] 
+          (0,0) rectangle (\linewidth-6pt, 3.8cm);
+        
+        % Navy header band
+        \path[fill=navyblue, rounded corners=8pt] 
+          (0, 2.9cm) [rounded corners=0pt] -- (0, 2.9cm) -- (\linewidth-6pt, 2.9cm) [rounded corners=8pt] -- (\linewidth-6pt, 3.8cm) -- (0, 3.8cm) -- cycle;
+        \path[fill=navyblue] (0, 2.9cm) rectangle (\linewidth-6pt, 3.0cm); % safety overlap
+        
+        % Header band text
+        \node[anchor=west, color=white] at (0.4cm, 3.35cm) {\fontsize{10.5pt}{12.5pt}\selectfont\bfseries\textsf{FINAL YEAR GRADUATION PROJECT REPORT}};
+        \node[anchor=east, color=cyberamber] at (\linewidth-10pt, 3.35cm) {\fontsize{9.5pt}{11.5pt}\selectfont\bfseries\textsc{Predictra CTI}};
+        
+        % Card body (title & subtitle)
+        \node[anchor=center, text width=\linewidth-24pt, align=center] at ({(\linewidth-6pt)/2}, 1.45cm) {
+            {\fontsize{16.5pt}{20.5pt}\selectfont\bfseries\color{cyberred} Design and Development of the Predictra Threat Map}\\[0.22cm]
+            {\fontsize{11pt}{13pt}\selectfont\color{charcoal}\bfseries Real-Time Cyber Threat Intelligence Aggregation and\\ Spatial Analytics Platform}
+        };
+    \end{tikzpicture}
+    
+    \vspace{0.6cm}
+    
+    % Side-by-side Prepared / Supervised Sections with Color-Coded Accent Borders
+    \noindent
+    \begin{minipage}[t]{0.48\textwidth}
+        \begin{tikzpicture}
+            \fill[black!5, rounded corners=4pt] (1.5pt, -1.5pt) rectangle (\linewidth-4pt+1.5pt, 2.2cm-1.5pt);
+            \fill[navyblue!3, rounded corners=4pt] 
+              (0,0) rectangle (\linewidth-4pt, 2.2cm);
+            \fill[cyberblue, rounded corners=2pt] (0,0) rectangle (4pt, 2.2cm);
+            
+            \node[anchor=north west, text width=\linewidth-16pt] at (8pt, 2.05cm) {
+                {\fontsize{9.5pt}{11.5pt}\selectfont\bfseries\color{navyblue}\textsc{Carried out by:}}\\[0.15cm]
+                {\fontsize{10.5pt}{12.5pt}\selectfont\color{charcoal}
+                \textbf{Brahim JABALLI} \\
+                \textbf{Chiheb AMRI}}
+            };
+        \end{tikzpicture}
+    \  \end{minipage}\hfill
+    \begin{minipage}[t]{0.48\textwidth}
+        \begin{tikzpicture}
+            \fill[black!5, rounded corners=4pt] (1.5pt, -1.5pt) rectangle (\linewidth-4pt+1.5pt, 2.2cm-1.5pt);
+            \fill[navyblue!3, rounded corners=4pt] 
+              (0,0) rectangle (\linewidth-4pt, 2.2cm);
+            \fill[cyberamber, rounded corners=2pt] (0,0) rectangle (4pt, 2.2cm);
+            
+            \node[anchor=north west, text width=\linewidth-16pt] at (8pt, 2.05cm) {
+                {\fontsize{9.5pt}{11.5pt}\selectfont\bfseries\color{navyblue}\textsc{Supervised by:}}\\[0.12cm]
+                {\fontsize{9.5pt}{11.5pt}\selectfont\color{charcoal}
+                \textbf{Mr. Anis DHAHRI} \\ {\scriptsize (Academic Supervisor)}}
+            };
+        \end{tikzpicture}
+    \end{minipage}
+    
+    \vspace{0.6cm}
+    
+    % Jury Section Card with Sleek Rounded-Corner Header
+    \begin{tikzpicture}
+        % Manual shadow
+        \fill[black!6, rounded corners=8pt] (1.5pt, -1.5pt) rectangle (\linewidth-6pt+1.5pt, 3.2cm-1.5pt);
+        % Main Card body
+        \draw[fill=white, draw=navyblue!20, rounded corners=8pt, line width=1pt] 
+          (0,0) rectangle (\linewidth-6pt, 3.2cm);
+        
+        % Card header banner
+        \path[fill=navyblue!5, rounded corners=8pt] 
+          (0, 2.5cm) [rounded corners=0pt] -- (0, 2.5cm) -- (\linewidth-6pt, 2.5cm) [rounded corners=8pt] -- (\linewidth-6pt, 3.2cm) -- (0, 3.2cm) -- cycle;
+        \path[fill=navyblue!5] (0, 2.5cm) rectangle (\linewidth-6pt, 2.6cm); % safety overlap
+        
+        % Header text
+        \node[anchor=center] at ({(\linewidth-6pt)/2}, 2.85cm) {
+            {\fontsize{9.5pt}{11.5pt}\selectfont\bfseries\color{navyblue}\textsc{Jury Board Members}}
+        };
+        
+        % Presenting date and table
+        \node[anchor=north, text width=\linewidth-24pt, align=center] at ({(\linewidth-6pt)/2}, 2.38cm) {
+            {\fontsize{9pt}{11pt}\selectfont\color{charcoal!80} Presented on \textbf{18/06/2026} before the jury composed of:}\\[0.1cm]
+            \fontsize{9pt}{11pt}\selectfont\color{charcoal}
+            \renewcommand{\arraystretch}{1.1}
+            \begin{tabular}{p{7.0cm}l}
+            \hline
+            \textbf{Ms. Hadhami ISSAOUI} & President (ISET Gafsa) \\
+            \textbf{Mr. Walid Hammemi} & Reporter (ISET Gafsa) \\
+            \textbf{Mr. Anis DHAHRI} & Academic Supervisor (ISET Gafsa) \\
+            \hline
+            \end{tabular}
+        };
+    \end{tikzpicture}
+    
+    \vfill
+    
+    {\fontsize{11pt}{13pt}\selectfont\bfseries\color{navyblue} Academic Year: 2025/2026}
+\end{center}
+\end{titlepage}

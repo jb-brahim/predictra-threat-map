@@ -1,0 +1,63 @@
+\clearpage
+\thispagestyle{empty}
+\pagestyle{empty}
+
+\begin{center}
+    \textbf{\large Résumés / Abstracts}
+\end{center}
+\vspace{0.1cm}
+
+% Box 1: French
+\noindent
+\begin{minipage}{\textwidth}
+\setlength{\fboxsep}{6pt}
+\setlength{\fboxrule}{0.6pt}
+\fbox{%
+\begin{minipage}{\dimexpr\textwidth-12pt-1.2pt}
+    \selectlanguage{french}
+    \footnotesize
+    \textbf{Résumé :} \\
+    Ce projet présente la conception et la réalisation de \textbf{Predictra Threat Map}, une plateforme de renseignement sur les cybermenaces (CTI) de nouvelle génération qui résout le défi opérationnel de la cécité des défenseurs face aux menaces externes. Le système implémente une architecture découplée et performante composée d'un backend Node.js/Express et d'un frontend React/Three.js. Le backend déploie plusieurs services de collecte asynchrones qui ingèrent, normalisent et enrichissent les indicateurs de compromission (IOC) provenant de neuf flux open-source et commerciaux, réalisant une géolocalisation et une classification sectorielle en temps réel. La télémétrie des menaces est diffusée au client via Server-Sent Events (SSE). Le frontend utilise WebGL (via React Three Fiber) et le gestionnaire d'état Zustand pour restituer ces menaces sous forme d'arcs animés et d'alertes sur un globe terrestre 3D interactif à 60 images par seconde. De plus, la plateforme intègre un analyseur STIX 2.1 JSON et un mappeur interactif de la matrice MITRE ATT\&CK, permettant aux analystes de visualiser les campagnes d'attaque directement dans le navigateur.
+    \vspace{2pt} \\
+    \textbf{Mots-clés :} Renseignement sur les cybermenaces, STIX 2.1, Visualisation WebGL 3D, React Three Fiber, Server-Sent Events, MITRE ATT\&CK.
+\end{minipage}%
+}
+\end{minipage}
+
+\vspace{0.2cm}
+
+% Box 2: English
+\noindent
+\begin{minipage}{\textwidth}
+\setlength{\fboxsep}{6pt}
+\setlength{\fboxrule}{0.6pt}
+\fbox{%
+\begin{minipage}{\dimexpr\textwidth-12pt-1.2pt}
+    \selectlanguage{english}
+    \footnotesize
+    \textbf{Abstract:} \\
+    This project presents the design and realization of the \textbf{Predictra Threat Map}, a next-generation Cyber Threat Intelligence (CTI) platform that addresses the operational challenge of defender blindness to external threat landscapes. The system implements a decoupled, high-performance architecture consisting of a Node.js/Express backend and a React/Three.js frontend. The backend deploys multiple asynchronous scraper services that ingest, normalize, and enrich cyber threat indicators of compromise (IOCs) from nine distinct open-source and commercial feeds, performing real-time geolocating and infrastructure sector classification. The normalized threat telemetry is streamed to the client via Server-Sent Events (SSE). The frontend utilizes WebGL (via React Three Fiber) and client-side Zustand state management to render these threats as animated great-circle arcs and pulsating alerts on an interactive 3D virtual Earth at a smooth 60 frames per second. Furthermore, the platform integrates a client-side STIX 2.1 JSON intelligence parser and an interactive MITRE ATT\&CK matrix mapper, enabling threat analysts to visualize adversary campaigns and tactical progression directly in the browser.
+    \vspace{2pt} \\
+    \textbf{Keywords:} Cyber Threat Intelligence, STIX 2.1, 3D WebGL Visualization, React Three Fiber, Server-Sent Events, MITRE ATT\&CK.
+\end{minipage}%
+}
+\end{minipage}
+
+\vspace{0.2cm}
+
+% Box 3: Arabic
+\noindent
+\begin{minipage}{\textwidth}
+\setlength{\fboxsep}{6pt}
+\setlength{\fboxrule}{0.6pt}
+\fbox{%
+\begin{minipage}{\dimexpr\textwidth-12pt-1.2pt}
+    \selectlanguage{arabic}
+    \footnotesize
+    \textbf{ملخص :} \\
+    يقدم هذا المشروع تصميم وإنجاز خريطة \textbf{\textlatin{Predictra}} للتهديدات السيبرانية، وهي منصة متطورة لاستخبارات التهديدات السيبرانية (\textlatin{CTI}) تهدف إلى تمكين فرق الدفاع الرقمي من رؤية وتتبع التهديدات الخارجية في الوقت الفعلي. يعتمد النظام على بنية برمجية مفككة وعالية الأداء تتكون من واجهة خلفية مبنية بـ \textlatin{Node.js/Express} وواجهة أمامية مبنية بـ \textlatin{React/Three.js}. تقوم الواجهة الخلفية بتشغيل خدمات تجميع غير متزامنة تسحب وتوحد وتثري مؤشرات الاختراق (\textlatin{IOCs}) من تسعة مصادر مختلفة (مفتوحة المصدر وتجارية)، مع تحديد المواقع الجغرافية وتصنيف قطاعات البنية التحتية المتأثرة في الوقت الفعلي. يتم بث هذه البيانات إلى الواجهة الأمامية عبر تقنية \textlatin{Server-Sent Events (SSE)}. وتستخدم الواجهة الأمامية تقنية \textlatin{WebGL} (عبر \textlatin{React Three Fiber}) وإدارة الحالة \textlatin{Zustand} لتمثيل مسارات التهديدات السيبرانية كأقواس متحركة على مجسم أرضي ثلاثي الأبعاد تفاعلي بمعدل \textlatin{60} إطارًا في الثانية. بالإضافة إلى ذلك، توفر المنصة محللًا لملفات \textlatin{STIX 2.1} ومخططًا تفاعليًا لمصفوفة \textlatin{MITRE ATT\&CK} لتمثيل حملات المهاجمين داخل المتصفح مباشرة.
+    \vspace{2pt} \\
+    \textbf{الكلمات المفتاحية :} استخبارات التهديدات السيبرانية، \textlatin{STIX 2.1}، \textlatin{WebGL} ثلاثي الأبعاد، \textlatin{React Three Fiber}، بث الأحداث، مصفوفة \textlatin{MITRE ATT\&CK}.
+\end{minipage}%
+}
+\end{minipage}

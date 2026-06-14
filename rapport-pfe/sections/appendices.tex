@@ -51,14 +51,12 @@ To launch the complete platform locally in development mode:
 \end{enumerate}
 
 \subsection*{A.4 Production Process Management (PM2)}
-In production environments, the backend server must be managed using the PM2 process manager to ensure zero-downtime clustering and automated crash recoveries:
+In future production environments, the backend server must be managed using the PM2 process manager to ensure zero-downtime clustering and automated crash recoveries:
 \begin{verbatim}
 pm2 start server.js --name "predictra-backend" -i max --watch
 pm2 save
 pm2 startup
 \end{verbatim}
-
----
 
 \section*{Appendix B: API Integrations and Data Streams Reference}
 This section provides a quick-reference catalog of the internal REST API endpoints exposed by the Node.js Express server to facilitate security tool integrations (e.g. connecting the Threat Map feeds to internal corporate SIEM dashboards).
@@ -107,8 +105,6 @@ This section provides a quick-reference catalog of the internal REST API endpoin
     \end{itemize}
     \item \textbf{Response Format:} Paginated JSON array containing BSON documents matching database schemas.
 \end{itemize}
-
----
 
 \section*{Appendix C: Automated Integration Test Suites (Jest \& Supertest)}
 To guarantee backend regression safety, route integrity, and database transaction safety, the Predictra platform implements automated test suites using the \textbf{Jest} unit testing framework and the \textbf{Supertest} HTTP assertion library.
@@ -188,8 +184,6 @@ describe('POST /api/test/threat-ingestion', () => {
 });
 \end{verbatim}
 
----
-
 \section*{Appendix D: Vercel CDN and Reverse-Proxy Configurations}
 To orchestrate secure client-to-server communications and bypass standard browser
 CORS (\textbf{Cross-Origin Resource Sharing}) restrictions without compromising
@@ -243,8 +237,6 @@ The production file located in the frontend root ensures that all visual compone
   ]
 }
 \end{verbatim}
-
----
 
 \section*{Appendix E: Global Frontend Zustand Storage Engine}
 To maintain a high framerate on our 3D visualization canvas while receiving dense threat updates over SSE channels, the client application relies on a decoupled, centralized Zustand state manager.
@@ -362,8 +354,6 @@ export const useStreamStore = create<StreamState>((set, get) => {
 });
 \end{verbatim}
 
----
-
 \section*{Appendix F: Sample Threat Event (BSON vs Enriched JSON)}
 To illustrate the data transformation performed by our backend enrichment pipeline, this section contrasts the highly compact, space-saving BSON document stored in the MongoDB Atlas database with the fully resolved, logically structured JSON document exposed to the client application.
 
@@ -427,8 +417,6 @@ When fetched by the frontend via the historical REST API or stream channels, the
   "timestamp": "2026-05-21T12:00:00.000Z"
 }
 \end{verbatim}
-
----
 
 \section*{Appendix G: Geocoding and Coordinate Mappings}
 To facilitate real-time mathematical operations in the client's web browser, the platform implements localized 3D coordinate translations, spherical linear interpolation, and geocoding transformations. This appendix provides the complete TypeScript source code for the geocoding and mapping utility.
@@ -590,8 +578,6 @@ export function getIsoCode(countryName: string): string {
 }
 \end{verbatim}
 
----
-
 \section*{Appendix H: GLSL Custom Shaders for Globe and Maps}
 To achieve high performance visual rendering of geographic elements and glowing indicators on the client's screen, the Predictra Threat Map shifts processing of procedural visual elements to the GPU. This is accomplished using custom WebGL shader materials implemented inside Three.js and React Three Fiber. This appendix details the complete GLSL source codes of the custom vertex and fragment shaders.
 
@@ -678,8 +664,6 @@ void main() {
   gl_FragColor = vec4(finalColor, alpha);
 }
 \end{verbatim}
-
----
 
 \section*{Appendix I: Raw Scraper Payload Samples}
 To assist in integration testing, this section catalogs the raw JSON and CSV payloads returned by the external scrapers before normalization.
@@ -804,8 +788,6 @@ The MISP Galaxy synthetic scraper parses internal threat intelligence models and
   }
 ]
 \end{verbatim}
-
----
 
 \section*{Appendix J: Sample STIX 2.1 Threat Ingestion Bundle}
 This section contains the raw JSON structure of the STIX 2.1 intelligence bundle representing a nation-state campaign analyzed in Chapter 4:
@@ -954,9 +936,7 @@ This section contains the raw JSON structure of the STIX 2.1 intelligence bundle
 }
 \end{verbatim}
 
----
-
-\section*{Appendix K: Pre-allocated Circular Memory Buffer (RingBuffer.ts)}
+\section*{Appendix K: Pre-allocated Circular Memory Buffer \\ (\texttt{RingBuffer.ts})}
 This section contains the complete TypeScript implementation of the pre-allocated circular RingBuffer class used for Garbage Collection protection:
 \begin{verbatim}
 export class RingBuffer<T> {
@@ -994,9 +974,7 @@ export class RingBuffer<T> {
 }
 \end{verbatim}
 
----
-
-\section*{Appendix L: Browser-Side FPS Telemetry Hook (useFpsTelemetry.ts)}
+\section*{Appendix L: Browser-Side FPS Telemetry Hook \\ (\texttt{useFpsTelemetry.ts})}
 This hook gathers high-precision rendering latency telemetry by hook integration with the browser paint cycle:
 \begin{verbatim}
 import { useEffect, useRef } from 'react';
@@ -1036,8 +1014,6 @@ export function useFpsTelemetry() {
   }, [setFps]);
 }
 \end{verbatim}
-
----
 
 \section*{Appendix M: STIX Parser and Classification Utilities}
 This appendix provides the core Javascript methods executing STIX parsing, object categorization, and regular expression IOC pattern classification inside the React application:

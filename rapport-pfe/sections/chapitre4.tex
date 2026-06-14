@@ -5,8 +5,6 @@ This chapter presents the design, Unified Modeling Language (UML) modeling, and 
 
 For each sprint, we deeply analyze the backlog objectives, describe functional system boundaries via UML Use Case modeling, detail the structural class layouts and transactional sequences, provide the mathematical foundations of graph physics and memory buffer allocations, walk through the actual React/TypeScript code logic, and illustrate the realized interfaces. This chapter represents the high-performance and analytical layer of the Predictra Threat Map, ensuring that visual alerts are paired with standard-compliant cyber threat intelligence.
 
----
-
 \section{Sprint 3: STIX 2.1 Threat Analysis Dashboard}
 
 \subsection{Sprint Backlog and Objectives}
@@ -19,9 +17,9 @@ The Sprint 3 backlog focused on two key deliverables:
 \end{itemize}
 
 \subsection{Sprint Analysis: Use Case Modeling}
-The analyst's interactions with the STIX workspace are captured in Figure~\ref{fig:s3_usecase} using a native LaTeX TikZ Use Case diagram, illustrating actor boundaries and system triggers.
+The analyst's interactions with the STIX workspace are captured in Figure~\ref{fig:s3_usecase} using a Use Case diagram, illustrating actor boundaries and system triggers.
 
-\begin{figure}[htbp]
+\begin{figure}[H]
 \centering
 \includegraphics[width=0.95\textwidth]{assets/s3_usecase.png}
 \caption{Sprint 3: Use Case diagram for the STIX 2.1 dashboard.}
@@ -30,21 +28,24 @@ The analyst's interactions with the STIX workspace are captured in Figure~\ref{f
 
 The functional workflows and validation rules for each use case are documented in Table~\ref{tab:s3_uc_desc_expanded}.
 
-\begin{table}[htbp]
+\begin{table}[H]
 \centering
 \small
-\begin{tabular}{>{\raggedright\arraybackslash}p{2.6cm}>{\raggedright\arraybackslash}p{4.4cm}>{\raggedright\arraybackslash}p{6.8cm}}
-\toprule
-\textbf{Use Case} & \textbf{Actor/Trigger} & \textbf{Main Workflow \& Validation Rules} \\
-\midrule
+\arrayrulecolor{charcoal!30}
+\rowcolors{2}{cyberblue!5}{white}
+\begin{tabularx}{\textwidth}{>{\raggedright\arraybackslash}p{2.6cm}>{\raggedright\arraybackslash}p{4.4cm}X}
+\hline
+\rowcolor{charcoal}
+\thc{Use Case} & \thc{Actor/Trigger} & \thc{Main Workflow \& Validation Rules} \\
+\hline
 Upload STIX 2.1 & Security Analyst / Uploads JSON File & 1. Analyst uploads a STIX JSON file. \\
-& & 2. The parser validates the existence of the `type: "bundle"` attribute and reads the JSON structures. \\
-& & 3. If validation fails, an error toast is displayed. \\
-\midrule
+ & & 2. The parser validates the existence of the `type: "bundle"` attribute and reads the JSON structures. \\
+ & & 3. If validation fails, an error toast is displayed. \\
+\hline
 Filter IOCs & Security Analyst / Types in Search & 1. Analyst filters by search text or select box (IP, Hash, URL). \\
-& & 2. The system executes client-side regex matching and pagination. \\
-\bottomrule
-\end{tabular}
+ & & 2. The system executes client-side regex matching and pagination. \\
+\hline
+\end{tabularx}
 \caption{Sprint 3: Detailed Use Case descriptions.}
 \label{tab:s3_uc_desc_expanded}
 \end{table}
@@ -86,15 +87,16 @@ Standard STIX 2.1 bundles represent complex threat profiles using objects and re
 
     To illustrate the input of our ingestion engine and demonstrate a complete, realistic intelligence structure, Table~\ref{tab:stix_bundle_objects} summarizes the STIX Domain Objects (SDOs) and Relationship Objects (SROs) parsed by our engine, with the full raw JSON bundle detailed in Appendix J.
 
-    \begin{table}[htbp]
+    \begin{table}[H]
     \centering
     \small
-    \begin{tabular}{>{\raggedright\arraybackslash}p{2.8cm}
-                    >{\raggedright\arraybackslash}p{3.6cm}
-                    >{\raggedright\arraybackslash}p{7.0cm}}
-    \toprule
-    \textbf{STIX Object Type} & \textbf{Name / Identifier} & \textbf{Key Characteristics / Attributes} \\
-    \midrule
+    \arrayrulecolor{charcoal!30}
+    \rowcolors{2}{cyberblue!5}{white}
+    \begin{tabularx}{\textwidth}{>{\raggedright\arraybackslash}p{2.8cm}>{\raggedright\arraybackslash}p{3.6cm}X}
+    \hline
+    \rowcolor{charcoal}
+    \thc{STIX Object Type} & \thc{Name / Identifier} & \thc{Key Characteristics / Attributes} \\
+    \hline
     \texttt{threat-actor}   & Apex Spyder              & Nation-state actor, Espionage goals, Innovator sophistication \\
     \texttt{campaign}       & Operation Silent Breach  & Target: telecommunication networks tap \\
     \texttt{malware}        & SpectreShell             & Remote access trojan, DNS exfiltration, registry persistence \\
@@ -106,8 +108,8 @@ Standard STIX 2.1 bundles represent complex threat profiles using objects and re
     \texttt{relationship}   & uses                     & Connects threat-actor to malware, and malware to tool \\
     \texttt{relationship}   & targets                  & Connects malware and campaign to victim identity \\
     \texttt{relationship}   & indicates                & Connects indicator to malware \\
-    \bottomrule
-    \end{tabular}
+    \hline
+    \end{tabularx}
     \caption{STIX 2.1 Sample Intelligence Bundle Components.}
     \label{tab:stix_bundle_objects}
     \end{table}
@@ -116,7 +118,7 @@ Standard STIX 2.1 bundles represent complex threat profiles using objects and re
 \subsubsection{UML Class Diagram}
 The structural layout of our client-side parser services, data models, and visualization pages is illustrated in Figure~\ref{fig:s3_class}.
 
-\begin{figure}[htbp]
+\begin{figure}[H]
 \centering
 \includegraphics[width=0.95\textwidth]{assets/s3_class.png}
 \caption{Sprint 3: Conception Class diagram.}
@@ -126,7 +128,7 @@ The structural layout of our client-side parser services, data models, and visua
 \subsubsection{UML Sequence Diagram}
 The asynchronous parsing and graph building lifecycle triggered when an investigator uploads a threat bundle is traced in Figure~\ref{fig:s3_sequence}.
 
-\begin{figure}[htbp]
+\begin{figure}[H]
 \centering
 \includegraphics[width=0.95\textwidth]{assets/s3_sequence.png}
 \caption{Sprint 3: Sequence diagram of STIX bundle parsing and graph rendering.}
@@ -140,15 +142,16 @@ The asynchronous parsing and graph building lifecycle triggered when an investig
 \subsubsection{STIX 2.1 Parser Code Walkthrough}
 The parser located in `ui/StixDashboard.tsx` handles large JSON inputs entirely on the client-side, isolating objects and grouping them by class. Table~\ref{tab:stix_parser_rules} details the client-side parsing rules, sorting STIX objects by type and mapping Indicators to classes using regular expressions (with the complete parser utilities detailed in Appendix M).
 
-    \begin{table}[htbp]
+    \begin{table}[H]
     \centering
     \small
-    \begin{tabular}{>{\raggedright\arraybackslash}p{3.5cm}
-                    >{\raggedright\arraybackslash}p{4.0cm}
-                    >{\raggedright\arraybackslash}p{5.9cm}}
-    \toprule
-    \textbf{Target Object / Class} & \textbf{STIX Type / Pattern Match} & \textbf{Parser Mapping \& Actions} \\
-    \midrule
+    \arrayrulecolor{charcoal!30}
+    \rowcolors{2}{cyberblue!5}{white}
+    \begin{tabularx}{\textwidth}{>{\raggedright\arraybackslash}p{3.5cm}>{\raggedright\arraybackslash}p{4.0cm}X}
+    \hline
+    \rowcolor{charcoal}
+    \thc{Target Object / Class} & \thc{STIX Type / Pattern Match} & \thc{Parser Mapping \& Actions} \\
+    \hline
     Threat Actor   & \texttt{threat-actor}                        & Populates the actor analysis cards \\
     Malware / Tool & \texttt{malware} / \texttt{tool}              & Populates the active adversary tools inventory \\
     Attack Pattern & \texttt{attack-pattern}                      & Compiled to MITRE ATT\&CK phase matrix \\
@@ -156,8 +159,8 @@ The parser located in `ui/StixDashboard.tsx` handles large JSON inputs entirely 
     SHA-256 Hash   & \texttt{/file:hashes\textbackslash.\allowbreak'SHA-256'/} & Classified as 'SHA-256 Hash' IOC \\
     Domain Name    & \texttt{/domain-name:value/}                 & Classified as 'Domain Name' IOC \\
     URL Endpoint   & \texttt{/url:value/}                         & Classified as 'URL Endpoint' IOC \\
-    \bottomrule
-    \end{tabular}
+    \hline
+    \end{tabularx}
     \caption{STIX 2.1 Parser Object Classification Rules.}
     \label{tab:stix_parser_rules}
     \end{table}
@@ -165,8 +168,6 @@ The parser located in `ui/StixDashboard.tsx` handles large JSON inputs entirely 
     The parser loops through each attack pattern's \texttt{kill\_chain\_phases} array, filters for \texttt{kill\_chain\_name: "mitre-attack"}, replaces dashes with spaces for clean labels, and inserts the pattern object into a map grouped by phase name (detailed in Appendix M.1).
 
 
-
----
 
 \section{Sprint 4: Analytics, History, and Performance Polishing}
 
@@ -184,7 +185,7 @@ The Sprint 4 backlog focused on four critical objectives:
 \subsection{Sprint Analysis: Use Case Modeling}
 The investigator's search and performance diagnostics use cases are captured in Figure~\ref{fig:s4_usecase}.
 
-\begin{figure}[htbp]
+\begin{figure}[H]
 \centering
 \includegraphics[width=0.95\textwidth]{assets/s4_usecase.png}
 \caption{Sprint 4: Use Case diagram for database browsing and performance monitoring.}
@@ -193,18 +194,21 @@ The investigator's search and performance diagnostics use cases are captured in 
 
 The functional steps are detailed in Table~\ref{tab:s4_uc_desc}.
 
-\begin{table}[htbp]
+\begin{table}[H]
 \centering
 \small
-\begin{tabular}{>{\raggedright\arraybackslash}p{2.6cm}>{\raggedright\arraybackslash}p{4.4cm}>{\raggedright\arraybackslash}p{6.8cm}}
-\toprule
-\textbf{Use Case} & \textbf{Actor/Trigger} & \textbf{Main Workflow} \\
-\midrule
+\arrayrulecolor{charcoal!30}
+\rowcolors{2}{cyberblue!5}{white}
+\begin{tabularx}{\textwidth}{>{\raggedright\arraybackslash}p{2.6cm}>{\raggedright\arraybackslash}p{4.4cm}X}
+\hline
+\rowcolor{charcoal}
+\thc{Use Case} & \thc{Actor/Trigger} & \thc{Main Workflow} \\
+\hline
 Search History Logs & Security Analyst / Enters Query & The analyst submits a search. The system issues a paginated HTTP GET request to `/api/history` with query parameters. \\
 Trigger Target My IP & Security Analyst / Clicks Button & Queries a public IP API (`jsonip`), geolocates the address, and immediately filters threat history to logs targeting the analyst's network. \\
 Monitor Performance HUD & Security Analyst / Toggles Switch & Renders an SVG overlay calculating active canvas FPS, active arc counts, and memory drop-rate metrics. \\
-\bottomrule
-\end{tabular}
+\hline
+\end{tabularx}
 \caption{Sprint 4: Use Case descriptions.}
 \label{tab:s4_uc_desc}
 \end{table}
@@ -214,7 +218,7 @@ Monitor Performance HUD & Security Analyst / Toggles Switch & Renders an SVG ove
 \subsubsection{UML Class Diagram}
 The structural layout of our historical logs queries, circular memory buffers, and adaptive sampling stores is illustrated in Figure~\ref{fig:s4_class}.
 
-\begin{figure}[htbp]
+\begin{figure}[H]
 \centering
 \includegraphics[width=0.95\textwidth]{assets/s4_class.png}
 \caption{Sprint 4: Conception Class diagram.}
@@ -224,7 +228,7 @@ The structural layout of our historical logs queries, circular memory buffers, a
 \subsubsection{UML Sequence Diagram}
 The paginated network round-trip tracing query submissions, backend mongoose filters, and frontend table rendering is illustrated in Figure~\ref{fig:s4_sequence}.
 
-\begin{figure}[htbp]
+\begin{figure}[H]
 \centering
 \includegraphics[width=0.95\textwidth]{assets/s4_sequence.png}
 \caption{Sprint 4: Sequence diagram of paginated historical threat search.}
@@ -234,32 +238,29 @@ The paginated network round-trip tracing query submissions, backend mongoose fil
 \subsection{Performance Stabilization Mathematics}
 
 \subsubsection{Garbage Collection and Memory Allocation Pressures}
-In high-velocity Javascript applications (such as a 3D Earth canvas receiving up to 100 events per second over HTTP streams), standard array manipulations cause major performance bottlenecks. Pushing dynamic objects into standard arrays forces the JavaScript engine (V8) to continuously reallocate heap memory segments. When the array is periodically cleared or pruned, these discarded objects are marked as garbage. 
-
-Eventually, the engine triggers a Garbage Collection (GC) sweep. Because GC sweeps are blocking actions, they freeze the main execution thread, resulting in visible frame drops (``stuttering'') and breaking the 60fps orbital rotation fluid target. To bypass this, we implemented a static circular RingBuffer.
+In applications that process high-speed data streams, standard array operations can slow down the browser. Frequently adding and removing objects from standard arrays causes the browser to allocate and clean up memory, which can lead to frame drops and laggy visuals. To avoid this, we implemented a custom circular buffer.
 
 \subsubsection{Circular RingBuffer Logic}
-To persist threat events without creating and allocating new memory cells, we built a static circular array buffer. The buffer is initialized with a fixed maximum capacity (pre-allocated to 10,000 slots). The system maintains a global integer write pointer that increases with every newly arrived event.
-
-To determine the physical index where the new threat event should be stored, the write pointer is evaluated using modulo arithmetic against the maximum buffer capacity. Once the threat event is written to that designated index, the write pointer is incremented by one. This mechanism guarantees that when the pointer exceeds the capacity limit, the oldest existing threat event in the buffer is overwritten in-place. This maintains a completely constant memory footprint, guarantees constant-time write operations, and entirely bypasses standard JavaScript garbage collection sweeps.
+To store threat events without constantly allocating new memory, we built a circular array buffer. The buffer is initialized with a fixed capacity of 10,000 slots. As new events arrive, they are written to the next available index. When the capacity is reached, the oldest events are overwritten in-place, keeping memory usage constant and preventing performance stutters.
 
 \subsubsection{Adaptive Event Sampling Controller}
-The system monitors browser frame rates using an active window delta timer. The instantaneous frame rate (expressed in frames per second) is calculated by dividing 1,000 milliseconds by the elapsed time in milliseconds between the current and previous animation frame.
+The system monitors browser frame rates. If the rendering performance falls below specific thresholds, the ingestion engine drops a percentage of visual events to protect the interface from lagging, as defined in Table~\ref{tab:perf_drop_rules}.
 
-The Zustand store tracks the moving average of this frame rate. If this average drops below operational thresholds, the ingestion engine triggers dynamic dropping rules to protect the main rendering thread from performance spikes. The drop mapping is defined in Table~\ref{tab:perf_drop_rules}.
-
-\begin{table}[htbp]
+\begin{table}[H]
 \centering
 \small
-\begin{tabular}{>{\raggedright\arraybackslash}p{4.2cm}>{\raggedright\arraybackslash}p{4.2cm}>{\raggedright\arraybackslash}p{5.6cm}}
-\toprule
-\textbf{Render Quality Mode} & \textbf{Instant FPS Range} & \textbf{Event Drop Ingestion Rate} \\
-\midrule
+\arrayrulecolor{charcoal!30}
+\rowcolors{2}{cyberblue!5}{white}
+\begin{tabularx}{\textwidth}{>{\raggedright\arraybackslash}p{4.2cm}>{\raggedright\arraybackslash}p{4.2cm}X}
+\hline
+\rowcolor{charcoal}
+\thc{Render Quality Mode} & \thc{Instant FPS Range} & \thc{Event Drop Ingestion Rate} \\
+\hline
 \textbf{High-Fluidity Mode} & Greater than or equal to 55 & 0\% (Processes all incoming visual events) \\
 \textbf{Medium-Load Mode} & Between 30 and 55 & 50\% (Drops half of incoming visual events) \\
 \textbf{Stress-Mitigation Mode} & Less than or equal to 30 & 75\% (Drops three-quarters of visual events) \\
-\bottomrule
-\end{tabular}
+\hline
+\end{tabularx}
 \caption{Adaptive Event Sampling Engine control parameters.}
 \label{tab:perf_drop_rules}
 \end{table}
@@ -269,21 +270,22 @@ The Zustand store tracks the moving average of this frame rate. If this average 
 \subsubsection{Circular Memory Buffer Implementation}
 The circular buffer is coded inside `utils/perf.ts`. The complete class structure, showing its memory pre-allocation, circular writing logic, and constant-time extraction is summarized in Table~\ref{tab:ring_buffer_api}, with the complete source code detailed in Appendix K:
     
-    \begin{table}[htbp]
+    \begin{table}[H]
     \centering
     \small
-    \begin{tabular}{>{\raggedright\arraybackslash}p{4.0cm}
-                    >{\raggedright\arraybackslash}p{3.2cm}
-                    >{\raggedright\arraybackslash}p{6.2cm}}
-    \toprule
-    \textbf{Method / Property} & \textbf{Time Complexity} & \textbf{Functional Role / Behavior} \\
-    \midrule
+    \arrayrulecolor{charcoal!30}
+    \rowcolors{2}{cyberblue!5}{white}
+    \begin{tabularx}{\textwidth}{>{\raggedright\arraybackslash}p{4.0cm}>{\raggedright\arraybackslash}p{3.2cm}X}
+    \hline
+    \rowcolor{charcoal}
+    \thc{Method / Property} & \thc{Time Complexity} & \thc{Functional Role / Behavior} \\
+    \hline
     \texttt{constructor\allowbreak(capacity)} & $O(N)$ heap allocation  & Pre-allocates fixed size array to block dynamic GC triggers \\
     \texttt{push(item)}            & $O(1)$ constant time    & Overwrites index \texttt{pointer \% capacity} and increments pointer \\
     \texttt{getAll()}              & $O(N)$ linear time      & Sequentially reads elements starting from oldest index to pointer \\
     \texttt{getLength()}           & $O(1)$ constant time    & Returns the active number of records stored (capped at capacity) \\
-    \bottomrule
-    \end{tabular}
+    \hline
+    \end{tabularx}
     \caption{Circular RingBuffer API Specifications.}
     \label{tab:ring_buffer_api}
     \end{table}
@@ -293,37 +295,32 @@ Inside `stream/useStreamStore.ts`, the Zustand store utilizes the adaptive sampl
 By dropping only the visual vector creation and three.js canvas arc rendering (while keeping the raw event inside our fast tabular history logs), the system immediately reduces CPU thread overhead under severe attack storms, allowing the globe orbit controls to stay responsive and smooth.
 
 \subsubsection{Browser-Side FPS Telemetry Collection Loop}
-To feed the Adaptive Sampling Controller with real-time frame rates, the presentation tier registers a high-precision telemetry loop using the browser's native \texttt{request\-Animation\-Frame} API. This loop runs continuously, tracking the duration between sequential paint calls to compute precise, non-blocking frame intervals. The duration of the current frame is calculated as the difference between the high-precision timestamp of the current frame and the timestamp of the preceding frame.
+To measure frame rates, the presentation layer registers a telemetry loop using browser APIs. The loop calculates the time between frames. To prevent temporary stutters from triggering adjustments, the system calculates a smoothed average. This telemetry loop runs in the background with minimal overhead, updating the state once per second to avoid affecting rendering performance. The variables used in the collection loop are summarized in Table~\ref{tab:fps_telemetry_vars}, with the complete source code detailed in Appendix L:
 
-To prevent instantaneous micro-stutters from triggering false-positive sampling adjustments, the engine applies an Exponential Moving Average (EMA) filter with a smoothing factor set to 0.1 to the calculated frame rate. The filtered frame rate is calculated recursively as the sum of two weighted terms: first, the product of the smoothing factor and the instantaneous frame rate (derived by dividing 1,000 milliseconds by the current frame's duration); and second, the product of the remaining weight (one minus the smoothing factor) and the previously filtered frame rate average.
-
-By utilizing a recursive low-pass filter, the telemetry stream remains exceptionally stable, filtering out single-frame garbage collection pauses while responding smoothly to sustained rendering degradation caused by attack storm payloads. The client-side implementation of this high-precision frame rate telemetry collector hook is summarized in Table~\ref{tab:fps_telemetry_vars}, with the complete source code detailed in Appendix L:
-
-    \begin{table}[htbp]
+    \begin{table}[H]
     \centering
     \small
-    \begin{tabular}{>{\raggedright\arraybackslash}p{4.2cm}
-                    >{\raggedright\arraybackslash}p{3.8cm}
-                    >{\raggedright\arraybackslash}p{5.4cm}}
-    \toprule
-    \textbf{Variable / Hook} & \textbf{Type / Source} & \textbf{Operational Role in FPS Loop} \\
-    \midrule
+    \arrayrulecolor{charcoal!30}
+    \rowcolors{2}{cyberblue!5}{white}
+    \begin{tabularx}{\textwidth}{>{\raggedright\arraybackslash}p{4.2cm}>{\raggedright\arraybackslash}p{3.8cm}X}
+    \hline
+    \rowcolor{charcoal}
+    \thc{Variable / Hook} & \thc{Type / Source} & \thc{Operational Role in FPS Loop} \\
+    \hline
     \texttt{setFps}               & Zustand Action Dispatcher          & Dispatches calculated frame rates to the global state store \\
     \texttt{frameCountRef}        & React \texttt{useRef<number>}      & Tracks the count of frame draws within the current second interval \\
     \texttt{lastTimeRef}          & React \texttt{useRef<number>}      & High-precision timestamp of the last second boundary \\
     \texttt{requestRef}           & React \texttt{useRef<number>}      & Reference handle of the active \texttt{requestAnimationFrame} loop \\
     \texttt{requestAnimationFrame}& Browser API                        & Coordinates paint ticks to sync calculations with refresh rate \\
-    \bottomrule
-    \end{tabular}
+    \hline
+    \end{tabularx}
     \caption{FPS Telemetry Collector State Variables.}
     \label{tab:fps_telemetry_vars}
     \end{table}
 By decoupling the telemetry collector hook from the main 3D rendering component and updating the Zustand state only once per second, the telemetry loop inflicts zero rendering overhead on the main JavaScript execution stack.
 
----
-
 \section{System Project Retrospective}
-With all 4 development sprints completed, we conducted a rigorous project retrospective to evaluate the Agile Scrum execution, analyze our technical achievements, and identify how key challenges were resolved.
+With all 4 development sprints completed, we conducted a project retrospective to evaluate the Agile Scrum execution, analyze our technical achievements, and identify how key challenges were resolved.
 
 \subsection{Scrum Development Analytics}
 The project execution was highly structured, maintaining steady progress across the 12-week schedule. By keeping our Sprint Planning sessions focused, committing to realistic backlogs, and conducting daily standups, we succeeded in delivering all committed features on schedule:
@@ -335,37 +332,35 @@ The project execution was highly structured, maintaining steady progress across 
 \subsection{Overcoming Critical Technical Challenges}
 During realization, our engineering team resolved three major technical bottlenecks:
 
-\subsubsection{1. High-Velocity WebGL Frame Rate Drop}
-During early testing, active scraper polls from Fortinet and Checkpoint flooded the SSE feed with hundreds of events in brief bursts. Drawing each event as a new Three.js arc caused the render loop to freeze, dropping frame rates to 15 FPS. 
+\subsubsection{1. Visual Interface Lag}
+Under heavy data loads, drawing every threat arc caused performance degradation.
 \begin{itemize}
-    \item \textbf{Resolution:} We implemented the Server SSE 300ms flush queue to batch events, introduced Zustand throttles to delay state updates, and capped active canvas arcs to a maximum of 150. Combined with our adaptive FPS sampling engine, these adjustments restored a solid 60 FPS performance.
+    \item \textbf{Resolution:} We implemented a 300ms event grouping queue on the server, delayed state updates, and capped active visual arcs to 150. Combined with adaptive sampling, this restored smooth performance.
 \end{itemize}
 
-\subsubsection{2. Cloud Database Storage Bounds}
-Ingesting threats continuously rapidly populated our MongoDB Atlas collection, threatening to exceed the 512 MB free cluster tier within a single week.
+\subsubsection{2. Database Storage Limits}
+Continuous ingestion threatened to exceed storage limits quickly.
 \begin{itemize}
-    \item \textbf{Resolution:} We restructured our database model to use compact BSON field names, reducing document footprints by over $50\%$. We also configured a 30-day MongoDB TTL (Time-To-Live) index to automatically prune historical records, and implemented a backend quota monitor that disables database writes if storage reaches 500 MB.
+    \item \textbf{Resolution:} We optimized the database schema to use compact field names, reducing storage size by 50%. We also configured automatic expiration rules for historical records and a backup monitor to halt writes if storage limits are reached.
 \end{itemize}
 
-\subsubsection{3. Cross-Origin Resource Sharing (CORS) Blocks}
-Deploying our React single-page application on Vercel CDN while running our Express API backend on a separate cloud instance initially resulted in browser CORS blocking blocks during STIX uploads and history searches.
+\subsubsection{3. Resource Sharing (CORS) Blocks}
+Deploying our React frontend application while running our API backend on a separate instance initially resulted in resource sharing blocks.
 \begin{itemize}
-    \item \textbf{Resolution:} We resolved this by writing a proxy routing rule inside the Vercel configurations file `vercel.json`, routing all client-side calls to `/api/*` through internal proxy channels, completely bypassing CORS constraints.
+    \item \textbf{Resolution:} We resolved this by configuring proxy routing rules in Vercel to direct frontend requests through internal paths, avoiding resource sharing blocks.
 \end{itemize}
 
 \subsection{Architectural Scalability and Future Improvements}
-To transition the Predictra Threat Map from an academic prototype into a production-grade enterprise platform, the system architecture must be designed to scale horizontally. In this subsection, we detail three planned high-volume scalability blueprints:
+To transition the Predictra Threat Map from a prototype into an enterprise platform, the system architecture must be designed to scale horizontally. In this subsection, we detail three planned high-volume scalability blueprints:
 
 \subsubsection{1. Kafka Distributed Message Broker Ingestion}
-The current memory-based event queue inside our Express backend is susceptible to data loss if the Node.js process crashes under extreme ingestion spikes. To resolve this, we propose replacing the direct in-memory array queue with an Apache Kafka distributed message broker. Scrapers will act as Kafka producers, publishing raw threat payloads to partitioned threat-feed topics. The Express SSE broadcast controller will act as a consumer group, reading messages from partitions and streaming them to connected clients. This establishes a highly durable, replayable, and fault-tolerant ingestion tier capable of handling millions of threat events per second.
+To prevent data loss if the backend server crashes under heavy load, we propose using a message broker like Apache Kafka. Scrapers will publish threat payloads to message queues, and the server will read and stream them to clients. This ensures a durable and fault-tolerant ingestion tier capable of handling massive threat volumes.
 
 \subsubsection{2. Predictive Machine Learning Extensions}
-While the current platform provides excellent real-time visibility, it operates purely on reactive historical data. A key future extension is the integration of a predictive AI model to anticipate threat trends. By training a Long Short-Term Memory (LSTM) recurrent neural network on historical threat distributions stored in MongoDB, the system can analyze temporal patterns to forecast attack velocity spikes and target sectors. The predictions will be rendered on the 3D globe as predictive threat heatmaps (volumetric glowing grids), enabling security analysts to proactively harden infrastructure before campaigns occur.
+A planned extension is the integration of a predictive machine learning model to anticipate threat trends. By training a model on historical threat distributions, the system can analyze patterns to forecast attack spikes and target sectors, displaying these predictions on the 3D globe as threat heatmaps.
 
 \subsubsection{3. Sharded Geographical Database Clustering}
-As historical records accumulate over years, a single MongoDB database instance will eventually face indexing and read bottlenecks. We propose a sharded cluster database configuration, sharding the threat event collection based on geographic country codes. This guarantees that queries for specific regions are routed only to their corresponding database shards, minimizing index lookup latencies and providing horizontal storage expansion.
-
----
+As historical records accumulate, a single database instance may face bottlenecks. We propose a database sharding strategy based on geographic regions. This guarantees that queries for specific countries are routed only to their corresponding database segments, minimizing search latency and scaling storage capacity.
 
 \section{Conclusion}
 This chapter detailed the completion of our second main release. By parsing STIX 2.1 JSON files client-side, mapping threat actions to MITRE ATT\&CK matrices, setting up paginated history browsers, geolocating public network IPs, and establishing performance stabilizers (including circular RingBuffers and adaptive event sampling drop rates), we have realized a highly performant, standard-compliant, and operationally reliable Cyber Threat Intelligence platform. We proceed to the General Conclusion to summarize our academic achievements, review our project goals, and suggest future avenues for research.

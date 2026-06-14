@@ -3,8 +3,6 @@
 \section{Introduction}
 To establish a clear, academically rigorous roadmap for the design, development, and realization of the \textbf{Predictra Threat Map}, it is essential to first understand the organizational environment, project context, and state of the art in the threat intelligence domain. This chapter introduces our host company, details the commercial and open-source landscape of Cyber Threat Intelligence (CTI) platforms, critiques existing market solutions, and defines the Agile Scrum framework and UML standards adopted as our development and modeling methodologies.
 
----
-
 \section{Host Organization: Predictra}
 
 \subsection{Company Profile and Mission}
@@ -17,7 +15,7 @@ Predictra's platforms leverage advanced machine learning models to ingest unstru
 \subsection{Organizational Structure}
 To support its mission of providing real-time global intelligence, Predictra is structured into three highly specialized departments, as modeled in Figure~\ref{fig:predictra_org}.
 
-\begin{figure}[htbp]
+\begin{figure}[H]
 \centering
 \includegraphics[width=0.9\textwidth]{assets/predictra_org.png}
 \caption{Organizational structure of Predictra.}
@@ -26,8 +24,8 @@ To support its mission of providing real-time global intelligence, Predictra is 
 
 The specific responsibilities of these departments are detailed below:
 \begin{itemize}
-    \item \textbf{Threat Research Department:} Composed of malware analysts, threat hunters, and reverse engineers. This department focuses on analyzing APT campaigns, monitoring dark web extortion sites, crawling black-market forums, and maintaining global intelligence databases (such as MISP Galaxies). They validate Indicators of Compromise (IOCs) and create custom threat signatures. Their daily operations involve reverse-engineering malware samples to extract cryptographic signatures, tracking botnet controller command networks, and cataloging threat actor tactics. Their key output is verified technical threat intelligence that is fed directly into ingestion platforms.
-    \item \textbf{Security Engineering Department:} Composed of backend developers, frontend designers, database administrators, and DevOps engineers. This department is responsible for building high-throughput ingestion pipelines, real-time data streaming layers, and high-performance visual interfaces (the department where our project was hosted). They focus on database performance tuning, horizontal scaling of ingestion services, UI/UX optimization for security analysts, and secure cloud deployments. They coordinate closely with researchers to ensure that newly discovered threat signatures are seamlessly supported by the parsing engines.
+    \item \textbf{Threat Research Department:} Composed of security analysts and researchers. This department focuses on analyzing cyber campaigns, monitoring extortion websites, and maintaining threat databases. They validate threat indicators and create signatures. Their operations involve examining malware samples, tracking attacker networks, and cataloging actor tactics. Their output is threat intelligence used to feed the ingestion platforms.
+    \item \textbf{Security Engineering Department:} Composed of software and database developers. This department is responsible for building ingestion pipelines, data streaming, and the user interface. They focus on database performance, user experience, and cloud deployments. They coordinate with researchers to support new threat indicators.
     \item \textbf{Sales and Operations Department:} Manages client relations, enterprise deployments, marketing campaigns, and commercial threat briefing dissemination, ensuring the platform's features align with commercial market requirements. They gather user feedback from enterprise customers, identify market gaps, and coordinate training and technical support services.
 \end{itemize}
 
@@ -36,23 +34,11 @@ To maintain a high velocity of threat detection and update dissemination, these 
 
 The engineers design new scrapers or update the existing classification databases to support these indicators. Once validated, the engineering team deploys the updates to production environments. Finally, the Sales and Operations team briefs enterprise clients on the newly integrated monitoring capabilities, gathering immediate operational feedback to guide future development iterations.
 
----
-
 \section{Project Context and Problem Definition}
-Modern organizations operate in an extremely hostile digital environment. Corporate IT infrastructures are continuously scanned, targeted, and compromised by sophisticated cyber threats, ranging from state-sponsored Advanced Persistent Threats (APTs) to highly organized Ransomware-as-a-Service (RaaS) cartels. 
-
-To defend their assets, security teams deploy extensive internal security controls (e.g., Endpoint Detection and Response - EDR, firewalls, and SIEM platforms). However, these controls only provide internal visibility. Organizations remain completely blind to the external threat landscape. They lack situational awareness regarding:
-\begin{itemize}
-    \item What active adversary infrastructures (Command and Control - C2 nodes) are currently being staged globally or targeting their specific industrial sector.
-    \item What credentials, internal assets, or confidential documents have been leaked on dark web forums or extortion blogs.
-    \item What global threat trends and geographic attack corridors are emerging.
-\end{itemize}
 
 Historically, analyzing external threat feeds was a slow, manual process. Threat intelligence teams had to poll separate tabular feeds, manually normalize indicators, and compile static briefings. This tabular approach creates a high **compromise dwell time** -- often exceeding 200 days -- during which adversaries move laterally undetected. Furthermore, Security Operations Center (SOC) analysts suffer from visual fatigue when looking at thousands of static text logs in spreadsheets or simple dashboards. They lack an intuitive, real-time spatial visual interface that provides immediate, global threat situational awareness at a glance.
 
 The \textbf{Predictra Threat Map} was conceived to bridge this critical operational gap, transforming high-velocity, multi-source external cyber threat data into a live, interactive, 3D visual intelligence map and structured analysis dashboard.
-
----
 
 \section{State of the Art: Comparative Analysis of CTI Solutions}
 To design a robust CTI platform, we conducted a rigorous comparative analysis of existing open-source and commercial threat intelligence solutions, evaluating their data models, stream latencies, spatial visualization support, and hardware footprints.
@@ -60,71 +46,70 @@ To design a robust CTI platform, we conducted a rigorous comparative analysis of
 \subsection{Open-Source Solutions}
 
 \subsubsection{MISP (Malware Information Sharing Platform)}
-MISP is the de facto open-source standard for indicator of compromise (IOC) sharing. It supports highly structured schemas for storing, tagging, and sharing IP addresses, hashes, and domains across trust communities. Its MISP Galaxies and Taxonomies provide outstanding threat classification. It allows communities to build "circles of trust" to share threat data anonymously via automated server synchronization.
+MISP is a widely used open-source platform for sharing threat information. It supports storing and tagging IP addresses, file hashes, and domains.
 
-From a technical perspective, MISP is built as a database-driven LAMP stack (Linux, Apache, MySQL, PHP). It relies on relational structures to represent threat events and attributes. While it is highly capable at storing massive tabular datasets of historical IOCs, it struggles under real-time streaming constraints. Analysts must poll the REST APIs periodically, which introduces latency. Furthermore, the user interface consists primarily of dense, tabular tables and text-based relationship structures. It lacks any high-performance, real-time 3D visual spatial mapping optimized for SOC situational monitoring.
+From a technical perspective, MISP uses standard database structures. While it is highly capable at storing large lists of historical threats, it is not optimized for real-time streaming. Analysts must request updates periodically, which introduces delays. Furthermore, the user interface consists primarily of text-based tables and lacks real-time 3D visual maps.
 
-Administrative costs for maintaining a MISP instance are relatively low in terms of software licensing (as it is open source), but high in terms of specialized human labor. Security teams must allocate engineering resources to regularly monitor system states, manage database partitions, and refine taxonomy rules. Additionally, because the UI is highly complex and lacks visual animations, security teams must invest extensive hours in analyst training before the tool can be effectively integrated into active incident response pipelines.
+Maintaining a MISP instance requires regular management. Security teams must allocate engineering resources to monitor the system and refine database rules. Additionally, because the interface is complex, security teams must spend time training analysts before using it in security operations.
 
 \subsubsection{OpenCTI (Open Cyber Threat Intelligence)}
-OpenCTI is an advanced, highly modular platform modeled strictly on the STIX 2.1 standard. It represents cyber threat intelligence as a complex knowledge graph, linking threat actors, intrusion sets, campaigns, malwares, vulnerabilities, and targeted sectors. The graph is stored in Neo4j (graph database) and indexed using Elasticsearch for fast searching. It features a robust Python connector framework that allows analysts to import public, private, and commercial threat feeds easily.
+OpenCTI is a modular platform designed to represent threat intelligence as a graph, linking actors, campaigns, malware, and targeted sectors. It uses specialized databases for indexing and searching, and features connectors to import public and private threat feeds.
 
-However, the architecture of OpenCTI is extremely heavy. Running a minimal production cluster requires orchestrating multiple service layers: a web application, Neo4j, Elasticsearch, Redis, RabbitMQ, and multiple background Python workers. This infrastructure footprint demands high-specification cloud servers, resulting in prohibitive operational and maintenance costs. Furthermore, OpenCTI's user interface is optimized for long-term analytical investigations and relationship navigation rather than real-time spatial attack streams. It provides no high-performance 3D WebGL geocoded tracking.
+However, OpenCTI's architecture is heavy. Running the platform requires managing multiple service layers, which demands high-specification servers and increases operational costs. Furthermore, the interface is optimized for long-term analytical research rather than real-time visual tracking.
 
-From a hosting perspective, the hardware overhead of running Neo4j and Elasticsearch concurrently means that organizations must allocate premium cloud compute resources (typically requiring at least 16GB-32GB of RAM on staging instances). For smaller security teams, start-ups, or regional public entities, this makes the cost of hosting OpenCTI comparable to commercial software suites, effectively undermining the economic benefit of selecting an open-source solution.
+From a hosting perspective, the server requirements mean that organizations must allocate significant hardware resources. For smaller teams, this makes the hosting costs high, reducing the financial benefits of using open-source software.
 
 \subsection{Commercial Solutions}
 
 \subsubsection{Recorded Future}
-Recorded Future is a leading commercial threat intelligence platform that utilizes extensive automated web scraping and natural language processing (NLP) to index threat indicators from public, dark web, and social media channels. It translates these unstructured pages into standardized "intelligence cards," offering threat scoring, actor profiles, and technical indicators. It provides polished integrations with major Enterprise SIEM, SOAR, and EDR systems.
+Recorded Future is a major commercial platform that gathers threat indicators from web, forum, and social media channels. It translates these pages into standardized profiles, offering threat scoring and technical indicators, with integrations for major security tools.
 
-Despite its outstanding collection and enrichment capabilities, Recorded Future is commercial and highly expensive. The licensing costs are prohibitive, making it completely inaccessible to small-to-medium enterprises (SMEs) or regional public institutions. Furthermore, the dashboard is heavily geared toward analytical text widgets and tabular intelligence reports. Its spatial visualization is limited to simple static 2D maps, lacking any high-performance, live-streaming spatial animation optimized for continuous SOC display screens.
+Despite its capabilities, Recorded Future is highly expensive, making it inaccessible to smaller organizations. Furthermore, the dashboard is focused on text reports and simple static 2D maps, lacking real-time animations for display screens.
 
-Because it operates as a proprietary SaaS system, organizations must rely completely on the vendor's closed scoring algorithms and data enrichment paths. If a security team requires custom data sources (such as localized regional forums or internal telemetry datasets) that are not natively crawled by Recorded Future's harvesters, integrating them into the core intelligence engine is highly complex, often requiring expensive custom service contracts.
+Because it is a closed system, organizations must rely entirely on the vendor's algorithms. Integrating custom data sources not supported by default can be difficult and costly.
 
 \subsubsection{Cyble}
-Cyble is a rapidly growing AI-powered commercial CTI provider focusing on dark web monitoring, brand protection, and attack surface management. It crawls dark web forums, deep web marketplaces, and encrypted chat channels to detect leaked credentials, compromised corporate assets, and exposed source codes. It provides security teams with automated threat alerts and risk indicators.
+Cyble is a commercial provider focusing on brand protection and monitoring online forums and chat channels for leaked credentials and assets. It provides automated alerts and risk indicators.
 
-Like Recorded Future, Cyble operates on a closed-source, high-fee commercial subscription model. It lacks an open developer ecosystem, preventing custom integrations or direct access to raw streaming engines. Its visual interfaces are designed as static executive reporting panels, omitting the live, high-frame-rate geocoded animations needed for real-time threat tracing. This static approach limits the utility of the platform for active SOC display environments where real-time, animated, and geocoded visual feedback is essential for maintaining analyst alertness and immediate threat identification.
+Like other commercial options, Cyble requires subscription fees and does not allow custom developer integrations. Its interfaces are designed as static reports, lacking real-time animations, which limits its usefulness for active display environments.
 
 \subsection{Comparative Summary Table}
 To clarify the distinctions, a comparative matrix of key platform parameters is detailed in Table~\ref{tab:cti_comparison}.
 
-\begin{table}[htbp]
+\begin{table}[H]
 \centering
 \small
-\begin{tabular}{>{\raggedright\arraybackslash}p{2.8cm}>{\raggedright\arraybackslash}p{2.4cm}>{\raggedright\arraybackslash}p{2.4cm}>{\raggedright\arraybackslash}p{2.4cm}>{\raggedright\arraybackslash}p{2.8cm}}
-\toprule
-\textbf{Feature / Metric} & \textbf{MISP} & \textbf{OpenCTI} & \textbf{Recorded Future} & \textbf{Predictra Threat Map} \\
-\midrule
-Data Model & Attributes / Events & STIX 2.1 Graph & Proprietary Graph & Hybrid (SSE + STIX 2.1) \\
+\arrayrulecolor{charcoal!30}
+\rowcolors{2}{cyberblue!5}{white}
+\begin{tabularx}{\textwidth}{>{\raggedright\arraybackslash}p{2.8cm}XXXX}
+\hline
+\rowcolor{charcoal}
+\thc{Feature / Metric} & \thc{MISP} & \thc{OpenCTI} & \thc{Recorded Future} & \thc{Predictra Threat Map} \\
+\hline
+Data Model & Attributes / Events & STIX 2.1 Graph~\cite{stix_specification} & Proprietary Graph & Hybrid (SSE + STIX 2.1) \\
 Real-Time Streaming & Low (Sync APIs) & Medium (API Poll) & Medium & High (300ms SSE Flush) \\
 Visual Spatial Mapping & None & None & Limited 2D Maps & 3D WebGL Globe \& 2D \\
 System Resource Footprint & Medium & Very High & N/A (SaaS) & Low (Optimized Node/React) \\
 Target Audience & Incident Responders & Intel Analysts & Enterprise SOCs & Modern SOCs \& SMEs \\
 Financial Accessibility & Free / Open Source & Free / Open Source & Highly Prohibitive & Open and Accessible \\
-\bottomrule
-\end{tabular}
+\hline
+\end{tabularx}
 \caption{Academic comparative analysis of global CTI solutions.}
 \label{tab:cti_comparison}
 \end{table}
 
----
-
 \section{Critique of Existing Systems and Proposed Solution}
 The evaluation of the state of the art highlights a clear market gap: \textbf{existing CTI platforms are either highly analytical but visually static and resource-heavy (like OpenCTI and MISP), or visually polished but commercially restrictive (like Recorded Future)}. 
 
-To resolve this gap, we proposed the \textbf{Predictra Threat Map}. Our solution is engineered as a high-performance, real-time threat visualizer and structured STIX analyst workspace:
+To resolve this gap, we proposed the \textbf{Predictra Threat Map}. Our solution is designed as a real-time threat visualizer and analysis workspace:
 \begin{itemize}
-    \item It uses a parallel scraper architecture fetching data from 9+ diverse feeds, bypassing heavy broker infrastructures. This ensures that the ingestion layer remains highly resilient, as the failure of one external feed does not affect other scraper operations.
-    \item It utilizes Server-Sent Events (SSE) to stream events instantly with a 300ms flush queue, keeping browser CPU load low. SSE provides a unidirectional, low-overhead HTTP connection that is simpler to configure and maintain through enterprise firewalls than complex WebSockets.
-    \item It renders an interactive 3D procedural Earth at 60fps utilizing React Three Fiber and WebGL shaders, visualising geolocated threat vectors as dynamic great-circle bezier curves. The use of hardware acceleration offloads mathematical calculations to the GPU, preserving browser responsiveness.
-    \item It integrates a dedicated, client-side STIX 2.1 bundle parser, providing the analytical depth of complex threat intelligence platforms in an accessible, zero-config workspace. This client-side approach eliminates the need for expensive Neo4j or Elasticsearch server clusters.
+    \item It uses a modular scraper architecture fetching data from 9+ feeds. This ensures resilience, as the failure of one external feed does not affect others.
+    \item It streams events instantly using a coordinated batching queue, keeping browser load low and ensuring smooth data delivery.
+    \item It displays an interactive 3D virtual Earth, visualizing threat locations as dynamic curved paths using hardware acceleration.
+    \item It integrates a client-side STIX 2.1 file parser, providing analysis features directly in the browser without requiring complex databases.
 \end{itemize}
 
-By decoupling the high-throughput ingestion backend from the rich 3D visualization frontend and using client-side WebGL math, the platform provides exceptional visual quality and deep intelligence analysis without requiring high-spec, expensive backend server clusters.
-
----
+By separating backend data ingestion from frontend visualization and optimizing client-side math, the platform provides high-quality graphics and analysis without requiring expensive server clusters.
 
 \section{Work Methodology and Modeling Standards}
 To ensure the rigorous and efficient delivery of this software platform, the project adopted standard industry methodologies for development and system modeling.
@@ -132,9 +117,9 @@ To ensure the rigorous and efficient delivery of this software platform, the pro
 \subsection{Agile Scrum Framework}
 We implemented the \textbf{Agile Scrum framework} to pilot the development process. This methodology split the project lifecycle into iterative, fully functional increments called \textbf{Sprints}.
 
-\begin{figure}[htbp]
+\begin{figure}[H]
 \centering
-\includegraphics[width=0.9\textwidth]{assets/scrum_lifecycle.png}
+\includegraphics[width=0.8\textwidth]{assets/scrum_lifecycle.png}
 \caption{Agile Scrum development lifecycle flowchart.}
 \label{fig:scrum_lifecycle}
 \end{figure}
@@ -174,21 +159,24 @@ The Sunday meetings, typically lasting 4 hours, were conducted at the end of eac
 
 To summarize, the operational structure of these twice-weekly coordination sessions is detailed in Table~\ref{tab:biweekly_meetings}.
 
-\begin{table}[htbp]
+\begin{table}[H]
 \centering
 \small
-\begin{tabular}{>{\raggedright\arraybackslash}p{2.3cm}>{\raggedright\arraybackslash}p{5.8cm}>{\raggedright\arraybackslash}p{5.8cm}}
-\toprule
-\textbf{Parameter} & \textbf{Thursday Technical Alignment} & \textbf{Sunday Strategic Integration} \\
-\midrule
+\arrayrulecolor{charcoal!30}
+\rowcolors{2}{cyberblue!5}{white}
+\begin{tabularx}{\textwidth}{>{\raggedright\arraybackslash}p{2.3cm}XX}
+\hline
+\rowcolor{charcoal}
+\thc{Parameter} & \thc{Thursday Technical Alignment} & \thc{Sunday Strategic Integration} \\
+\hline
 \textbf{Session Focus} & Technical Integration, Code Auditing, Bug Diagnostics & Architectural Consolidation, Documentation, Sprint Planning \\
 \textbf{Typical Duration} & 3.0 Hours & 4.0 Hours \\
 \textbf{Key Inputs} & Local Feature Branches, Scraper Output Logs, Performance Metrics & Consolidated \texttt{develop} Branch, Open Backlog, Academic Guide \\
 \textbf{Key Activities} & Peer reviews, API schema validation, WebGL frame profiling, branch merging & Code refactoring, Zustand state pruning, LaTeX documentation, backlog sizing \\
 \textbf{Primary Output} & Integrated, stable mid-sprint code build & Cleaned production build, updated UML blueprints, next sprint backlog \\
 \textbf{Lifespan Coverage} & Every week over 6-month duration (48+ sessions) & Every week over 6-month duration (48+ sessions) \\
-\bottomrule
-\end{tabular}
+\hline
+\end{tabularx}
 \caption{Operational breakdown of bi-weekly coordination meetings held over 6 months.}
 \label{tab:biweekly_meetings}
 \end{table}
@@ -201,8 +189,6 @@ To guarantee a solid architectural design, the system requirements, conception, 
     \item \textbf{Sequence Diagrams:} Traced asynchronous communication timelines between analysts, backend event streams, and front-end render loops, verifying transaction safety and identifying potential race conditions or connection deadlocks.
     \item \textbf{Component Diagrams:} Illustrated modular package boundaries and code dependencies, ensuring a decoupled physical architecture that facilitates scaling.
 \end{itemize}
-
----
 
 \section{Conclusion}
 This chapter established the academic, professional, and methodological foundations of our project. Having analyzed the CTI domain, compared existing market solutions, and set up our Scrum and UML modeling structures, we proceed to Chapter 2 to detail the requirements, project preparation, sprint planning, and the global architecture of the Predictra CTI platform.

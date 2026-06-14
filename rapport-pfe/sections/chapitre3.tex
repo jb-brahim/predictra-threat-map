@@ -3,8 +3,6 @@
 \section{Introduction}
 This chapter documents the design, modeling, and realization of the first functional release of the platform, aligning with the \textbf{Release 1} specifications. This release covers \textbf{Sprint 1 (Core Data Ingestion and Scraper Pipeline)} and \textbf{Sprint 2 (Real-Time SSE Streaming and 3D Globe Visualization)}. For each sprint, we present its backlog objectives, UML modeling diagrams (Use Case, Class, and Sequence), database schemas, component structures, code walks, and interface screenshots.
 
----
-
 \section{Sprint 1: Data Ingestion and Enrichment Pipeline}
 
 \subsection{Sprint Backlog and Objectives}
@@ -15,7 +13,7 @@ The primary engineering challenges in this sprint involved managing parallel con
 \subsection{Sprint Analysis: Use Case Modeling}
 The ingestion use cases are captured in Figure~\ref{fig:s1_usecase}, illustrating how the External API Feed actor triggers the harvest loop.
 
-\begin{figure}[htbp]
+\begin{figure}[H]
 \centering
 \includegraphics[width=0.95\textwidth]{assets/s1_usecase.png}
 \caption{Sprint 1: Use Case diagram for threat data harvesting.}
@@ -24,17 +22,20 @@ The ingestion use cases are captured in Figure~\ref{fig:s1_usecase}, illustratin
 
 The functional behaviors of these use cases are structured in Table~\ref{tab:s1_uc_desc}.
 
-\begin{table}[htbp]
+\begin{table}[H]
 \centering
 \small
-\begin{tabular}{>{\raggedright\arraybackslash}p{3.8cm}>{\raggedright\arraybackslash}p{4.7cm}>{\raggedright\arraybackslash}p{4.7cm}}
-\toprule
-\textbf{Use Case} & \textbf{Actor/Trigger} & \textbf{Main Workflow} \\
-\midrule
+\arrayrulecolor{charcoal!30}
+\rowcolors{2}{cyberblue!5}{white}
+\begin{tabularx}{\textwidth}{>{\raggedright\arraybackslash}p{3.8cm}XX}
+\hline
+\rowcolor{charcoal}
+\thc{Use Case} & \thc{Actor/Trigger} & \thc{Main Workflow} \\
+\hline
 Fetch Threat Feed & Express Server (Scheduler / Poll) & The server initiates a scheduler, calling a modular scraper file to query the external REST endpoint or establish a streaming connection, retrieving threat JSON packets. \\
 Enrich \& Store Payload & Express Server (Callback / Data In) & Upon retrieval, the payload is resolved through `enrichment.js` for IP geolocation and target sector classification, and queued for bulk MongoDB write. \\
-\bottomrule
-\end{tabular}
+\hline
+\end{tabularx}
 \caption{Sprint 1: Use Case descriptions.}
 \label{tab:s1_uc_desc}
 \end{table}
@@ -44,7 +45,7 @@ Enrich \& Store Payload & Express Server (Callback / Data In) & Upon retrieval, 
 \subsubsection{UML Class Diagram}
 The structural interfaces created in Sprint 1 are illustrated in Figure~\ref{fig:s1_class}.
 
-\begin{figure}[htbp]
+\begin{figure}[H]
 \centering
 \includegraphics[width=0.95\textwidth]{assets/s1_class.png}
 \caption{Sprint 1: Conception Class diagram.}
@@ -54,13 +55,16 @@ The structural interfaces created in Sprint 1 are illustrated in Figure~\ref{fig
 \subsubsection{MongoDB Schema Dictionary}
 To accommodate high-velocity database writes (up to hundreds of logs per second), the MongoDB schema in `models/ThreatEvent.js` uses \textbf{compact field names} to minimize BSON document sizes. This layout reduces document sizes from 200 bytes to 80 bytes, conserving cloud database storage. Furthermore, a compound index was established on `s\_ip` and `timestamp` to accelerate fast queries on the history explorer page. The database schema dictionary mapping is defined in Table~\ref{tab:db_dictionary}.
 
-\begin{table}[htbp]
+\begin{table}[H]
 \centering
 \small
-\begin{tabular}{>{\raggedright\arraybackslash}p{3.2cm}>{\raggedright\arraybackslash}p{2.0cm}>{\raggedright\arraybackslash}p{1.4cm}>{\raggedright\arraybackslash}p{6.0cm}}
-\toprule
-\textbf{BSON Field} & \textbf{Logical Name} & \textbf{Type} & \textbf{Description / Constraints} \\
-\midrule
+\arrayrulecolor{charcoal!30}
+\rowcolors{2}{cyberblue!5}{white}
+\begin{tabularx}{\textwidth}{>{\raggedright\arraybackslash}p{3.2cm}>{\raggedright\arraybackslash}p{2.0cm}>{\raggedright\arraybackslash}p{1.4cm}X}
+\hline
+\rowcolor{charcoal}
+\thc{BSON Field} & \thc{Logical Name} & \thc{Type} & \thc{Description / Constraints} \\
+\hline
 `a\_c` & Attack Count & Number & Aggregated attack volume count (default 1) \\
 `a\_n` & Attack Name & String & adversary malware family, CVE identifier, or exploit name \\
 `a\_t` & Attack Type & String & Categorized class: `exploit`, `malware`, or `phishing` \\
@@ -70,8 +74,8 @@ To accommodate high-velocity database writes (up to hundreds of logs per second)
 `d\_la` / `d\_lo` & Dest Latitude / Longitude & Number & Geocoded target coordinates (or fallback coordinates) \\
 `source\_api` & Source Feeds Tag & String & Scraper origin tag (e.g., `alienvault`, `urlhaus`) \\
 `timestamp` & Event Timestamp & Date & Date of capture. \textbf{Expires after 30 days (TTL index)} \\
-\bottomrule
-\end{tabular}
+\hline
+\end{tabularx}
 \caption{MongoDB BSON Schema Dictionary (`models/ThreatEvent.js`).}
 \label{tab:db_dictionary}
 \end{table}
@@ -79,14 +83,12 @@ To accommodate high-velocity database writes (up to hundreds of logs per second)
 \subsubsection{UML Sequence Diagram}
 The transactional messaging timeline tracing threat log polling, geocoding, target enrichment, and bulk database persistence is illustrated in Figure~\ref{fig:s1_sequence}.
 
-\begin{figure}[htbp]
+\begin{figure}[H]
 \centering
 \includegraphics[width=0.95\textwidth]{assets/s1_sequence.png}
 \caption{Sprint 1: Sequence diagram of the harvesting and enrichment loop.}
 \label{fig:s1_sequence}
 \end{figure}
-
----
 
 \subsection{Sprint Realization: Detailed Scraper Implementations}
 The harvesters are located in \texttt{backend/services/scrapers/}. To ensure complete operational isolation, thread resilience, and modular error recovery, we implemented a decoupled execution model. The core Express orchestrator (\texttt{server.js}) dynamically registers each scraper module, executing their ingestion loops within separate asynchronous promise contexts. This ensures that if a single external feed encounters network timeouts, rate-limit blocks, or malformed responses, the remaining scrapers continue to operate.
@@ -96,31 +98,37 @@ Below, we catalog and detail the architectural specifications, raw payload schem
 \subsubsection{1. Checkpoint Scraper (\texttt{checkpoint.js})}
 \begin{itemize}
     \item \textbf{Source Endpoint \& Protocol:} Establishes a direct, long-lived, secure Server-Sent Events (SSE) HTTP stream connection to Checkpoint's corporate live threat telemetry server (summarized in Table~\ref{tab:spec_checkpoint}).
-    \begin{table}[htbp]
+    \begin{table}[H]
     \centering
     \small
-    \begin{tabular}{ll}
-    \toprule
-    \textbf{Specification Parameter} & \textbf{Configuration Value} \\
-    \midrule
+    \arrayrulecolor{charcoal!30}
+    \rowcolors{2}{cyberblue!5}{white}
+    \begin{tabularx}{\textwidth}{>{\raggedright\arraybackslash}p{4.5cm}X}
+    \hline
+    \rowcolor{charcoal}
+    \thc{Specification Parameter} & \thc{Configuration Value} \\
+    \hline
     Protocol & HTTP/1.1 Server-Sent Events (SSE) \\
     Endpoint URL & \url{https://threatmap.checkpoint.com/feed/live} \\
     Transport Security & TLS 1.3 Encryption \\
     Connection Mode & Active Persistent Client Stream \\
-    \bottomrule
-    \end{tabular}
+    \hline
+    \end{tabularx}
     \caption{Checkpoint Scraper Endpoint Specifications.}
     \label{tab:spec_checkpoint}
     \end{table}
 
-    \item \textbf{Expected Payload Schema:} The stream broadcasts newline-separated SSE threat packets. The parsed JSON data attributes are defined in Table~\ref{tab:payload_checkpoint} (with the raw payload example detailed in Appendix I.1).
-    \begin{table}[htbp]
+    \item \textbf{Expected Payload Schema:} The stream broadcasts SSE threat packets separated by newlines. The parsed JSON data attributes are defined in Table~\ref{tab:payload_checkpoint} (with the raw payload example detailed in Appendix I.1).
+    \begin{table}[H]
     \centering
     \small
-    \begin{tabular}{lll}
-    \toprule
-    \textbf{JSON Attribute} & \textbf{Data Type} & \textbf{Description / Constraints} \\
-    \midrule
+    \arrayrulecolor{charcoal!30}
+    \rowcolors{2}{cyberblue!5}{white}
+    \begin{tabularx}{\textwidth}{>{\raggedright\arraybackslash}p{3.2cm}>{\raggedright\arraybackslash}p{2.5cm}X}
+    \hline
+    \rowcolor{charcoal}
+    \thc{JSON Attribute} & \thc{Data Type} & \thc{Description / Constraints} \\
+    \hline
     \texttt{srcIp} & String & Source IPv4 or IPv6 Address \\
     \texttt{dstIp} & String & Target/Destination IP Address \\
     \texttt{attackName} & String & Exploit name or signature identifier \\
@@ -128,8 +136,8 @@ Below, we catalog and detail the architectural specifications, raw payload schem
     \texttt{severity} & String & Threat severity level string \\
     \texttt{srcCountry} & String & Origin ISO two-letter country code \\
     \texttt{dstCountry} & String & Target ISO two-letter country code \\
-    \bottomrule
-    \end{tabular}
+    \hline
+    \end{tabularx}
     \caption{Checkpoint Raw Threat Payload Schema.}
     \label{tab:payload_checkpoint}
     \end{table}
@@ -141,39 +149,45 @@ Below, we catalog and detail the architectural specifications, raw payload schem
 \subsubsection{2. Bitdefender Live Telemetry Scraper (\texttt{bitdefender.js})}
 \begin{itemize}
     \item \textbf{Source Endpoint \& Protocol:} Establishes a real-time Web Socket connection using the \texttt{socket.io-client} protocol to Bitdefender's global threat intelligence sharing hub (summarized in Table~\ref{tab:spec_bitdefender}).
-    \begin{table}[htbp]
+    \begin{table}[H]
     \centering
     \small
-    \begin{tabular}{ll}
-    \toprule
-    \textbf{Specification Parameter} & \textbf{Configuration Value} \\
-    \midrule
+    \arrayrulecolor{charcoal!30}
+    \rowcolors{2}{cyberblue!5}{white}
+    \begin{tabularx}{\textwidth}{>{\raggedright\arraybackslash}p{4.5cm}X}
+    \hline
+    \rowcolor{charcoal}
+    \thc{Specification Parameter} & \thc{Configuration Value} \\
+    \hline
     Protocol & WebSocket (socket.io Transport) \\
     Endpoint URL & \url{wss://hub.bitdefender.com/threat-telemetry} \\
     Active Channels & 13 Threat Channels (e.g. ransomware, botnet) \\
     Connection Mode & Bidirectional Event Socket \\
-    \bottomrule
-    \end{tabular}
+    \hline
+    \end{tabularx}
     \caption{Bitdefender Scraper Endpoint Specifications.}
     \label{tab:spec_bitdefender}
     \end{table}
 
     \item \textbf{Expected Payload Schema:} The WebSocket channel broadcasts binary frames converted into JSON. The attributes are listed in Table~\ref{tab:payload_bitdefender} (with the raw payload example detailed in Appendix I.2).
-    \begin{table}[htbp]
+    \begin{table}[H]
     \centering
     \small
-    \begin{tabular}{lll}
-    \toprule
-    \textbf{JSON Attribute} & \textbf{Data Type} & \textbf{Description / Constraints} \\
-    \midrule
+    \arrayrulecolor{charcoal!30}
+    \rowcolors{2}{cyberblue!5}{white}
+    \begin{tabularx}{\textwidth}{>{\raggedright\arraybackslash}p{3.2cm}>{\raggedright\arraybackslash}p{2.5cm}X}
+    \hline
+    \rowcolor{charcoal}
+    \thc{JSON Attribute} & \thc{Data Type} & \thc{Description / Constraints} \\
+    \hline
     \texttt{event} & String & Event action classifier (e.g. \texttt{detection}) \\
     \texttt{channel} & String & Source channel name mapped to threat vector \\
     \texttt{ip} & String & Intercepted source IP address string \\
     \texttt{country} & String & Origin country code (ISO Alpha-2) \\
     \texttt{malwareName} & String & Specific malware signature family name \\
     \texttt{port} & Number & Target connection port (used for sector mapping) \\
-    \bottomrule
-    \end{tabular}
+    \hline
+    \end{tabularx}
     \caption{Bitdefender Raw Threat Payload Schema.}
     \label{tab:payload_bitdefender}
     \end{table}
@@ -185,38 +199,44 @@ Below, we catalog and detail the architectural specifications, raw payload schem
 \subsubsection{3. Fortinet FortiGuard Scraper (\texttt{fortinet.js})}
 \begin{itemize}
     \item \textbf{Source Endpoint \& Protocol:} Polls Fortinet's active exploit telemetry API using standard stateless HTTP queries (summarized in Table~\ref{tab:spec_fortinet}).
-    \begin{table}[htbp]
+    \begin{table}[H]
     \centering
     \small
-    \begin{tabular}{ll}
-    \toprule
-    \textbf{Specification Parameter} & \textbf{Configuration Value} \\
-    \midrule
+    \arrayrulecolor{charcoal!30}
+    \rowcolors{2}{cyberblue!5}{white}
+    \begin{tabularx}{\textwidth}{>{\raggedright\arraybackslash}p{4.5cm}X}
+    \hline
+    \rowcolor{charcoal}
+    \thc{Specification Parameter} & \thc{Configuration Value} \\
+    \hline
     Protocol & HTTP/1.1 REST API (GET) \\
     Endpoint URL & \url{https://fortiguard.com/api/threats/active} \\
     Custom Headers & \texttt{User-Agent: Predictra-Ingestion-Agent/1.0} \\
     Polling Frequency & Every 4 seconds \\
-    \bottomrule
-    \end{tabular}
+    \hline
+    \end{tabularx}
     \caption{Fortinet Scraper Endpoint Specifications.}
     \label{tab:spec_fortinet}
     \end{table}
 
     \item \textbf{Expected Payload Schema:} The API returns a structured JSON array of exploit records. The schema fields are defined in Table~\ref{tab:payload_fortinet} (with the raw payload example detailed in Appendix I.3).
-    \begin{table}[htbp]
+    \begin{table}[H]
     \centering
     \small
-    \begin{tabular}{lll}
-    \toprule
-    \textbf{JSON Attribute} & \textbf{Data Type} & \textbf{Description / Constraints} \\
-    \midrule
+    \arrayrulecolor{charcoal!30}
+    \rowcolors{2}{cyberblue!5}{white}
+    \begin{tabularx}{\textwidth}{>{\raggedright\arraybackslash}p{3.2cm}>{\raggedright\arraybackslash}p{2.5cm}X}
+    \hline
+    \rowcolor{charcoal}
+    \thc{JSON Attribute} & \thc{Data Type} & \thc{Description / Constraints} \\
+    \hline
     \texttt{srcCountry} & String & Full country name of attacker origin \\
     \texttt{dstCountry} & String & Full country name of victim target \\
     \texttt{signatureName} & String & Specific exploit name (e.g. Apache Log4j) \\
     \texttt{attackCount} & Number & Aggregated count of attack occurrences \\
     \texttt{victimSubnet} & String & Masked network subnet of victim \\
-    \bottomrule
-    \end{tabular}
+    \hline
+    \end{tabularx}
     \caption{Fortinet Raw Threat Payload Schema.}
     \label{tab:payload_fortinet}
     \end{table}
@@ -228,38 +248,44 @@ Below, we catalog and detail the architectural specifications, raw payload schem
 \subsubsection{4. URLhaus Malware Scraper (\texttt{urlhaus.js})}
 \begin{itemize}
     \item \textbf{Source Endpoint \& Protocol:} Queries abuse.ch's URLhaus API to retrieve newly identified malicious URL distribution nodes (summarized in Table~\ref{tab:spec_urlhaus}).
-    \begin{table}[htbp]
+    \begin{table}[H]
     \centering
     \small
-    \begin{tabular}{ll}
-    \toprule
-    \textbf{Specification Parameter} & \textbf{Configuration Value} \\
-    \midrule
+    \arrayrulecolor{charcoal!30}
+    \rowcolors{2}{cyberblue!5}{white}
+    \begin{tabularx}{\textwidth}{>{\raggedright\arraybackslash}p{4.5cm}X}
+    \hline
+    \rowcolor{charcoal}
+    \thc{Specification Parameter} & \thc{Configuration Value} \\
+    \hline
     Protocol & HTTP/1.1 REST API (POST) \\
     Endpoint URL & \url{https://urlhaus-api.abuse.ch/v1/urls/recent/} \\
     Polling Frequency & Every 90 seconds \\
-    \bottomrule
-    \end{tabular}
+    \hline
+    \end{tabularx}
     \caption{URLhaus Scraper Endpoint Specifications.}
     \label{tab:spec_urlhaus}
     \end{table}
 
     \item \textbf{Expected Payload Schema:} Returns a dictionary containing a list of active threat URLs. The schema fields for each item are defined in Table~\ref{tab:payload_urlhaus} (with the raw payload example detailed in Appendix I.4).
-    \begin{table}[htbp]
+    \begin{table}[H]
     \centering
     \small
-    \begin{tabular}{lll}
-    \toprule
-    \textbf{JSON Attribute} & \textbf{Data Type} & \textbf{Description / Constraints} \\
-    \midrule
+    \arrayrulecolor{charcoal!30}
+    \rowcolors{2}{cyberblue!5}{white}
+    \begin{tabularx}{\textwidth}{>{\raggedright\arraybackslash}p{3.2cm}>{\raggedright\arraybackslash}p{2.5cm}X}
+    \hline
+    \rowcolor{charcoal}
+    \thc{JSON Attribute} & \thc{Data Type} & \thc{Description / Constraints} \\
+    \hline
     \texttt{id} & String & Unique integer identifier for URL block \\
     \texttt{url} & String & Full HTTP/HTTPS address serving malware payload \\
     \texttt{url\_status} & String & Online/offline reachability flag \\
     \texttt{threat} & String & Threat class label (e.g. \texttt{malware\_download}) \\
     \texttt{reporter} & String & Name of threat researcher or bot submitter \\
     \texttt{tags} & Array & Threat signature list tags (e.g. CobaltStrike) \\
-    \bottomrule
-    \end{tabular}
+    \hline
+    \end{tabularx}
     \caption{URLhaus Raw Threat Payload Schema.}
     \label{tab:payload_urlhaus}
     \end{table}
@@ -271,37 +297,43 @@ Below, we catalog and detail the architectural specifications, raw payload schem
 \subsubsection{5. Kaspersky Feodo Botnet Tracker (\texttt{kaspersky.js})}
 \begin{itemize}
     \item \textbf{Source Endpoint \& Protocol:} Polls abuse.ch's Feodo Tracker database of active Botnet command-and-control (C2) servers (summarized in Table~\ref{tab:spec_kaspersky}).
-    \begin{table}[htbp]
+    \begin{table}[H]
     \centering
     \small
-    \begin{tabular}{ll}
-    \toprule
-    \textbf{Specification Parameter} & \textbf{Configuration Value} \\
-    \midrule
+    \arrayrulecolor{charcoal!30}
+    \rowcolors{2}{cyberblue!5}{white}
+    \begin{tabularx}{\textwidth}{>{\raggedright\arraybackslash}p{4.5cm}X}
+    \hline
+    \rowcolor{charcoal}
+    \thc{Specification Parameter} & \thc{Configuration Value} \\
+    \hline
     Protocol & HTTP/1.1 REST (GET) \\
     Endpoint URL & \url{https://feodotracker.abuse.ch/downloads/ipblocklist.csv} \\
     Polling Frequency & Every 60 seconds \\
-    \bottomrule
-    \end{tabular}
+    \hline
+    \end{tabularx}
     \caption{Kaspersky Feodo Scraper Endpoint Specifications.}
     \label{tab:spec_kaspersky}
     \end{table}
 
     \item \textbf{Expected Payload Schema:} The feed returns CSV formatted text lines. The schema fields mapping to the CSV headers are defined in Table~\ref{tab:payload_kaspersky} (with the raw payload example detailed in Appendix I.5).
-    \begin{table}[htbp]
+    \begin{table}[H]
     \centering
     \small
-    \begin{tabular}{lll}
-    \toprule
-    \textbf{CSV Attribute} & \textbf{Data Type} & \textbf{Description / Constraints} \\
-    \midrule
+    \arrayrulecolor{charcoal!30}
+    \rowcolors{2}{cyberblue!5}{white}
+    \begin{tabularx}{\textwidth}{>{\raggedright\arraybackslash}p{3.2cm}>{\raggedright\arraybackslash}p{2.5cm}X}
+    \hline
+    \rowcolor{charcoal}
+    \thc{CSV Attribute} & \thc{Data Type} & \thc{Description / Constraints} \\
+    \hline
     \texttt{Firstseen} & Date String & Date/time the node was first registered \\
     \texttt{DstIP} & String & Destination Command \& Control IP address \\
     \texttt{DstPort} & Number & Listening port of the C2 framework \\
     \texttt{Malware} & String & Name of active botnet malware (e.g. Qakbot) \\
     \texttt{Asname} & String & Autonomous System (AS) network ISP name \\
-    \bottomrule
-    \end{tabular}
+    \hline
+    \end{tabularx}
     \caption{Kaspersky Feodo Raw Threat Payload Schema.}
     \label{tab:payload_kaspersky}
     \end{table}
@@ -313,38 +345,44 @@ Below, we catalog and detail the architectural specifications, raw payload schem
 \subsubsection{6. AlienVault OTX Pulse Scraper (\texttt{alienvault.js})}
 \begin{itemize}
     \item \textbf{Source Endpoint \& Protocol:} Queries the AlienVault Open Threat Exchange REST API, utilizing custom developer API authentication tokens (summarized in Table~\ref{tab:spec_alienvault}).
-    \begin{table}[htbp]
+    \begin{table}[H]
     \centering
     \small
-    \begin{tabular}{ll}
-    \toprule
-    \textbf{Specification Parameter} & \textbf{Configuration Value} \\
-    \midrule
+    \arrayrulecolor{charcoal!30}
+    \rowcolors{2}{cyberblue!5}{white}
+    \begin{tabularx}{\textwidth}{>{\raggedright\arraybackslash}p{4.5cm}X}
+    \hline
+    \rowcolor{charcoal}
+    \thc{Specification Parameter} & \thc{Configuration Value} \\
+    \hline
     Protocol & HTTP/1.1 REST (GET) \\
     Endpoint URL & \url{https://otx.alienvault.com/api/v1/pulses/subscribed} \\
     Custom Headers & \texttt{X-OTX-API-KEY: <custom\_otx\_api\_token>} \\
     Polling Frequency & Every 5 minutes \\
-    \bottomrule
-    \end{tabular}
+    \hline
+    \end{tabularx}
     \caption{AlienVault Scraper Endpoint Specifications.}
     \label{tab:spec_alienvault}
     \end{table}
 
     \item \textbf{Expected Payload Schema:} Returns nested threat pulses. The parsed schema attributes are described in Table~\ref{tab:payload_alienvault} (with the raw payload example detailed in Appendix I.6).
-    \begin{table}[htbp]
+    \begin{table}[H]
     \centering
     \small
-    \begin{tabular}{lll}
-    \toprule
-    \textbf{JSON Attribute} & \textbf{Data Type} & \textbf{Description / Constraints} \\
-    \midrule
+    \arrayrulecolor{charcoal!30}
+    \rowcolors{2}{cyberblue!5}{white}
+    \begin{tabularx}{\textwidth}{>{\raggedright\arraybackslash}p{3.2cm}>{\raggedright\arraybackslash}p{2.5cm}X}
+    \hline
+    \rowcolor{charcoal}
+    \thc{JSON Attribute} & \thc{Data Type} & \thc{Description / Constraints} \\
+    \hline
     \texttt{count} & Number & Count of pulse objects returned in response \\
     \texttt{name} & String & Threat intelligence pulse campaign name \\
     \texttt{description} & String & Text summary details of adversary activities \\
     \texttt{indicator} & String & Specific indicator string (IP address or hash) \\
     \texttt{type} & String & IOC type tag indicator (e.g. \texttt{IPv4}, \texttt{FileHash}) \\
-    \bottomrule
-    \end{tabular}
+    \hline
+    \end{tabularx}
     \caption{AlienVault Raw Threat Payload Schema.}
     \label{tab:payload_alienvault}
     \end{table}
@@ -356,36 +394,42 @@ Below, we catalog and detail the architectural specifications, raw payload schem
 \subsubsection{7. Ransomwatch Extortion Scraper (\texttt{ransomwatch.js})}
 \begin{itemize}
     \item \textbf{Source Endpoint \& Protocol:} Polls the Ransomlook.io API endpoint monitoring active ransomware extortion leak sites (summarized in Table~\ref{tab:spec_ransomwatch}).
-    \begin{table}[htbp]
+    \begin{table}[H]
     \centering
     \small
-    \begin{tabular}{ll}
-    \toprule
-    \textbf{Specification Parameter} & \textbf{Configuration Value} \\
-    \midrule
+    \arrayrulecolor{charcoal!30}
+    \rowcolors{2}{cyberblue!5}{white}
+    \begin{tabularx}{\textwidth}{>{\raggedright\arraybackslash}p{4.5cm}X}
+    \hline
+    \rowcolor{charcoal}
+    \thc{Specification Parameter} & \thc{Configuration Value} \\
+    \hline
     Protocol & HTTP/1.1 REST (GET) \\
     Endpoint URL & \url{https://ransomlook.io/api/posts/recent} \\
     Polling Frequency & Every 10 minutes \\
-    \bottomrule
-    \end{tabular}
+    \hline
+    \end{tabularx}
     \caption{Ransomwatch Scraper Endpoint Specifications.}
     \label{tab:spec_ransomwatch}
     \end{table}
 
     \item \textbf{Expected Payload Schema:} Returns a list of dark web leak site posts. The metadata attributes are defined in Table~\ref{tab:payload_ransomwatch} (with the raw payload example detailed in Appendix I.7).
-    \begin{table}[htbp]
+    \begin{table}[H]
     \centering
     \small
-    \begin{tabular}{lll}
-    \toprule
-    \textbf{JSON Attribute} & \textbf{Data Type} & \textbf{Description / Constraints} \\
-    \midrule
+    \arrayrulecolor{charcoal!30}
+    \rowcolors{2}{cyberblue!5}{white}
+    \begin{tabularx}{\textwidth}{>{\raggedright\arraybackslash}p{3.2cm}>{\raggedright\arraybackslash}p{2.5cm}X}
+    \hline
+    \rowcolor{charcoal}
+    \thc{JSON Attribute} & \thc{Data Type} & \thc{Description / Constraints} \\
+    \hline
     \texttt{group} & String & Name of ransomware developer group (e.g. LockBit) \\
     \texttt{post\_title} & String & Title containing victim corporation name string \\
     \texttt{discovered} & Date String & Timestamp when post was first indexed \\
     \texttt{website} & String & Darknet onion address of the extortion site \\
-    \bottomrule
-    \end{tabular}
+    \hline
+    \end{tabularx}
     \caption{Ransomwatch Raw Threat Payload Schema.}
     \label{tab:payload_ransomwatch}
     \end{table}
@@ -397,36 +441,42 @@ Below, we catalog and detail the architectural specifications, raw payload schem
 \subsubsection{8. MontySecurity C2 Tracker (\texttt{c2tracker.js})}
 \begin{itemize}
     \item \textbf{Source Endpoint \& Protocol:} Polls the MontySecurity command-and-control tracker endpoint to monitor active listener framework IPs (summarized in Table~\ref{tab:spec_c2tracker}).
-    \begin{table}[htbp]
+    \begin{table}[H]
     \centering
     \small
-    \begin{tabular}{ll}
-    \toprule
-    \textbf{Specification Parameter} & \textbf{Configuration Value} \\
-    \midrule
+    \arrayrulecolor{charcoal!30}
+    \rowcolors{2}{cyberblue!5}{white}
+    \begin{tabularx}{\textwidth}{>{\raggedright\arraybackslash}p{4.5cm}X}
+    \hline
+    \rowcolor{charcoal}
+    \thc{Specification Parameter} & \thc{Configuration Value} \\
+    \hline
     Protocol & HTTP/1.1 REST (GET) \\
     Endpoint URL & \url{https://github.com/c2/active/c2.json} \\
     Polling Frequency & Every 15 minutes \\
-    \bottomrule
-    \end{tabular}
+    \hline
+    \end{tabularx}
     \caption{MontySecurity C2 Scraper Endpoint Specifications.}
     \label{tab:spec_c2tracker}
     \end{table}
 
     \item \textbf{Expected Payload Schema:} Returns active command host framework arrays. The JSON fields are described in Table~\ref{tab:payload_c2tracker} (with the raw payload example detailed in Appendix I.8).
-    \begin{table}[htbp]
+    \begin{table}[H]
     \centering
     \small
-    \begin{tabular}{lll}
-    \toprule
-    \textbf{JSON Attribute} & \textbf{Data Type} & \textbf{Description / Constraints} \\
-    \midrule
+    \arrayrulecolor{charcoal!30}
+    \rowcolors{2}{cyberblue!5}{white}
+    \begin{tabularx}{\textwidth}{>{\raggedright\arraybackslash}p{3.2cm}>{\raggedright\arraybackslash}p{2.5cm}X}
+    \hline
+    \rowcolor{charcoal}
+    \thc{JSON Attribute} & \thc{Data Type} & \thc{Description / Constraints} \\
+    \hline
     \texttt{ip} & String & Public IP address of the listening C2 server \\
     \texttt{framework} & String & C2 framework software name (e.g. Cobalt Strike) \\
     \texttt{port} & Number & Server listening port number \\
     \texttt{first\_seen} & String & Date string of initial detection \\
-    \bottomrule
-    \end{tabular}
+    \hline
+    \end{tabularx}
     \caption{MontySecurity C2 Raw Threat Payload Schema.}
     \label{tab:payload_c2tracker}
     \end{table}
@@ -438,37 +488,43 @@ Below, we catalog and detail the architectural specifications, raw payload schem
 \subsubsection{9. MISP Galaxy Synthetic Scraper (\texttt{misp-galaxy.js})}
 \begin{itemize}
     \item \textbf{Source Endpoint \& Protocol:} Accesses local JSON data structures cached inside the backend configuration folder (summarized in Table~\ref{tab:spec_misp_galaxy}).
-    \begin{table}[htbp]
+    \begin{table}[H]
     \centering
     \small
-    \begin{tabular}{ll}
-    \toprule
-    \textbf{Specification Parameter} & \textbf{Configuration Value} \\
-    \midrule
+    \arrayrulecolor{charcoal!30}
+    \rowcolors{2}{cyberblue!5}{white}
+    \begin{tabularx}{\textwidth}{>{\raggedright\arraybackslash}p{4.5cm}X}
+    \hline
+    \rowcolor{charcoal}
+    \thc{Specification Parameter} & \thc{Configuration Value} \\
+    \hline
     Protocol & Local In-Memory JSON Parsing (File Read) \\
     Cache Directory & \texttt{backend/config/misp-galaxy/} \\
     Refresh Interval & Every 6 hours \\
     Synthetic Emission & Random interval of 20 seconds \\
-    \bottomrule
-    \end{tabular}
+    \hline
+    \end{tabularx}
     \caption{MISP Galaxy Scraper Endpoint Specifications.}
     \label{tab:spec_misp_galaxy}
     \end{table}
 
     \item \textbf{Expected Payload Schema:} Evaluates cached MISP JSON metadata templates. The main template structures are defined in Table~\ref{tab:payload_misp_galaxy} (with the raw payload format referenced in Appendix I.9).
-    \begin{table}[htbp]
+    \begin{table}[H]
     \centering
     \small
-    \begin{tabular}{lll}
-    \toprule
-    \textbf{JSON Attribute} & \textbf{Data Type} & \textbf{Description / Constraints} \\
-    \midrule
+    \arrayrulecolor{charcoal!30}
+    \rowcolors{2}{cyberblue!5}{white}
+    \begin{tabularx}{\textwidth}{>{\raggedright\arraybackslash}p{3.2cm}>{\raggedright\arraybackslash}p{2.5cm}X}
+    \hline
+    \rowcolor{charcoal}
+    \thc{JSON Attribute} & \thc{Data Type} & \thc{Description / Constraints} \\
+    \hline
     \texttt{galaxy} & String & Galaxy class name identifier (e.g. threat-actor) \\
     \texttt{name} & String & Name of the threat actor cluster or malware family \\
     \texttt{description} & String & Detailed narrative of target profiling and CVEs \\
     \texttt{uuid} & String & Unique OASIS STIX-compliant entity UUID \\
-    \bottomrule
-    \end{tabular}
+    \hline
+    \end{tabularx}
     \caption{MISP Galaxy Raw Threat Payload Schema.}
     \label{tab:payload_misp_galaxy}
     \end{table}
@@ -476,8 +532,6 @@ Below, we catalog and detail the architectural specifications, raw payload schem
     \item \textbf{Operation Mechanism:} Caches massive threat actor clusters and malware family metadata locally every 6 hours, emitting geocoded synthetic events every 20 seconds to populate visual screens.
     \item \textbf{Data Normalization:} Derives attributes from MISP actor and target metadata files.
 \end{itemize}
-
----
 
 \subsection{Sprint Realization: Ingestion \& Enrichment Logic}
 
@@ -504,8 +558,6 @@ To enrich the geolocated organizational contexts, we also implemented an **async
     \item \textbf{Persistence Test:} We verified MongoDB collections using Compass, confirming that all compact fields (\texttt{a\_n}, \texttt{s\_la}, \texttt{source\_api}) mapped correctly with 30-day index expirations active.
 \end{itemize}
 
----
-
 \section{Sprint 2: Real-Time SSE Stream and 3D Globe Visualization}
 
 \subsection{Sprint Backlog and Objectives}
@@ -514,7 +566,7 @@ Sprint 2 covered the frontend and communication setup. The goal was to write the
 \subsection{Sprint Analysis: Use Case Modeling}
 The visualizer use cases are captured in Figure~\ref{fig:s2_usecase}, illustrating the analyst's dashboard controls.
 
-\begin{figure}[htbp]
+\begin{figure}[H]
 \centering
 \includegraphics[width=0.95\textwidth]{assets/s2_usecase.png}
 \caption{Sprint 2: Use Case diagram for the 3D map visualizer.}
@@ -523,57 +575,50 @@ The visualizer use cases are captured in Figure~\ref{fig:s2_usecase}, illustrati
 
 The functional steps are detailed in Table~\ref{tab:s2_uc_desc}.
 
-\begin{table}[htbp]
+\begin{table}[H]
 \centering
 \small
-\begin{tabular}{>{\raggedright\arraybackslash}p{2.8cm}>{\raggedright\arraybackslash}p{5.2cm}>{\raggedright\arraybackslash}p{5.2cm}}
-\toprule
-\textbf{Use Case} & \textbf{Actor/Trigger} & \textbf{Main Workflow} \\
-\midrule
+\arrayrulecolor{charcoal!30}
+\rowcolors{2}{cyberblue!5}{white}
+\begin{tabularx}{\textwidth}{>{\raggedright\arraybackslash}p{2.8cm}>{\raggedright\arraybackslash}p{5.2cm}X}
+\hline
+\rowcolor{charcoal}
+\thc{Use Case} & \thc{Actor/Trigger} & \thc{Main Workflow} \\
+\hline
 Monitor 3D Spatial Globe & Security Analyst / Mounts Page & Connects the client browser to the live `/api/feed` stream. Incoming events are geocoded to 3D vectors and drawn as animated great-circle arcs and pulsating circles. \\
 Toggle 2D Projection & Security Analyst / Clicks HUD Button & Triggers a coordinate system interpolation, flattening the Three.js mesh spheres into a flat 2D Mercator layout. \\
-\bottomrule
-\end{tabular}
+\hline
+\end{tabularx}
 \caption{Sprint 2: Use Case descriptions.}
 \label{tab:s2_uc_desc}
 \end{table}
 
 \subsection{Sprint Conception: Trigonometric Geocoding and Arc Interpolation}
-Building a high-performance 3D visual mapping environment requires a solid mathematical foundation. To bridge the gap between geographical databases (which express threat locations using standard Latitude/Longitude coordinate systems) and WebGL canvases (which require 3D spatial vector arrays), we designed custom geocoding and curve-generation pipelines.
+To bridge the gap between geographical databases (which express threat locations using standard Latitude/Longitude) and the 3D visual workspace (which requires Cartesian coordinates), we designed custom geocoding and curve-generation pipelines.
 
 \subsubsection{Spatial Projection Mathematics (Latitude/Longitude to Vector3)}
-To project geolocated coordinates onto the procedural Three.js sphere, the system translates geographic coordinates (standard latitude and longitude values in degrees) into three-dimensional Cartesian vector coordinates. This mapping operates within a coordinate system relative to a sphere of a predefined radius (typically set to a base unit of 1.0).
-
-First, the geographic angles in degrees are mathematically scaled into radians. To ensure the rendered map projection aligns perfectly with the WebGL screen orientation, the longitude is offset by 180 degrees before scaling, and the latitude is directly converted. The system then computes the Cartesian coordinates. The horizontal coordinate (X-axis) is defined as the negative product of the sphere radius, the cosine of the radian latitude, and the cosine of the radian longitude. The vertical coordinate (Y-axis) is defined as the product of the sphere radius and the sine of the radian latitude. Finally, the depth coordinate (Z-axis) is defined as the product of the sphere radius, the cosine of the radian latitude, and the sine of the radian longitude.
-
-The inclusion of the negative sign on the horizontal projection (X-axis) is a critical requirement of the WebGL rendering context. Three.js utilizes a right-handed coordinate system where the positive Z-axis points directly outward from the screen, the positive Y-axis points upwards, and the positive X-axis points rightwards. Omitting this directional inversion would cause the geocoded map coordinates to mirror horizontally, placing geographical boundaries in the incorrect hemispheres.
+To display coordinates on the 3D globe, the system converts geographic coordinates (latitude and longitude) into 3D Cartesian coordinates (X, Y, Z). This conversion maps the coordinates to a sphere of radius 1.0. The formulas scale the angles from degrees to radians and map them to the corresponding 3D positions. The system also aligns the coordinates with the screen axes to ensure geographical boundaries are displayed in the correct hemispheres.
 
 \subsubsection{Trigonometric Derivation of Spherical Linear Interpolation (SLERP)}
-To render an attack arc flying out from a source coordinates vector to a destination coordinates vector across the sphere surface, a simple linear interpolation of coordinates is geometrically incorrect. A linear interpolation (LERP) would cut straight through the three-dimensional volume of the sphere, resulting in a straight line that sinks directly beneath the curved surface mesh of the Earth.
-
-To ensure that the attack trail flies gracefully along the curved surface of the globe, the system utilizes Spherical Linear Interpolation (SLERP). The algorithm first calculates the angular separation between the two unit position vectors (the source vector and the destination vector). This is achieved by taking the vector dot product of the two coordinates, which represents the cosine of the separation angle.
-
-Using this angular separation, the intermediate coordinates are interpolated along the curved surface for any progress state (ranging from zero percent at the start to one hundred percent at the destination). The algorithm scales each of the two terminal vectors using sine-based ratios of the progress state and the total angular separation. This specific sine-based weighting ensures a constant angular velocity across the entire flight path. As a result, the particle trails move at a perfectly uniform speed, avoiding unrealistic accelerations or deceleration spikes near the starting or ending coordinates.
+To render an attack line moving from a starting country to a destination country across the globe's surface, a simple straight line is incorrect because it would go through the interior of the sphere. Instead, the system uses Spherical Linear Interpolation (SLERP) to calculate points along the curve of the sphere. This ensures that the attack trail follows the curvature of the Earth at a constant speed.
 
 \subsubsection{Parametric Quadratic Bezier Fly-Arcs}
-While spherical linear interpolation keeps paths aligned to the sphere's surface, rendering multiple overlapping tracks directly on the globe makes visual analysis difficult. To represent attack vectors as elevated volumetric fibers, the arcs are designed to rise radially outward, reaching their peak altitude exactly at the midpoint of their flight trajectory:
+To make the attack lines visually distinct and avoid clutter, they are designed as elevated arcs that rise above the sphere's surface, reaching their highest point at the midpoint of their flight:
 \begin{enumerate}
-    \item The system first computes a surface midpoint coordinates vector. This is done by performing a spherical linear interpolation between the source and destination vectors at exactly fifty percent of the flight progress.
-    \item An elevated control point vector is then projected radially outward from the center of the sphere. This is achieved by scaling the surface midpoint vector by an elevation multiplier. This multiplier is calculated by adding a base scale factor to the product of a dynamic arc height scalar coefficient (typically set between 0.25 and 0.45) and the angular distance between the source and destination vectors. This dynamic scaling guarantees that long-distance intercontinental attacks arch significantly higher into space, while local regional queries remain low and close to the surface, visually sorting the severity and scope of threat streams.
-    \item These three coordinate vectors (the source vector, the elevated control vector, and the destination vector) are passed to the Three.js quadratic Bezier curve constructor. The resulting curve is evaluated parametrically using quadratic Bernstein polynomials to generate a smooth, continuous path. This path starts at the origin coordinates, reaches its maximum radial height in outer space at the midpoint, and sweeps down to the target coordinates, providing a beautiful neon volumetric path.
+    \item The system first computes a surface midpoint coordinates vector using spherical interpolation between the source and destination.
+    \item An elevated control point is then projected radially outward from the center of the sphere. The height is dynamically scaled: longer distances arch higher, while shorter paths remain closer to the surface, organizing the visualization.
+    \item These points are used to generate a smooth Bezier curve, providing a clean neon volumetric path.
 \end{enumerate}
 
 \subsubsection{UML Sequence Diagram}
 The real-time streaming pipeline from scraper broadcasts to frontend Zustand store accumulation and WebGL rendering cycles is traced in Figure~\ref{fig:s2_sequence}.
 
-\begin{figure}[htbp]
+\begin{figure}[H]
 \centering
 \includegraphics[width=0.95\textwidth]{assets/s2_sequence.png}
 \caption{Sprint 2: Sequence diagram of real-time streaming and WebGL rendering.}
 \label{fig:s2_sequence}
 \end{figure}
-
----
 
 \subsection{Sprint Realization: Shaders, Shards, and WebGL Globe}
 
@@ -587,19 +632,22 @@ Rather than using heavy WebSockets, we built an optimized SSE route \texttt{GET 
 \end{itemize}
 
 \subsubsection{3D Earth Shader Realization}
-Our primary globe mesh in \texttt{globe/Earth.tsx} implements a highly performant, custom-shaded sphere:
+Our primary globe mesh in \texttt{globe/Earth.tsx} implements a performant custom material for rendering:
 \begin{itemize}
-    \item \textbf{Custom GLSL Shaders:} To create a premium visual experience, the globe mesh avoids standard flat image textures. Instead, we wrote custom WebGL vertex and fragment shaders using OpenGL Shading Language (GLSL). The vertex shader passes surface normals to the fragment shader, which computes a real-time \textbf{Fresnel atmospheric glow} based on the relationship between the surface normal vector and the camera's line-of-sight view vector. Specifically, the shader calculates the vector dot product of the surface normal and the camera view direction, restricts this value to a non-negative range, subtracts it from a maximum intensity unit, and raises the result to a power falloff factor (typically set to a factor of 4.0). This creates a high-fidelity glowing border around the outer silhouette of the globe that fades smoothly towards the center.
+    \item \textbf{Atmospheric Glow:} To create a premium visual experience, the globe uses a custom shader that calculates a glowing border (Fresnel effect) around the silhouette of the globe, which fades smoothly towards the center.
     
     To illustrate this shader logic, Table~\ref{tab:glow_shader_vars} outlines the shader attributes and parameters passed between the rendering passes, with the complete source code detailed in Appendix H.1:
 
-    \begin{table}[htbp]
+    \begin{table}[H]
     \centering
     \small
-    \begin{tabular}{lll}
-    \toprule
-    \textbf{Variable Name} & \textbf{GLSL Type} & \textbf{Role / Computational Purpose} \\
-    \midrule
+    \arrayrulecolor{charcoal!30}
+    \rowcolors{2}{cyberblue!5}{white}
+    \begin{tabularx}{\textwidth}{>{\raggedright\arraybackslash}p{3.2cm}>{\raggedright\arraybackslash}p{2.5cm}X}
+    \hline
+    \rowcolor{charcoal}
+    \thc{Variable Name} & \thc{GLSL Type} & \thc{Role / Computational Purpose} \\
+    \hline
     \texttt{vNormal} & \texttt{varying vec3} & Surface normal vector passed from vertex to fragment shader \\
     \texttt{normalMatrix} & \texttt{uniform mat3} & Standard WebGL transformation matrix mapping normals \\
     \texttt{mvPosition} & \texttt{vec4} & Model-View matrix mapping physical coordinates on sphere \\
@@ -607,8 +655,8 @@ Our primary globe mesh in \texttt{globe/Earth.tsx} implements a highly performan
     \texttt{intensity} & \texttt{float} & Power-scaled intensity falloff function for Fresnel scattering \\
     \texttt{atmosphericColor} & \texttt{vec3} & Neon Cyberblue color vector (\texttt{0.23, 0.51, 0.96}) \\
     \texttt{gl\_FragColor} & \texttt{vec4} & Output pixel color vector containing transparency blending \\
-    \bottomrule
-    \end{tabular}
+    \hline
+    \end{tabularx}
     \caption{Atmospheric Glow Shader Parameters and Interpolated Variables.}
     \label{tab:glow_shader_vars}
     \end{table}
@@ -617,8 +665,6 @@ Our primary globe mesh in \texttt{globe/Earth.tsx} implements a highly performan
     \item \textbf{Neon Glow Borders:} Renders country borders using \textbf{5 overlapping vector line layers} at microscopic scale increases (from $R=1.002$ to $R=1.010$) with decreasing opacities, creating a beautiful neon outline glow effect without needing heavy blur shaders.
     \item \textbf{Post-Processing Bloom:} Wraps the R3F \texttt{<Canvas>} in \texttt{<EffectComposer>}, using a high-fidelity \texttt{<Bloom>} shader (luminanceThreshold 0.15, intensity 0.8) to make severity-colored attack arcs glow like neon light fibers.
 \end{itemize}
-
----
 
 \section{Conclusion}
 This chapter detailed the completion of our first main release. By combining a parallel harvester backend with geocoders and establishing the 300ms SSE broadcast channel, we successfully rendered the 3D procedural WebGL threat globe at 60fps, displaying active threat events as volumetric glowing bezier arcs. We proceed to Chapter 4 to document the second release, detailing the analytical STIX 2.1 graph, historical browser, and performance guardrails.

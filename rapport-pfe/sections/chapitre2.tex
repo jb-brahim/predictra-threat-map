@@ -3,8 +3,6 @@
 \section{Introduction}
 Establishing a robust system requires deep preparation, rigorous specifications, planning, and clean architectural design. This chapter details our functional and non-functional requirements, models the global system needs using a UML Use Case diagram, breaks down the Scrum product backlog, details our development environment, and presents both our infrastructure deployment layout and logical multi-tier application architecture.
 
----
-
 \section{Requirements Specification}
 To ensure the Predictra Threat Map satisfies academic and operational standards, we captured and defined detailed functional and non-functional requirements.
 
@@ -13,20 +11,20 @@ The platform must support the following nine functional requirements, structured
 
 \subsubsection{RF-1: Multi-Feeds Data Ingestion Engine}
 \begin{itemize}
-    \item \textbf{Description \& Operational Context:} The system must ingest raw security events from 9+ diverse external feeds (AlienVault, URLhaus, C2 Tracker, Kaspersky Feodo, Fortinet, Bitdefender, Checkpoint, RansomWatch, and MISP Galaxy), orchestrating both REST APIs and streaming clients in parallel. This broad harvesting ensures that different threat categories (malwares, command controllers, exploits) are consolidated. From a strategic perspective, cyber threat intelligence is only as valuable as the diversity of its input signals. Relying on a single vendor or data stream introduces a critical vulnerability known as "intelligence blindness." By harvesting from multiple geographically and operationally diverse sources, the platform is able to build a holistic threat map. The engineering challenges involved in this requirement are significant: each external feed utilizes distinct transmission protocols, custom authentication structures, varying data schemas, and unique rate-limiting policies. The ingestion layer must decouple the fetch routines using an asynchronous component architecture, ensuring that slow queries from one scraper do not block the thread execution of other active harvesters.
-    \item \textbf{Use-Case Scenario:} A threat actor registers a new botnet command-and-control server on an bulletproof hosting provider. Within minutes of active staging, the C2 Tracker scraper queries the target host, extracts the raw server details, validates the active listening ports, and pushes the threat indicator into our ingestion pipeline.
-    \item \textbf{Inputs:} External threat intelligence feed configurations, API tokens, HTTP REST endpoints, WebSocket channels, query rate parameters, connection timeout configurations.
+    \item \textbf{Description \& Operational Context:} The system must ingest threat events from 9+ external feeds (AlienVault, \allowbreak URLhaus, \allowbreak C2 Tracker, \allowbreak Kaspersky Feodo, \allowbreak Fortinet, \allowbreak Bitdefender, \allowbreak Checkpoint, \allowbreak RansomWatch, \allowbreak and MISP Galaxy), supporting different threat categories (malware, malicious servers, exploits). Collecting data from multiple sources prevents relying on a single vendor, building a more complete threat map. Each external feed utilizes different protocols and data formats. The ingestion layer separates the collection routines, ensuring that a slow query from one feed does not block the collection of others.
+    \item \textbf{Use-Case Scenario:} A threat actor registers a new botnet command-and-control server. Within minutes of active staging, the scraper queries the target host, extracts the server details, validates the active listening ports, and pushes the threat indicator into our ingestion pipeline.
+    \item \textbf{Inputs:} External threat intelligence feed configurations, API tokens, HTTP endpoints, query rate parameters, connection timeout configurations.
     \item \textbf{Outputs:} Standardized raw threat events JSON packets containing source attributes, raw timestamps, indicator categories, and adversary identification headers.
-    \item \textbf{Validation Criteria:} Continuous ingestion from all 9 sources must proceed without data blocking or feed starvation. If an external API goes offline or encounters temporary network congestion, the scraper must gracefully capture the error, log a detailed system warning, and schedule an exponential-backoff reconnect attempt ($T_{retry} = 2^n \times 1000\text{ms}$) up to a maximum threshold, preventing server thread lockups or continuous request flooding.
+    \item \textbf{Validation Criteria:} Continuous ingestion from all 9 sources must proceed without data blocking. If an external API goes offline, the scraper must capture the error, log a warning, and schedule a reconnect attempt after a brief delay, preventing server freeze.
 \end{itemize}
 
 \subsubsection{RF-2: Geolocation Enrichment Pipeline}
 \begin{itemize}
-    \item \textbf{Description \& Operational Context:} The backend must automatically resolve raw IPv4/IPv6 address indicators into precise geographic coordinates (Latitude, Longitude) and ISO country codes utilizing a high-speed geocoding library. Geolocating threat origins is critical for SOC teams to identify emerging regional attack corridors and apply geo-blocking policies. Simply knowing that an IP address is malicious is insufficient for strategic and tactical defense. Security analysts must understand the spatial distributions of cyberattacks to identify if their organization is being targeted by a localized regional campaign or if a specific threat actor group is utilizing staging servers in a particular jurisdiction. The geolocation pipeline must execute at high velocities. Because the live stream receives dozens of threat logs per second, resolving coordinates using external network queries (such as remote REST API calls) is impossible due to latency bottlenecks and strict vendor rate-limiting. The enrichment pipeline must therefore utilize an optimized local database memory mapping, converting IP blocks in sub-millisecond cycles.
-    \item \textbf{Use-Case Scenario:} An incoming exploit log from a Fortinet scraper lists the attacker IP \texttt{185.220.101.5}. The geocoder intercepts this address, searches the local IP-to-country B-tree memory block, and resolves the IP to Germany (DE) with decimal coordinates \texttt{51.2993, 9.491}.
+    \item \textbf{Description \& Operational Context:} The backend must automatically find the geographic locations (latitude, longitude, country) of IP addresses using a local geocoding library. Knowing where threats originate helps security teams identify regional attack trends. Because the live stream receives many events per second, resolving locations using online APIs would be too slow and subject to rate limits. Therefore, the geolocation process uses a local database for instant coordinate resolution.
+    \item \textbf{Use-Case Scenario:} An incoming exploit log lists the attacker IP \texttt{185.220.101.5}. The geocoder intercepts this address, searches the local IP-to-country database, and resolves the IP to Germany (DE) with coordinates \texttt{51.2993, 9.491}.
     \item \textbf{Inputs:} Raw IP address strings (IPv4 or IPv6 format) extracted from the threat events ingestion queue.
     \item \textbf{Outputs:} ISO two-letter country codes, geocoded Latitude and Longitude decimal coordinates, city name indicators (where available), and Autonomous System Number (ASN) details.
-    \item \textbf{Validation Criteria:} Coordinate resolution must execute in sub-millisecond latencies using local caching to avoid external API rate limits. Invalid, malformed, or private IP blocks (e.g. Loopbacks, \texttt{127.0.0.1}, \texttt{192.168.x.x}, or \texttt{10.x.x.x}) must be mapped to safe default fallback coordinates (typically centered in the Atlantic Ocean or the coordinate center $[0, 0]$) without raising system exceptions or halting the pipeline execution.
+    \item \textbf{Validation Criteria:} Coordinate resolution must execute in low latencies using local caching to avoid external API rate limits. Invalid or private IP blocks (e.g. \texttt{127.0.0.1}) must be mapped to safe default fallback coordinates without raising system exceptions or halting the pipeline execution.
 \end{itemize}
 
 \subsubsection{RF-3: Multi-Layer Sector Classification}
@@ -40,20 +38,20 @@ The platform must support the following nine functional requirements, structured
 
 \subsubsection{RF-4: Real-Time Server-Sent Events (SSE) Streaming}
 \begin{itemize}
-    \item \textbf{Description \& Operational Context:} The server must stream geocoded and classified threat events to connected browsers with sub-second latencies using a Server-Sent Events (SSE) feed, avoiding the overhead of heavy message brokers. This allows immediate dashboard updates without continuous REST polling. Traditional client-server architectures rely on HTTP polling, where the client browser repeatedly requests updates every few seconds. This polling method introduces severe latency delays and wastes massive network bandwidth. While WebSockets provide two-way real-time communication, they require complex protocol handshakes, custom framing, and suffer from firewall blocking in strict corporate environments. Server-Sent Events (SSE) represent the optimal compromise: they establish a lightweight, unidirectional, long-lived HTTP connection where the server can continuously push events to the client. This streaming pipeline must include an intermediate memory queue on the backend, buffering incoming threats and flushing them in coordinated batches to protect client-side rendering processes.
-    \item \textbf{Use-Case Scenario:} A new ransomware victim is indexed. The backend processes the event, enriches it with coordinates, queues it, and immediately flushes it down the open SSE connection, causing the analyst's map to pulsate.
-    \item \textbf{Inputs:} Enriched backend threat events from the processing pipeline, active client HTTP socket connections.
-    \item \textbf{Outputs:} Consolidating HTTP Server-Sent Events (SSE) stream payloads formatted as \texttt{text/event-stream} packets.
-    \item \textbf{Validation Criteria:} Updates must be consolidated and flushed at a coordinated 300ms interval to protect client browser rendering performance, preventing CPU thread locks from rapid single-event updates. The stream must maintain a 30-second keep-alive heartbeat to prevent reverse-proxy servers from prematurely closing idle connections.
+    \item \textbf{Description \& Operational Context:} The server streams geocoded threat events to browsers using a Server-Sent Events (SSE) connection, updating the dashboard instantly without constant polling. Traditional web updates require the browser to request data repeatedly, which is slow and wastes bandwidth. SSE establishes a direct, continuous connection where the server pushes new events to the client. The backend also includes a queue to group and batch incoming threats, ensuring smooth updates.
+    \item \textbf{Use-Case Scenario:} A new ransomware victim is indexed. The backend processes the event, enriches it with coordinates, queues it, and immediately flushes it down the open SSE connection, causing the analyst's map to update.
+    \item \textbf{Inputs:} Enriched backend threat events from the processing pipeline, active client HTTP connections.
+    \item \textbf{Outputs:} HTTP Server-Sent Events (SSE) stream payloads formatted as \texttt{text/}\allowbreak\texttt{event-stream}.
+    \item \textbf{Validation Criteria:} Updates must be grouped and flushed at a 300ms interval to protect client browser rendering performance, preventing browser lag from rapid updates. The stream must maintain a keep-alive heartbeat to prevent servers from closing the connection.
 \end{itemize}
 
 \subsubsection{RF-5: 3D WebGL Threat Map Visualizer}
 \begin{itemize}
-    \item \textbf{Description and Context:} The frontend must render a high-performance, interactive 3D procedural globe showing live attacks as animated great-circle bezier curves and pulsating impact markers, with support for a flat 2D Mercator projection toggle. A high-end visual environment helps SOC teams analyze spatial threat relations at a glance. In a high-pressure Security Operations Center (SOC), analysts are overwhelmed by tabular text logs, which leads to cognitive fatigue. A 3D visual threat map transforms complex spatial telemetry into an intuitive, real-time spatial experience. The map must allow seamless user interactions, including orbital rotations, zooming, and panning, and must support a toggle to project coordinates onto a flat 2D Mercator surface for specific geographical comparisons. To achieve high performance, the visualizer must leverage the GPU directly using WebGL and optimized vertex shaders.
-    \item \textbf{Use-Case Scenario:} An analyst mounts the dashboard. A 3D WebGL Earth loads in a black space background. Glowing fibers representing attacks arch from Germany to the US, showing the active threat vectors.
-    \item \textbf{Inputs:} 3D coordinate vectors, attack categories, severity colors, and time deltas retrieved from the Zustand state store.
-    \item \textbf{Outputs:} High-end, interactive procedural 3D visual Earth mesh in R3F Canvas with glowing arcs, pulsating impact markers, and country boundary lines.
-    \item \textbf{Validation Criteria:} Rendering frame rate must maintain a smooth 60fps under standard attack densities. If the client hardware is low-powered, the system must trigger adaptive visual scaling, limiting the active number of overlapping bezier arcs to prevent rendering lag.
+    \item \textbf{Description and Context:} The frontend displays an interactive 3D globe showing live attacks as animated curves and pulsating markers, with a toggle to switch to a flat 2D map. A visual threat map is easier to interpret than text logs. The map allows rotation, zooming, and panning. To ensure smooth performance, the visualizer uses hardware acceleration in the browser.
+    \item \textbf{Use-Case Scenario:} An analyst mounts the dashboard. A 3D Earth loads in a dark space background, displaying colored lines representing attack vectors between countries.
+    \item \textbf{Inputs:} 3D coordinate vectors, attack categories, and time deltas.
+    \item \textbf{Outputs:} Interactive 3D visual Earth mesh with glowing arcs, pulsating markers, and country boundary lines.
+    \item \textbf{Validation Criteria:} Rendering frame rate must maintain a smooth 60fps under standard attack densities. If the client hardware is low-powered, the system must reduce details to prevent lag.
 \end{itemize}
 
 \subsubsection{RF-6: STIX 2.1 Bundle Parser}
@@ -96,26 +94,24 @@ The platform must support the following nine functional requirements, structured
 To satisfy system reliability, performance, and aesthetic standards, five non-functional requirements were established:
 
 \begin{subsubsection}{RNF-1: High Frame-Rate and UI Fluidity}
-The 3D interactive globe must maintain a rendering frame-rate of 60 Frames Per Second (FPS) under normal conditions. The frontend must implement adaptive sampling, dynamically dropping events if rendering drops below 45 FPS to preserve orbit controls responsiveness. Because a laggy visual UI breaks the premium experience, we mandate a strict performance ceiling. The system must measure rendering deltas and drop the creation of visual WebGL objects (arcs and impact points) if client hardware lags, ensuring smooth navigation at all times.
+The 3D globe should run smoothly at 60 frames per second (FPS). The frontend must implement adaptive checks, dynamically reducing visual details if the frame rate drops, ensuring that map controls remain responsive.
 \end{subsubsection}
 
-\begin{subsubsection}{RNF-2: Minimal Memory Footprint (GC Protection)}
-The client-side dashboard must avoid memory leaks. The system must utilize optimized circular buffers (RingBuffer) with a maximum capacity of 10,000 events, avoiding garbage collection pressure and main-thread stutters. Traditional JavaScript array operations trigger frequent garbage collection cycles that pause the browser execution thread. The custom circular buffer pre-allocates a static array structure, overriding elements in-place and keeping the memory usage flat.
+\begin{subsubsection}{RNF-2: Minimal Memory Footprint}
+The client dashboard must manage memory efficiently. The system uses a circular buffer with a maximum capacity of 10,000 events to store data. This buffer overrides old events in-place, keeping memory usage constant and avoiding performance stutters.
 \end{subsubsection}
 
 \begin{subsubsection}{RNF-3: Self-Cleaning Storage \& Time-To-Live (TTL)}
-The MongoDB database growth must be bounded. Old threat records must automatically expire and prune from the database after a 30-day Time-To-Live (TTL) interval using automated indexing, avoiding billing overages on free cloud database tiers. Because our scrapers process thousands of records daily, unbounded growth would rapidly consume storage quotas. The database layer must enforce self-cleaning behaviors.
+The database growth must be bounded. Old threat records must automatically expire and prune from the database after a 30-day Time-To-Live (TTL) interval, avoiding billing overages on free cloud database tiers.
 \end{subsubsection}
 
 \begin{subsubsection}{RNF-4: Database Storage Quota Guard}
-The backend must monitor MongoDB collection sizes. If storage space exceeds 500 MB (protecting free cloud database tiers), the server must automatically disable database writes and fall back to volatile in-memory streaming, notifying administrators. This requirement acts as a fail-safe mechanism, protecting deployment infrastructure from crash failures caused by storage exhaustion.
+The backend monitors the database collection size. If database storage exceeds 500 MB, the server automatically stops database writes and switches to in-memory streaming to prevent database errors.
 \end{subsubsection}
 
-\begin{subsubsection}{RNF-5: Premium Glassmorphism UI Theme}
-The interface must implement a high-end, responsive dark theme design, utilizing glassmorphism visual tokens (blur, borders, translucent backgrounds) and neon-HSL severity colors (red for exploits, amber for malwares, blue for phishing), ensuring visual premium aesthetics and reducing investigator fatigue. The visual theme must look modern, clean, and state-of-the-art, projecting a futuristic command-center atmosphere.
+\begin{subsubsection}{RNF-5: Glassmorphism UI Theme}
+The interface implements a modern dark theme design, utilizing semi-transparent panel styles and colors based on threat severity, which reduces eye strain and provides a clean visual workspace.
 \end{subsubsection}
-
----
 
 \section{System Needs Modeling}
 To define the system boundary, we identified the primary actors and modeled their interactions with the global platform using a UML Use Case diagram.
@@ -130,7 +126,7 @@ We identified two main actors interacting with our system:
 \subsection{Global Use Case Diagram}
 The global interactions are illustrated in the UML Use Case diagram in Figure~\ref{fig:global_usecase}.
 
-\begin{figure}[htbp]
+\begin{figure}[H]
 \centering
 \includegraphics[width=\textwidth,height=0.85\textheight,keepaspectratio]{assets/global_usecase.png}
 \caption{UML Global Use Case diagram for the Predictra CTI platform.}
@@ -139,13 +135,16 @@ The global interactions are illustrated in the UML Use Case diagram in Figure~\r
 
 The specific functional workflows of these use cases are summarized in Table~\ref{tab:global_uc_desc}.
 
-\begin{table}[htbp]
+\begin{table}[H]
 \centering
 \small
-\begin{tabular}{>{\raggedright\arraybackslash}p{3.2cm}>{\raggedright\arraybackslash}p{3.5cm}>{\raggedright\arraybackslash}p{7.3cm}}
-\toprule
-\textbf{Base Use Case} & \textbf{Included / Extending} & \textbf{Main Workflow \& Interaction Details} \\
-\midrule
+\arrayrulecolor{charcoal!30}
+\rowcolors{2}{cyberblue!5}{white}
+\begin{tabularx}{\textwidth}{>{\raggedright\arraybackslash}p{3.2cm}>{\raggedright\arraybackslash}p{3.5cm}X}
+\hline
+\rowcolor{charcoal}
+\thc{Base Use Case} & \thc{Included / Extending} & \thc{Main Workflow \& Interaction Details} \\
+\hline
 View Live Map &
 \textbf{Includes:} Stream Live Events, Render 3D Globe \newline
 \textbf{Extends:} Toggle 2D/3D Projection, Configure Map, Inspect Metadata &
@@ -170,13 +169,13 @@ Manage STIX Intel &
 \textbf{Includes:} Parse STIX 2.1 \newline
 \textbf{Extends:} Upload STIX, Map MITRE &
 Security Analyst mounts the STIX 2.1 analysis environment. The analyst uploads a JSON bundle, parsed client-side. The frontend maps adversary patterns into the 12 phases of the MITRE ATT\&CK Cyber Kill Chain. \\
-\bottomrule
-\end{tabular}
+\hline
+\end{tabularx}
 \caption{Detailed descriptions of the global primary use cases and their relationships.}
 \label{tab:global_uc_desc}
 \end{table}
 
----
+\clearpage
 
 \section{Project Management with Scrum}
 As described in Chapter 1, we implemented the Agile Scrum methodology to pilot the design and realization.
@@ -191,9 +190,9 @@ The features requested by the Product Owner were broken down into four distinct 
 \end{itemize}
 
 \subsection{Previsional Gantt Chart}
-Our chronological sprint schedule is modeled in Figure~\ref{fig:gantt_chart} using a native LaTeX TikZ timeline chart.
+Our chronological sprint schedule is modeled in Figure~\ref{fig:gantt_chart} using a timeline chart.
 
-\begin{figure}[htbp]
+\begin{figure}[H]
 \centering
 \begin{tikzpicture}[x=0.95cm, y=0.85cm]
 
@@ -293,8 +292,6 @@ Our chronological sprint schedule is modeled in Figure~\ref{fig:gantt_chart} usi
 \label{fig:gantt_chart}
 \end{figure}
 
----
-
 \section{Work Environment}
 To support development and testing, we established a standardized hardware and software environment.
 
@@ -316,66 +313,55 @@ To support development and testing, we established a standardized hardware and s
 The selection of our development stack was not arbitrary; it was the result of a rigorous architectural evaluation designed to balance the competing demands of high-throughput backend data harvesting and ultra-smooth, lightweight frontend WebGL rendering. Every framework and language was scrutinized against standard industry alternatives to ensure optimal resource efficiency.
 
 \subsubsection{Core Languages: Type Safety vs. Volatile Scripting}
-For our backend orchestration, we utilized **JavaScript (ECMAScript 6+)** running in the CommonJS module system. JavaScript's dynamic, weakly-typed nature is highly advantageous in ingestion layers where threat APIs return volatile, unstructured JSON formats with varying properties. However, on the client-side presentation layer, this lack of structure becomes a major liability. Managing complex 3D rendering canvases, orbital projection math, and nested STIX relationship structures requires absolute structural guarantees. 
-
-We therefore implemented **TypeScript (v5.x)** on the React frontend. TypeScript acts as a compile-time static type-checker, wrapping our components, state stores, and spatial geocoding utilities in strict interfaces. This prevents standard runtime exceptions (such as the infamous \texttt{"Cannot read property of undefined"}) which would immediately crash the WebGL canvas, freeze the browser thread, or break rendering cycles. TypeScript's interfaces guarantee that coordinate inputs, sector variables, and severity codes are strictly validated before they enter the React component lifecycle, ensuring system robustness.
+For backend development, we used JavaScript to handle the incoming data formats which can vary in structure. On the client side, we implemented TypeScript to provide structure and type-checking, preventing runtime errors that could crash the interface.
 
 \subsubsection{Backend Environment: Node.js/Express vs. Java Spring Boot / Go}
-A fundamental architectural decision was selecting **Node.js LTS (v20)** with **Express 5** as our primary application runtime instead of heavy enterprise environments like Java Spring Boot or highly concurrent compiled languages like Golang:
+We selected Node.js with Express instead of heavy enterprise environments like Java Spring Boot or Go:
 \begin{itemize}
-    \item \textbf{The Java Spring Boot Critique:} Java Spring is designed for heavy, multi-threaded enterprise transaction systems. It assigns a dedicated OS-level execution thread to every incoming client connection (the Thread-Per-Request model). In our CTI platform, we maintain long-lived, unidirectional Server-Sent Events (SSE) connections to thousands of analyst browsers. In a Java Spring architecture, keeping thousands of HTTP connections open simultaneously would consume massive server memory, forcing the OS to perform continuous CPU context-switching, leading to severe resource starvation and latency spikes.
-    \item \textbf{The Golang Critique:} While Go's lightweight routines (Goroutines) and compiled speed are outstanding for network systems, building a complex geocoding, classification, and BSON database mapping pipeline in Go requires writing low-level boilerplate code. It also lacks mature libraries for direct STIX parsing, TopoJSON line projections, and rapid BSON conversions.
-    \item \textbf{The Node.js Resolution:} Node.js utilizes a single-threaded, non-blocking Event Loop driven by the libuv library to handle asynchronous I/O operations. When scrapers query external REST feeds or clients establish SSE channels, Node.js registers the socket handles with the operating system kernel and immediately resumes execution. It does not spawn heavy OS threads or block execution. This asynchronous model allows Node.js to manage thousands of parallel, idle SSE connections with a minimal memory footprint (often under 80 MB for the entire server process), ensuring maximum horizontal scalability.
+    \item \textbf{Comparison with Spring Boot:} Spring Boot allocates substantial server resources for each connection. In our case, where we maintain continuous connections for streaming threat data, this would consume significant memory.
+    \item \textbf{Comparison with Go:} While Go is fast, Node.js provides a large ecosystem of libraries for database mapping, geocoding, and REST requests, allowing faster development.
+    \item \textbf{Node.js Advantages:} Node.js is designed to handle thousands of concurrent client connections efficiently under a low memory footprint, making it ideal for streaming threat feeds in real-time.
 \end{itemize}
 
 \subsubsection{Frontend Engine: React 19 \& Vite 7 vs. Webpack / Next.js}
-For the client-side interface, we implemented **React 19** bundled with **Vite 7** instead of traditional bundle frameworks or server-side rendering (SSR) environments:
+For the client-side interface, we used React with Vite instead of Webpack or Next.js:
 \begin{itemize}
-    \item \textbf{SSR Next.js Assessment:} While Next.js is highly optimized for SEO and content delivery, it is unsuitable for real-time dashboards that rely on heavy client-side Canvas operations and continuous live streaming data. In a threat map application, 100\% of the data must be updated and rendered dynamically in the browser, making Next.js's server-rendering mechanisms redundant and introducing unnecessary node server overhead.
-    \item \textbf{Vite vs. Webpack Compilation:} Webpack builds the complete dependency graph and compiles all assets before mounting the development server, resulting in slow startup times (often exceeding 30 seconds for large applications) and sluggish Hot Module Replacement (HMR) updates. Vite bypasses this bottleneck by serving source code over native ES Modules (ESM) and leveraging esbuild (written in Go) to perform pre-bundling. This provides near-instantaneous server starts and millisecond HMR updates during development.
+    \item \textbf{Next.js:} Next.js is optimized for page pre-rendering and SEO, which is not needed for a real-time visual application where all data updates dynamically in the browser.
+    \item \textbf{Vite vs. Webpack:} Webpack compiles all assets before starting, which is slow. Vite compiles code on-demand, providing faster startup times and quicker updates during development.
 \end{itemize}
 
 \subsubsection{3D Graphics: Three.js and React Three Fiber (R3F)}
-Rendering a 3D Earth globe with thousands of vector lines and glowing arcs in standard HTML5 DOM elements is impossible due to the performance bottlenecks of browser document structures. We therefore utilized **Three.js**, the industry-standard WebGL abstraction wrapper. 
-
-Rather than writing imperative Three.js code (which is difficult to maintain and integrate with React's unidirectional state flows), we orchestrated our 3D canvas using **React Three Fiber (R3F)** and **React Three Drei**. R3F allows building declarative Three.js scenes, meshes, and materials using standard React JSX syntax. R3F compiles these components into highly optimized WebGL rendering loops, handling resize listeners, camera projections, and orbital user controls natively while keeping the developer experience clean.
+To display the 3D globe with many overlapping lines and markers, we used Three.js via React Three Fiber (R3F). R3F allows building 3D meshes using React components, handling resizing and camera controls automatically while keeping the performance high.
 
 \subsubsection{State Management: Zustand 5 vs. Redux Toolkit}
-Managing the state of our CTI stream is a critical performance junction. Incoming threat events must be captured, geocoded, pushed into memory arrays, and rendered on the 3D globe in real-time. We chose **Zustand 5** over **Redux Toolkit**:
-\begin{itemize}
-    \item \textbf{The Redux Toolkit Bottleneck:} Redux relies on a single global state tree and drives updates through reducer functions. When a state change occurs, Redux triggers a full render pass across all connected components in the DOM tree unless complex selectors are written. When threat streams are injecting 50+ events per second, Redux's state dispatching logic causes continuous, blocking CPU re-renders, dropping the frame rate of the 3D canvas down to 15 FPS.
-    \item \textbf{The Zustand Resolution:} Zustand is a lightweight, slice-based state manager that operates outside of the React render cycle. Zustand allows components to establish transient, slice-based subscriptions. This means that when a new attack arc is added to our list, Zustand updates the underlying data array and directly notifies our WebGL rendering mesh, completely bypassing React's virtual DOM reconciliation. This direct, reactive subscription model preserves our smooth 60 FPS visual performance.
-\end{itemize}
+To manage real-time threat data in the browser, we chose Zustand over Redux Toolkit. Redux triggers full-page render updates, which slows down performance when receiving multiple events per second. Zustand allows direct updates to the 3D canvas components, keeping the interface smooth.
 
 \subsubsection{Data Persistence: MongoDB Atlas BSON vs. SQL Relational Databases}
-For our long-term persistence layer, we utilized **MongoDB Atlas** and **Mongoose 8** instead of relational systems like PostgreSQL or MySQL:
-\begin{itemize}
-    \item \textbf{The Relational Database Rigidness:} Cyber threat indicators from external scrapers are highly heterogeneous. A Fortinet log might contain an attack signature and destination port; an AlienVault pulse provides CVE indices and IP hashes; a RansomWatch item provides extortion details and actor descriptions. In a relational database, accommodating these differing threat structures would require complex, multi-table joins or frequent, hazardous database schema migrations (\texttt{ALTER TABLE}) that lock active database systems.
-    \item \textbf{The MongoDB BSON Suitability:} MongoDB persists data as Binary JSON (BSON) documents. This schemaless format allows the ingestion pipeline to write threat documents with varying fields into a single unified collection without rigid table constraints. Mongoose 8 adds validation schemas, middleware hooks, and simple index management. This schema flexibility allows us to easily integrate new scrapers and data points in minutes, ensuring horizontal scalability.
-\end{itemize}
+For database storage, we utilized MongoDB instead of relational databases like PostgreSQL or MySQL. Relational databases require rigid table structures, which is difficult because threat data from different scrapers contains different fields. MongoDB allows storing flexible document structures, making it easier to integrate new feeds.
 
 \subsubsection{Technology Stack Comparative Summary Matrix}
 To formalize the architectural rationale behind our technology choices, a detailed comparison matrix evaluating our selected stack against traditional enterprise alternatives is presented in Table~\ref{tab:tech_stack_comparison}.
 
-\begin{table}[htbp]
+\begin{table}[H]
 \centering
 \small
-\begin{tabular}{>{\raggedright\arraybackslash}p{2.2cm}>{\raggedright\arraybackslash}p{2.5cm}>{\raggedright\arraybackslash}p{2.5cm}>{\raggedright\arraybackslash}p{6.8cm}}
-\toprule
-\textbf{Layer / Component} & \textbf{Selected Technology} & \textbf{Traditional Alternative} & \textbf{Architectural Rationale for Selection} \\
-\midrule
+\arrayrulecolor{charcoal!30}
+\rowcolors{2}{cyberblue!5}{white}
+\begin{tabularx}{\textwidth}{>{\raggedright\arraybackslash}p{2.2cm}>{\raggedright\arraybackslash}p{2.5cm}>{\raggedright\arraybackslash}p{2.5cm}X}
+\hline
+\rowcolor{charcoal}
+\thc{Layer / Component} & \thc{Selected Technology} & \thc{Traditional Alternative} & \thc{Architectural Rationale for Selection} \\
+\hline
 \textbf{Runtime Engine} & Node.js LTS (v20) \& Express 5 & Java Spring Boot & Asynchronous non-blocking event-driven loop vs heavy Thread-per-Request. Scalable for open SSE streams under low memory. \\
 \textbf{State Management} & Zustand 5 & Redux Toolkit & Slice-based reactive updates outside React DOM rendering vs full-tree dispatches. Essential for preserving 60fps WebGL rendering. \\
 \textbf{Graphics Engine} & Three.js \& React Three Fiber & Vanilla HTML5 Canvas & Declarative component composition, GPU acceleration, SLERP math, and custom GLSL vertex/fragment shaders. \\
 \textbf{Client Build Tool} & React 19 \& Vite 7 & Angular \& Webpack & Native ESM during dev, instant startup, fast HMR updates vs slow dependency pre-compilation graphs. \\
 \textbf{Data Persistence} & MongoDB Atlas (BSON) & PostgreSQL / MySQL & Dynamic schemaless BSON documents for heterogeneous CTI logs vs rigid relational tables requiring heavy migrations. \\
-\bottomrule
-\end{tabular}
+\hline
+\end{tabularx}
 \caption{Comprehensive architectural comparison of selected vs alternative technologies.}
 \label{tab:tech_stack_comparison}
 \end{table}
-
----
 
 \section{Architectural Design}
 To guarantee maximum horizontal scalability and system responsiveness under high threat ingestions, we adopted a clean, modular multi-tier architecture.
@@ -384,28 +370,31 @@ To guarantee maximum horizontal scalability and system responsiveness under high
 The system deployment model is structured into three cloud layers:
 \begin{enumerate}
     \item \textbf{Frontend Layer (Vercel CDN):} The single-page application is hosted on Vercel's global Content Delivery Network. The configuration file `vercel.json` intercepts client requests and handles API proxy rewrites directly, as summarized in Table~\ref{tab:vercel_proxy} (with the full production configuration file detailed in Appendix D.1).
-
-    \begin{table}[htbp]
-    \centering
-    \small
-    \begin{tabular}{ll}
-    \toprule
-    \textbf{Source Match Rule} & \textbf{Target VM Service Endpoint} \\
-    \midrule
-    \texttt{/api/:path*} & \texttt{http://api:3001/api/:path*} \\
-    \bottomrule
-    \end{tabular}
-    \caption{Frontend Reverse-Proxy Routing Configuration.}
-    \label{tab:vercel_proxy}
-    \end{table}
     \item \textbf{Backend Layer (Virtual Cloud VM):} The Node.js Express server runs as a continuous service managed by PM2 on a secure virtual instance. PM2 clusters the Node process across multiple virtual CPU cores, routing client requests and handling automated crash recoveries.
     \item \textbf{Database Layer (MongoDB Atlas Cluster):} persistence is offloaded to a replicated MongoDB Atlas cloud cluster, handling scalable BSON document writes.
 \end{enumerate}
 
+\begin{table}[H]
+\centering
+\small
+\arrayrulecolor{charcoal!30}
+\rowcolors{2}{cyberblue!5}{white}
+\begin{tabular}{ll}
+\hline
+\rowcolor{charcoal}
+\thc{Source Match Rule} & \thc{Target VM Service Endpoint} \\
+\hline
+\texttt{/api/:path*} & \texttt{http://api:3001/api/:path*} \\
+\hline
+\end{tabular}
+\caption{Frontend Reverse-Proxy Routing Configuration.}
+\label{tab:vercel_proxy}
+\end{table}
+
 \subsection{System Package Component Architecture}
 To ensure clean separation of concerns, our physical system is organized into decoupled modules, as illustrated in the UML Component diagram in Figure~\ref{fig:component_diagram}.
 
-\begin{figure}[htbp]
+\begin{figure}[H]
 \centering
 \includegraphics[width=0.95\textwidth]{assets/component_diagram.png}
 \caption{UML Component diagram of the Predictra CTI system.}
@@ -413,9 +402,9 @@ To ensure clean separation of concerns, our physical system is organized into de
 \end{figure}
 
 \subsection{Application Logical Architecture}
-The Predictra Threat Map's internal logic is partitioned into 4 distinct tiers, as illustrated in the TikZ logical architecture diagram in Figure~\ref{fig:logical_architecture}.
+The Predictra Threat Map's internal logic is partitioned into 4 distinct tiers, as illustrated in the logical architecture diagram in Figure~\ref{fig:logical_architecture}.
 
-\begin{figure}[htbp]
+\begin{figure}[H]
 \centering
 \includegraphics[width=0.95\textwidth]{assets/multi_tier_architecture.png}
 \caption{Predictra platform multi-tier layered application architecture.}
@@ -431,7 +420,7 @@ This multi-tier structure enforces strict data-flow boundaries:
 \subsection{Global Class Diagram}
 To model the static structure of the Predictra CTI system, we designed a Global Class Diagram that illustrates the key logical modules, their core attributes, operational methods, and structural relationships. The diagram is illustrated in Figure~\ref{fig:global_class_diagram}.
 
-\begin{figure}[htbp]
+\begin{figure}[H]
 \centering
 \includegraphics[width=0.95\textwidth]{assets/global_class_diagram.png}
 \caption{UML Global Class diagram of the Predictra CTI system.}
@@ -444,8 +433,6 @@ The structural design modeled in Figure~\ref{fig:global_class_diagram} highlight
     \item \texttt{Zustand Store} and performance utilities: The client-side \texttt{useStreamStore} acts as a real-time reactive state manager. To handle incoming threat stream data without memory leaks or high garbage collection cycles, the store encapsulates a circular \texttt{RingBuffer} class structure and tracks performance through the custom instrumented \texttt{perfTelemetry} class.
     \item \textbf{React Views Tier:} React pages and tab elements represent the core view controllers. The \texttt{DashboardPage}, \texttt{HistoryPage}, \texttt{AnalyticsPage}, \texttt{StixDashboard}, and \texttt{CountryDashboard} subscribe to the Zustand store state slices and bind to specific endpoints (like \texttt{/api/history} and \texttt{/api/stats}) to drive layout changes and charts.
 \end{itemize}
-
----
 
 \section{Conclusion}
 This chapter established the complete blueprints of our CTI platform. Having documented the functional/non-functional specifications, structured the Scrum timelines, cataloged our dev environment, and detailed our layered deployment and application logical architectures, we proceed to Chapter 3 to document the deep implementation details and UML structures of our first Release.
