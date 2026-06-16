@@ -1,0 +1,477 @@
+\documentclass[11pt,a4paper]{report}
+
+% --- Packages ---
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{geometry}
+\geometry{left=2.5cm, right=2.5cm, top=2.5cm, bottom=2.5cm}
+\usepackage{xcolor}
+\usepackage{hyperref}
+\usepackage{listings}
+\usepackage[many]{tcolorbox}
+\usepackage{booktabs}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{fancyhdr}
+\usepackage{titlesec}
+\usepackage{float}
+\usepackage{longtable}
+
+% --- Color Palette (Modern, Sleek, High-Contrast) ---
+\definecolor{primary}{HTML}{0F172A}    % Slate 900
+\definecolor{secondary}{HTML}{0D9488}  % Teal 600
+\definecolor{accent}{HTML}{D97706}     % Amber 600
+\definecolor{lightbg}{HTML}{F8FAFC}    % Slate 50
+\definecolor{darkgray}{HTML}{334155}   % Slate 700
+\definecolor{boxborder}{HTML}{E2E8F0}  % Slate 200
+
+% --- Typography & Spacing ---
+\usepackage{lmodern}
+\linespread{1.15}
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{6pt}
+
+% --- Headers & Footers ---
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\textcolor{darkgray}{\bfseries Predictra Frontend \& Fullstack Guide}}
+\fancyhead[R]{\textcolor{darkgray}{\leftmark}}
+\fancyfoot[C]{\textcolor{darkgray}{\thepage}}
+\renewcommand{\headrulewidth}{0.5pt}
+
+% --- Custom Titles ---
+\titleformat{\chapter}[display]
+  {\normalfont\huge\bfseries\color{primary}}
+  {\chaptertitlename\ \thechapter}{20pt}{\Huge}
+\titleformat{\section}
+  {\normalfont\large\bfseries\color{secondary}}
+  {\thesection}{1em}{}
+
+% --- Code Listing Config ---
+\lstdefinelanguage{TypeScript}{
+  keywords={break, case, catch, continue, debugger, default, delete, do, else, false, finally, for, function, if, in, instanceof, new, null, return, switch, this, throw, true, try, typeof, var, void, while, with, const, let, class, export, import, require, module, interface, type, extends, implements, readonly, async, await, from, default, as, return},
+  morecomment=[l]{//},
+  morecomment=[s]{/*}{*/},
+  morestring=[b]',
+  morestring=[b]"
+}
+
+\lstset{
+  basicstyle=\ttfamily\small,
+  breaklines=true,
+  backgroundcolor=\color{lightbg},
+  frame=single,
+  rulecolor=\color{boxborder},
+  keywordstyle=\color{blue},
+  commentstyle=\color{gray},
+  stringstyle=\color{teal},
+  showstringspaces=false,
+  numbers=left,
+  numberstyle=\tiny\color{gray},
+  stepnumber=1,
+  numbersep=5pt
+}
+
+% --- Custom tcolorbox Templates ---
+\newtcolorbox{memoryanchor}[2][]{
+  enhanced,
+  colback=lightbg,
+  colframe=secondary,
+  arc=5pt,
+  fonttitle=\bfseries\color{white},
+  title={\textsf{Memory Anchor: #2}},
+  attach boxed title to top left={yshift=-2mm, xshift=4mm},
+  boxed title style={colback=secondary},
+  #1
+}
+
+\newtcolorbox{deepdive}[2][]{
+  enhanced,
+  colback=white,
+  colframe=primary,
+  arc=5pt,
+  fonttitle=\bfseries\color{white},
+  title={\textsf{Deep Dive: #2}},
+  attach boxed title to top left={yshift=-2mm, xshift=4mm},
+  boxed title style={colback=primary},
+  #1
+}
+
+\newtcolorbox{activerecall}[2][]{
+  enhanced,
+  colback=lightbg,
+  colframe=accent,
+  arc=5pt,
+  fonttitle=\bfseries\color{white},
+  title={\textsf{Active Recall Challenge: #2}},
+  attach boxed title to top left={yshift=-2mm, xshift=4mm},
+  boxed title style={colback=accent},
+  #1
+}
+
+% --- Hyperref Setup ---
+\hypersetup{
+  colorlinks=true,
+  linkcolor=secondary,
+  urlcolor=secondary,
+  citecolor=secondary,
+  pdftitle={Predictra Threat Map Frontend Guide},
+  pdfauthor={Predictra Team}
+}
+
+\begin{document}
+
+% =============================================================================
+% TITLE PAGE
+% =============================================================================
+\begin{titlepage}
+  \centering
+  \vspace*{2cm}
+  {\Huge \bfseries \color{primary} Predictra Threat Map Frontend} \\[0.5cm]
+  {\Large \bfseries \color{secondary} Fullstack Synapse \& Interactive Visual Guide} \\[1.5cm]
+  
+  \rule{\textwidth}{1pt} \\[1.5cm]
+  
+  \begin{minipage}{0.8\textwidth}
+    \centering
+    \large \textcolor{darkgray}{
+      This comprehensive guide details the frontend architecture, performance throttles, 3D graphics rendering, and fullstack connection mechanisms of the Predictra Cyber Threat Map. It contains an intensive bank of 25 active recall questions to ensure complete structural comprehension and technical memory consolidation.
+    }
+  \end{minipage} \\[1.5cm]
+  
+  \rule{\textwidth}{1pt} \\[2cm]
+  
+  {\large \bfseries React + TypeScript + Three.js + Zustand + Express + MongoDB} \\[0.2cm]
+  {\large June 2026}
+  
+  \vfill
+\end{titlepage}
+
+\tableofcontents
+\newpage
+
+% =============================================================================
+% CHAPTER 1: THE VISUAL SYNAPSE
+% =============================================================================
+\chapter{The Frontend Interface (The Sensory Display)}
+
+While the backend processes threat telemetry, the frontend renders it. The frontend is built as a single-page application (SPA) using React, TypeScript, and Vite. Its core mission is to render cyber events in a way that provides instant situational awareness.
+
+\section{The Core Tech Stack}
+The visualizer runs on four main pillars:
+\begin{enumerate}
+  \item \textbf{React (v19.2) \& TypeScript:} Core engine and type-safe component hierarchy.
+  \item \textbf{React Three Fiber (R3F) \& Drei (v10.7):} Declaring Three.js WebGL scenes in React syntax.
+  \item \textbf{Zustand (v5.0):} The lightweight, fast state manager that processes real-time event updates and runs the UI thread.
+  \item \textbf{D3 (d3-force, d3-shape):} Math utilities for complex geometry computations.
+\end{enumerate}
+
+\section{The Interface Views}
+The application supports six interface views, switched dynamically via the sidebar:
+\begin{itemize}
+  \item \textbf{Map View (\texttt{'map'}):} Renders the full 3D Earth globe with attack arcs flying from origin to target. Includes HUD overlays with live threat gauges, system statuses, sparklines, and active alerts.
+  \item \textbf{Dashboard View (\texttt{'dashboard'}):} An alternative flat panel showing structured summaries: attack types distribution, top vectors, primary target countries, major origin locations, and attack corridors. Uses a stylized SVG world map background with scanline overlays.
+  \item \textbf{History View (\texttt{'history'}):} A tabular log browser containing a searchable list of database records. Supports regex search querying against target IPs, source IPs, CVEs, or tags.
+  \item \textbf{Country Focus View (\texttt{'country'}):} Displays a dedicated hologram panel focusing on a single nation's threat vectors, active origins, and target corridors.
+  \item \textbf{Analytics View (\texttt{'analytics'}):} Aggregates historic databases into heatmaps, timeline charts, and sector matrix tables.
+  \item \textbf{STIX Dashboard (\texttt{'stix'}):} Processes and displays standard STIX JSON threat bundles (e.g., CISA reports, Ivanti exploits), mapping indicators to the MITRE ATT\&CK Kill Chain.
+\end{itemize}
+
+\begin{memoryanchor}{The Display Metaphor}
+  Think of the UI as a **Tactical Hologram Table**. Instead of simple data lists, it is a cockpit: Map view is the 3D map, Dashboard is the radar console, History is the archive logs, and STIX is the adversary intelligence folder.
+\end{memoryanchor}
+
+\begin{activerecall}{UI Views Inventory}
+  1. Name all 6 views available in the Predictra interface.
+  2. What is the fundamental difference in rendering layout between the \texttt{'map'} view and the \texttt{'dashboard'} view?
+\end{activerecall}
+
+\newpage
+
+% =============================================================================
+% CHAPTER 2: THE STATE ENGINE
+% =============================================================================
+\chapter{State Management \& Event Ingestion}
+
+At the core of the frontend is \texttt{src/stream/useStreamStore.ts}. This is a Zustand store that handles the Server-Sent Events (SSE) feed, maintains threat queues, tracks system metrics, and coordinates UI transitions.
+
+\section{State Variables \& Data Models}
+The store tracks:
+\begin{itemize}
+  \item \texttt{status}: SSE connection state (\texttt{'disconnected'}, \texttt{'reconnecting'}, \texttt{'live'}).
+  \item \texttt{arcs[] \& markers[]}: Active graphical objects rendered on the 3D canvas.
+  \item \texttt{eventBuffer}: A custom circular ring-buffer (\texttt{RingBuffer}) that stores up to 10,000 events in memory for fast history retrieval.
+  \item \texttt{typeDistribution, originDistribution, targetDistribution}: Cached counters of threat characteristics, avoiding database queries on every click.
+  \item \texttt{trendData[]}: An array of 60 buckets tracking threats in 10-second intervals to render trend sparklines.
+\end{itemize}
+
+\section{The SSE Connection Pipeline}
+When the store initializes via \texttt{initStream()}, it instantiates an \texttt{EventSource} connection to the backend endpoint (defaults to \texttt{/api/feed}):
+\begin{lstlisting}[language=TypeScript]
+eventSource = new EventSource(apiUrl);
+eventSource.addEventListener('attacks', (e: MessageEvent) => {
+  const batch = JSON.parse(e.data);
+  if (!Array.isArray(batch)) return;
+  const validEvents = [];
+  for (const data of batch) {
+    if (!data.a_t || data.s_la === undefined || data.d_la === undefined) continue;
+    validEvents.push({
+      id: fastId(),
+      a_c: data.a_c || 1,
+      a_n: String(data.a_n).slice(0, 200),
+      a_t: data.a_t,
+      s_co: data.s_co, s_la: Number(data.s_la), s_lo: Number(data.s_lo),
+      d_co: data.d_co, d_la: Number(data.d_la), d_lo: Number(data.d_lo),
+      s_ip: data.s_ip, d_ip: data.d_ip,
+      source_api: data.source_api,
+      ts: new Date().toISOString(),
+      meta: data.meta || {}
+    });
+  }
+  if (validEvents.length > 0) get().addEvents(validEvents);
+});
+\end{lstlisting}
+
+\section{Exponential Reconnection Backoff}
+If the backend crashes or restart occurs, the store protects the network by avoiding immediate reconnections. If connection fails, it triggers a retry with exponential backoff:
+\begin{lstlisting}[language=TypeScript]
+// Backoff with Jitter
+const jitter = Math.random() * 1000;
+setTimeout(connect, reconnectDelay + jitter);
+reconnectDelay = Math.min(reconnectDelay * 2, 30000);
+\end{lstlisting}
+The delay starts at 1,000ms, doubles on every failure (up to a 30-second cap), and adds a randomized jitter offset. This prevents "connection swarms" when the server recovers.
+
+\begin{activerecall}{Connection \& Event Loop}
+  1. What is the role of \texttt{RingBuffer} in \texttt{useStreamStore}? Why use it instead of a standard array?
+  2. Explain what exponential backoff with jitter is and why it is used in the frontend stream connector.
+\end{activerecall}
+
+\newpage
+
+% =============================================================================
+% CHAPTER 3: GRAPHICS PERFORMANCE
+% =============================================================================
+\chapter{Visual Performance Optimizations}
+
+Rendering hundreds of flying lines and flashing markers in WebGL in real-time is computationally demanding. Without optimization, frame rates would drop below 15 FPS, causing visual lag. Predictra implements three performance optimizations:
+
+\section{1. Dynamic Adaptive Sampling (FPS Guard)}
+The store monitors the client's actual frame rate using a custom telemetry class \texttt{perfTelemetry}. When adding new threat events to the map, it dynamically drops visual elements if performance degrades:
+\begin{lstlisting}[language=TypeScript]
+const fps = perfTelemetry.stats.fps;
+let visualEvents = events;
+if (fps < 30) {
+  visualEvents = events.filter((_, i) => i % 3 === 0); // Keep only 33% of arcs
+} else if (fps < 45) {
+  visualEvents = events.filter((_, i) => i % 2 === 0); // Keep only 50% of arcs
+}
+\end{lstlisting}
+If the machine lags (FPS < 30), the store filters out two-thirds of the graphical arcs. This keeps the animation smooth while retaining accurate statistical counting (the counters in Zustand still increment by the true, unfiltered amount).
+
+\section{2. Staged Batch Throttling}
+To prevent React from re-rendering the UI dozens of times per second, the store separates high-frequency event updates from state commits:
+\begin{itemize}
+  \item \textbf{Recent Event Updates:} Throttled to a maximum of one commit every 500ms.
+  \item \textbf{Analytics Matrix Re-calculations:} Accumulated in temporary global variables (e.g. \texttt{pendingType}, \texttt{pendingOrigin}) and flushed to React state only once per second.
+\end{itemize}
+
+\section{3. Hard Visual Limits}
+Graphical objects are hard-capped in size to prevent GPU memory bloat:
+\begin{itemize}
+  \item \texttt{MAX\_ARCS = 150} (maximum simultaneous flying curves).
+  \item \texttt{MAX\_MARKERS = 300} (maximum simultaneous flashing impact markers).
+\end{itemize}
+Once these thresholds are reached, oldest visual elements are deleted immediately.
+
+\section{4. Geometry Calculations: The Arc Path}
+The 3D arc path between coordinates is generated in \texttt{src/utils/geo.ts} using spherical interpolation (Slerp) combined with a parabolic elevation equation:
+\begin{equation}
+  \text{Elevation}(t) = \sin(t \cdot \pi) \cdot \text{maxArcHeight}
+\end{equation}
+As progress ($t$) goes from $0$ to $1$, the elevation follows a sine curve, peaking at $t=0.5$. This creates the curved trajectory above the Earth's surface.
+
+\begin{activerecall}{Optimization Analysis}
+  1. What happens to visual arc rendering when the client FPS drops to 25? What happens to the total threat counters?
+  2. Why are analytics calculations throttled to a 1-second interval?
+  3. Write down the equation used to calculate arc elevation at a given progress fraction $t$.
+\end{activerecall}
+
+\newpage
+
+% =============================================================================
+% CHAPTER 4: STIX MATRIX
+% =============================================================================
+\chapter{The STIX Intelligence Engine}
+
+Predictra is not just a live threat visualizer; it is an intelligence platform. The STIX Dashboard (\texttt{src/ui/StixDashboard.tsx}) parses standard cybersecurity documents and correlates threat indicators.
+
+\section{STIX Bundle Parsing}
+STIX (Structured Threat Information Expression) represents threat details using JSON objects linked by relationships. The parser maps:
+\begin{itemize}
+  \item \texttt{reports}: The core dossiers containing metadata.
+  \item \texttt{attack-patterns}: Specific tactics, techniques, and procedures (TTPs) used by adversaries (e.g. SQL Injection, Web Shell upload).
+  \item \texttt{indicators}: Artifacts that indicate compromise (e.g. registry keys, filenames, domain names).
+\end{itemize}
+
+\section{MITRE ATT\&CK Kill Chain Mapping}
+The dashboard parses the name and descriptions of techniques to categorize them into standard kill chain phases (Reconnaissance, Delivery, Execution, Persistence, Lateral Movement, Command \& Control):
+\begin{lstlisting}[language=TypeScript]
+const KILL_CHAIN_PHASES = [
+  { id: 'recon', label: 'Reconnaissance', keywords: ['reconnaissance', 'scanning'], color: '#8B5CF6' },
+  { id: 'initial', label: 'Initial Access', keywords: ['initial access', 'exploit public-facing'], color: '#EF4444' },
+  // ...
+];
+\end{lstlisting}
+If keywords are matched, the technique is mapped to the corresponding phase in the visual matrix.
+
+\section{Indicator of Compromise (IOC) Classification}
+Indicators are written in STIX pattern syntax (e.g. \texttt{"[file:hashes.'SHA-256' = 'a1b2...']"}). The frontend uses a regex classifier to extract clean indicators:
+\begin{lstlisting}[language=TypeScript]
+function classifyIndicator(obj: StixObject) {
+  const pattern = obj.pattern || '';
+  if (pattern.includes('ipv4-addr')) {
+    const match = pattern.match(/(\d+\.\d+\.\d+\.\d+)/);
+    return { type: 'IPv4', value: match ? match[1] : pattern, icon: 'IP' };
+  }
+  if (pattern.includes('file:hashes')) {
+    const sha256 = pattern.match(/SHA-256[^=]*=\s*'([^']+)'/i);
+    return { type: 'SHA-256', value: sha256 ? sha256[1] : pattern, icon: 'File' };
+  }
+  // Mutex, Domain, URL classification...
+}
+\end{lstlisting}
+
+\begin{activerecall}{STIX Parsing}
+  1. What does STIX stand for? What is the main objective of the STIX view?
+  2. How does the frontend classify and display hashes vs IP addresses in the IOC tab?
+  3. Name three phases of the MITRE ATT\&CK Kill Chain defined in the store.
+\end{activerecall}
+
+\newpage
+
+% =============================================================================
+% CHAPTER 5: FULLSTACK SYNAPSE
+% =============================================================================
+\chapter{The Fullstack Synapse}
+
+Now let's examine the connection between the frontend and the backend. They operate in a decoupled client-server architecture:
+
+\begin{figure}[H]
+  \centering
+  \small
+  \begin{tabular}{|p{6.5cm}|c|p{6.5cm}|}
+    \hline
+    \textbf{Frontend React App} & \textbf{Transmission} & \textbf{Backend Express App} \\ \hline
+    \texttt{initStream()} listeners & $\leftarrow$ SSE Stream $\leftarrow$ & \texttt{/api/feed} (300ms flushes) \\ \hline
+    Zustand stats state & $\leftarrow$ HTTP Poll $\leftarrow$ & \texttt{/api/stats} (MongoDB aggregation) \\ \hline
+    ExcelJS / SaveAs exports & $\leftarrow$ User Request $\leftarrow$ & Document downloads \\ \hline
+    History page regexp search & $\rightarrow$ HTTP GET $\rightarrow$ & \texttt{/api/history?q=...} search \\ \hline
+    Toggle database controls & $\rightarrow$ HTTP POST $\rightarrow$ & \texttt{/api/db/toggle} state change \\ \hline
+  \end{tabular}
+  \caption{Fullstack Communication Matrix}
+\end{figure}
+
+\section{The Data Key Mapping Matrix}
+To maintain the optimized database footprint, the backend saves data using abbreviated keys. The frontend maps these database attributes directly to human-readable variables:
+\begin{longtable}{lcl}
+\toprule
+\textbf{MongoDB Document Key} & \textbf{Synapse Transmission} & \textbf{React Rendering Variable} \\
+\midrule
+\texttt{a\_c} & $\longrightarrow$ & Attack occurrences count \\
+\texttt{a\_n} & $\longrightarrow$ & Threat signature / name \\
+\texttt{a\_t} & $\longrightarrow$ & Threat classification (\texttt{exploit}, \texttt{malware}, \texttt{phishing}) \\
+\texttt{s\_co} & $\longrightarrow$ & Source Country flag and label \\
+\texttt{s\_la} / \texttt{s\_lo} & $\longrightarrow$ & Globe 3D coordinates (Slerp start point) \\
+\texttt{d\_co} & $\longrightarrow$ & Target Country flag and label \\
+\texttt{d\_la} / \texttt{d\_lo} & $\longrightarrow$ & Globe 3D coordinates (Slerp end point) \\
+\texttt{meta.organization} & $\longrightarrow$ & Vector organization owner (RDAP resolve) \\
+\texttt{source\_api} & $\longrightarrow$ & Threat intelligence provider label \\
+\bottomrule
+\end{longtable}
+
+\section{The Excel Export Pipeline}
+The frontend allows administrators to export logs to Excel via `exceljs` in \texttt{DashboardPage.tsx}.
+1. The app extracts current threat events from the store's circular buffer.
+2. It instantiates a workbook structure in memory.
+3. It styles header fields with dark blue fills and sets standard column widths.
+4. It iterates over threat rows. It applies conditional formatting, highlighting exploit rows in red, malware in gold, and phishing in violet.
+5. It compiles the worksheet into a binary blob and uses `file-saver` to download the file directly to the client's machine.
+
+\begin{activerecall}{Synapse Mechanics}
+  1. Complete the mapping: What does \texttt{s\_la} represent on the 3D globe scene?
+  2. How does the backend quota monitor (500MB cap) affect what is displayed in the frontend?
+  3. Explain the steps the client takes to export threat data into a formatted Excel sheet.
+\end{activerecall}
+
+\newpage
+
+% =============================================================================
+% CHAPTER 6: RECALL STAGE
+% =============================================================================
+\chapter{Active Recall \& Memory Consolidation}
+
+Answer these questions to test your knowledge of the Predictra frontend and fullstack synapse. Write down your answers before checking the key on the next page.
+
+\section{25 Core Study Questions}
+
+\begin{enumerate}
+  \item \textbf{Stack:} Which state management library handles the frontend stream data?
+  \item \textbf{Vite:} What does Vite do in the context of the frontend app?
+  \item \textbf{Engine:} What framework maps WebGL 3D canvas coordinates to React components?
+  \item \textbf{Store:} Which file manages the main SSE connection and state in the app?
+  \item \textbf{Buffer:} What is the maximum size capacity of the store's circular `eventBuffer`?
+  \item \textbf{Visuals:} What is the maximum number of simultaneous arcs allowed on the globe?
+  \item \textbf{Visuals:} What is the maximum number of simultaneous markers allowed on the globe?
+  \item \textbf{API:} What is the default path of the Server-Sent Events stream on the backend?
+  \item \textbf{Backoff:} What delay is used for the first reconnection attempt after a failure?
+  \item \textbf{Backoff:} What is the maximum retry delay cap of the exponential backoff loop?
+  \item \textbf{Backoff:} Why is randomized "jitter" added to the reconnection timeout?
+  \item \textbf{Graphics:} Below what FPS threshold does the store activate the 33\% sampling rate?
+  \item \textbf{Graphics:} What is the sampling rate when frame rate is between 30 and 45 FPS?
+  \item \textbf{Graphics:} Why does the app drop visual arcs while maintaining the main counters?
+  \item \textbf{Throttling:} How often are recent events updated in the UI store?
+  \item \textbf{Throttling:} How often are the analytics maps flushed to the React state?
+  \item \textbf{Math:} What mathematical function is used to calculate elevation over the globe?
+  \item \textbf{STIX:} Which two STIX threat bundles are imported by default in the Stix view?
+  \item \textbf{STIX:} What regex check is used to extract file hashes from STIX patterns?
+  \item \textbf{STIX:} What does the STIX parser do with the `relationship` data type?
+  \item \textbf{Synapse:} What port does the backend SSE feed serve by default?
+  \item \textbf{Synapse:} What database property translates to the threat class label in React?
+  \item \textbf{Synapse:} Which API endpoint is queried when searching history logs?
+  \item \textbf{Synapse:} Why are MongoDB inserts bulk-saved in batches of 25 instead of saved individually?
+  \item \textbf{Export:} Which npm libraries compile and download styled spreadsheet reports in the client?
+\end{enumerate}
+
+\newpage
+\section{Answer Key \& Explanations}
+
+\begin{enumerate}
+  \item \textbf{Zustand} manages the stream data state.
+  \item \textbf{Vite} compiles, bundles, and serves the frontend React application.
+  \item \textbf{React Three Fiber (R3F)} manages WebGL scenes in React.
+  \item \textbf{\texttt{src/stream/useStreamStore.ts}} manages connections and state.
+  \item \textbf{10,000 events} is the maximum capacity of the circular buffer.
+  \item \textbf{150 arcs} is the maximum simultaneous arc limit.
+  \item \textbf{300 markers} is the maximum simultaneous marker limit.
+  \item \textbf{\texttt{/api/feed}} is the default path of the SSE stream.
+  \item \textbf{1,000ms} is the initial retry delay.
+  \item \textbf{30,000ms} (30 seconds) is the maximum retry delay.
+  \item To prevent all client devices from reconnecting at the same millisecond and overloading the server.
+  \item Below \textbf{30 FPS}, the app drops to a 33\% sampling rate.
+  \item \textbf{50\%} of visual arcs are rendered when FPS is between 30 and 45.
+  \item To protect visual performance while maintaining accurate statistics.
+  \item Every \textbf{500ms}.
+  \item Every \textbf{1,000ms} (1 second).
+  \item A **Sine function** (\texttt{Math.sin(t * Math.PI)}) elevates arcs above the globe.
+  \item \textbf{\texttt{cisa.json}} and \textbf{\texttt{ivanti.json}} are imported.
+  \item Looks for the \texttt{file:hashes} string and extracts associated hash values.
+  \item Maps links between threat reports, attack patterns, and indicator nodes.
+  \item Port \textbf{3001} is the default backend port.
+  \item The \texttt{a\_t} key maps to threat types.
+  \item \textbf{\texttt{/api/history?q=...}} queries historical database entries.
+  \item To avoid database locking and network latency overhead.
+  \item \textbf{\texttt{exceljs}} and \textbf{\texttt{file-saver}} compile and download files.
+\end{enumerate}
+
+\end{document}

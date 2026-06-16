@@ -6,6 +6,8 @@ import { useEffect, useState } from 'react';
 import type { ThreatEvent } from '../stream/types';
 import { theme, getAttackColor } from '../theme/theme';
 import { GlassPanel } from './GlassPanel';
+import * as ExcelJS from 'exceljs';
+import { saveAs } from 'file-saver';
 
 // This component displays a list of the last 100 recorded threat alerts from MongoDB.
 // It allows users to search by IP or keyword, filter by threat types, and inspect logs.
@@ -15,15 +17,19 @@ export function HistoryPage() {
   const [error, setError] = useState<string | null>(null);
   
   const [search, setSearch] = useState('');
+  const [startTime, setStartTime] = useState('');
+  const [endTime, setEndTime] = useState('');
 
   // ─── QUERY DATABASE CONTROLLER ──────────────────────────────────────────────
   // Requests list of logs from MongoDB matching queries or IP values.
-  const fetchHistory = async (query = '', ip = '') => {
+  const fetchHistory = async (query = '', ip = '', sTime = startTime, eTime = endTime) => {
     setLoading(true);
     try {
       const url = new URL('/api/history', window.location.origin);
       if (query) url.searchParams.set('q', query);
       if (ip) url.searchParams.set('ip', ip);
+      if (sTime) url.searchParams.set('startTime', sTime);
+      if (eTime) url.searchParams.set('endTime', eTime);
       
       const response = await fetch(url.toString());
       if (!response.ok) throw new Error('Failed to fetch history');
@@ -42,7 +48,7 @@ export function HistoryPage() {
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
-    fetchHistory(search);
+    fetchHistory(search, '', startTime, endTime);
   };
 
   const handleCheckMyIP = async () => {
@@ -62,10 +68,124 @@ export function HistoryPage() {
       
       setSearch(ip);
       // Use the general query search so it matches across all fields, rather than strict exact-match
-      fetchHistory(ip); 
+      fetchHistory(ip, '', startTime, endTime); 
     } catch (err) {
       console.error(err);
       setError('Could not detect your IP through browser security. Please type it manually.');
+    }
+  };
+
+  const handleExport = async (format: 'csv' | 'json' | 'xlsx') => {
+    setLoading(true);
+    try {
+      const url = new URL('/api/history', window.location.origin);
+      if (search) url.searchParams.set('q', search);
+      if (startTime) url.searchParams.set('startTime', startTime);
+      if (endTime) url.searchParams.set('endTime', endTime);
+      url.searchParams.set('limit', '5000'); // request up to 5000 records from the database
+      
+      const response = await fetch(url.toString());
+      if (!response.ok) throw new Error('Failed to fetch data for export');
+      const dataToExport: ThreatEvent[] = await response.json();
+      
+      if (dataToExport.length === 0) {
+        alert('No data found matching current filters to export.');
+        return;
+      }
+
+      const fileDate = new Date().toISOString().slice(0, 10);
+
+      if (format === 'json') {
+        const json = JSON.stringify(dataToExport, null, 2);
+        const blob = new Blob([json], { type: "application/json" });
+        saveAs(blob, `Threat_History_Report_${fileDate}.json`);
+      } else if (format === 'csv') {
+        const BOM = "\uFEFF";
+        const headers = ['Event ID', 'Local Time', 'Threat Type', 'Attack Vector', 'Source IP', 'Source Country', 'Target IP', 'Target Country', 'Intel Source'];
+        
+        const rows = dataToExport.map(e => {
+          const date = new Date(e.timestamp || e.ts || Date.now()).toLocaleString();
+          const type = (e.a_t || '').toUpperCase();
+          const name = `"${String(e.a_n || '').replace(/"/g, '""')}"`;
+          return [
+            e.id || e._id, `"${date}"`, type, name, e.s_ip, e.s_co, e.d_ip, e.d_co, e.source_api
+          ].join(',');
+        });
+        
+        const csvContent = "data:text/csv;charset=utf-8," + encodeURIComponent(BOM + headers.join(',') + '\n' + rows.join('\n'));
+        const link = document.createElement("a");
+        link.setAttribute("href", csvContent);
+        link.setAttribute("download", `Threat_History_Report_${fileDate}.csv`);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      } else if (format === 'xlsx') {
+        const workbook = new ExcelJS.Workbook();
+        const sheet = workbook.addWorksheet('Threat History Report');
+
+        sheet.mergeCells('A1', 'I2');
+        const titleCell = sheet.getCell('A1');
+        titleCell.value = 'Global Command Center - Threat History Report';
+        titleCell.font = { size: 16, bold: true, color: { argb: 'FFFFFFFF' } };
+        titleCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1A233A' } };
+        titleCell.alignment = { vertical: 'middle', horizontal: 'center' };
+
+        sheet.getRow(4).values = ['Event ID', 'Local Time', 'Threat Type', 'Attack Vector', 'Source IP', 'Source Country', 'Target IP', 'Target Country', 'Intel Source'];
+        const headerRow = sheet.getRow(4);
+        headerRow.font = { bold: true, color: { argb: 'FFFFFFFF' } };
+        headerRow.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF00D1FF' } };
+        headerRow.alignment = { vertical: 'middle', horizontal: 'center' };
+
+        sheet.columns = [
+            { key: 'id', width: 32 },
+            { key: 'time', width: 22 },
+            { key: 'type', width: 14 },
+            { key: 'name', width: 40 },
+            { key: 'sip', width: 16 },
+            { key: 'sco', width: 16 },
+            { key: 'dip', width: 16 },
+            { key: 'dco', width: 16 },
+            { key: 'api', width: 15 },
+        ];
+
+        dataToExport.forEach(e => {
+            const row = sheet.addRow({
+                id: e.id || e._id,
+                time: new Date(e.timestamp || e.ts || Date.now()).toLocaleString(),
+                type: (e.a_t || '').toUpperCase(),
+                name: e.a_n,
+                sip: e.s_ip,
+                sco: e.s_co,
+                dip: e.d_ip,
+                dco: e.d_co,
+                api: e.source_api
+            });
+            
+            const typeCell = row.getCell('type');
+            typeCell.font = { bold: true, color: { argb: e.a_t === 'exploit' ? 'FFFF4444' : e.a_t === 'malware' ? 'FFFFD700' : 'FFCC33FF' } };
+        });
+
+        sheet.eachRow((row, rowNumber) => {
+            if (rowNumber >= 4) {
+                row.eachCell(cell => {
+                    cell.border = {
+                        top: {style:'thin', color: {argb:'FFEEEEEE'}},
+                        left: {style:'thin', color: {argb:'FFEEEEEE'}},
+                        bottom: {style:'thin', color: {argb:'FFEEEEEE'}},
+                        right: {style:'thin', color: {argb:'FFEEEEEE'}}
+                    };
+                });
+            }
+        });
+
+        const buffer = await workbook.xlsx.writeBuffer();
+        saveAs(new Blob([buffer]), `Threat_History_Report_${fileDate}.xlsx`);
+      }
+    } catch (err: any) {
+      console.error(err);
+      alert('Failed to export threat history: ' + err.message);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -103,14 +223,14 @@ export function HistoryPage() {
             Attack History
           </h1>
           <p style={{ color: theme.colors.textDim, fontSize: '14px', marginTop: '4px' }}>
-            Displaying the last 100 recorded threat events from MongoDB
+            Displaying the last {history.length} recorded threat events from MongoDB
           </p>
         </div>
       </div>
 
       {/* Search Header */}
-      <div style={{ display: 'flex', gap: '12px' }}>
-        <form onSubmit={handleSearch} style={{ flex: 1, display: 'flex' }}>
+      <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+        <form onSubmit={handleSearch} style={{ flex: 1, display: 'flex', minWidth: '300px' }}>
           <div style={{
             display: 'flex', alignItems: 'center', background: 'rgba(255, 255, 255, 0.05)',
             border: '1px solid rgba(255, 255, 255, 0.1)', borderRadius: '8px 0 0 8px', padding: '0 16px'
@@ -177,6 +297,184 @@ export function HistoryPage() {
         </button>
       </div>
 
+      {/* Time Filtration & Export HUD */}
+      <div style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: '16px',
+        flexWrap: 'wrap',
+        background: 'rgba(255, 255, 255, 0.02)',
+        border: '1px solid rgba(255, 255, 255, 0.06)',
+        borderRadius: '8px',
+        padding: '16px 20px',
+      }}>
+        {/* From Date */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <span style={{ color: theme.colors.textDim, fontSize: '12px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.5 }}>From:</span>
+          <input
+            type="datetime-local"
+            value={startTime}
+            onChange={(e) => setStartTime(e.target.value)}
+            style={{
+              background: 'rgba(0, 0, 0, 0.4)',
+              border: '1px solid rgba(255, 255, 255, 0.1)',
+              borderRadius: '4px',
+              padding: '8px 12px',
+              color: '#fff',
+              fontSize: '12px',
+              fontFamily: theme.fonts.mono,
+              outline: 'none',
+            }}
+          />
+        </div>
+
+        {/* To Date */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <span style={{ color: theme.colors.textDim, fontSize: '12px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.5 }}>To:</span>
+          <input
+            type="datetime-local"
+            value={endTime}
+            onChange={(e) => setEndTime(e.target.value)}
+            style={{
+              background: 'rgba(0, 0, 0, 0.4)',
+              border: '1px solid rgba(255, 255, 255, 0.1)',
+              borderRadius: '4px',
+              padding: '8px 12px',
+              color: '#fff',
+              fontSize: '12px',
+              fontFamily: theme.fonts.mono,
+              outline: 'none',
+            }}
+          />
+        </div>
+
+        {/* Presets */}
+        <div style={{ display: 'flex', gap: '6px' }}>
+          {[
+            { label: '1H', value: 60 },
+            { label: '24H', value: 24 * 60 },
+            { label: '7D', value: 7 * 24 * 60 },
+            { label: '30D', value: 30 * 24 * 60 },
+          ].map((preset) => (
+            <button
+              key={preset.label}
+              type="button"
+              onClick={() => {
+                const end = new Date();
+                const start = new Date(end.getTime() - preset.value * 60 * 1000);
+                
+                // Helper to format Date to 'YYYY-MM-DDTHH:MM' local format
+                const pad = (n: number) => n < 10 ? '0' + n : n;
+                const formattedStart = `${start.getFullYear()}-${pad(start.getMonth() + 1)}-${pad(start.getDate())}T${pad(start.getHours())}:${pad(start.getMinutes())}`;
+                const formattedEnd = `${end.getFullYear()}-${pad(end.getMonth() + 1)}-${pad(end.getDate())}T${pad(end.getHours())}:${pad(end.getMinutes())}`;
+                
+                setStartTime(formattedStart);
+                setEndTime(formattedEnd);
+                fetchHistory(search, '', formattedStart, formattedEnd);
+              }}
+              style={{
+                background: 'rgba(255, 255, 255, 0.04)',
+                border: '1px solid rgba(255, 255, 255, 0.08)',
+                color: theme.colors.textDim,
+                padding: '6px 12px',
+                borderRadius: '4px',
+                fontSize: '11px',
+                fontWeight: 700,
+                fontFamily: theme.fonts.display,
+                cursor: 'pointer',
+                transition: 'all 0.2s',
+              }}
+              onMouseOver={e => { e.currentTarget.style.color = '#fff'; e.currentTarget.style.background = 'rgba(255,255,255,0.1)'; }}
+              onMouseOut={e => { e.currentTarget.style.color = theme.colors.textDim; e.currentTarget.style.background = 'rgba(255,255,255,0.04)'; }}
+            >
+              {preset.label}
+            </button>
+          ))}
+          <button
+            type="button"
+            onClick={() => {
+              setStartTime('');
+              setEndTime('');
+              fetchHistory(search, '', '', '');
+            }}
+            style={{
+              background: 'rgba(239, 68, 68, 0.1)',
+              border: '1px solid rgba(239, 68, 68, 0.2)',
+              color: '#FF4444',
+              padding: '6px 12px',
+              borderRadius: '4px',
+              fontSize: '11px',
+              fontWeight: 700,
+              fontFamily: theme.fonts.display,
+              cursor: 'pointer',
+              transition: 'all 0.2s',
+            }}
+            onMouseOver={e => { e.currentTarget.style.background = 'rgba(239,68,68,0.2)'; }}
+            onMouseOut={e => { e.currentTarget.style.background = 'rgba(239, 68, 68, 0.1)'; }}
+          >
+            CLEAR TIME
+          </button>
+        </div>
+
+        {/* Apply filter button */}
+        <button
+          type="button"
+          onClick={() => fetchHistory(search, '', startTime, endTime)}
+          style={{
+            background: 'rgba(0, 209, 255, 0.12)',
+            border: '1px solid rgba(0, 209, 255, 0.3)',
+            color: '#00D1FF',
+            padding: '8px 16px',
+            borderRadius: '4px',
+            fontSize: '11px',
+            fontWeight: 800,
+            fontFamily: theme.fonts.display,
+            cursor: 'pointer',
+            transition: 'all 0.2s',
+          }}
+          onMouseOver={e => { e.currentTarget.style.background = 'rgba(0,209,255,0.25)'; }}
+          onMouseOut={e => { e.currentTarget.style.background = 'rgba(0,209,255,0.12)'; }}
+        >
+          APPLY TIME
+        </button>
+
+        {/* Exports */}
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: '8px',
+          marginLeft: 'auto',
+          borderLeft: '1px solid rgba(255,255,255,0.08)',
+          paddingLeft: '16px'
+        }}>
+          <span style={{ color: theme.colors.textDim, fontSize: '10px', textTransform: 'uppercase', letterSpacing: 1, marginRight: '4px' }}>Export DB:</span>
+          {(['csv', 'json', 'xlsx'] as const).map((format) => (
+            <button
+              key={format}
+              type="button"
+              onClick={() => handleExport(format)}
+              style={{
+                background: format === 'xlsx' ? 'rgba(0, 209, 255, 0.04)' : 'rgba(255, 255, 255, 0.03)',
+                border: `1px solid ${format === 'xlsx' ? 'rgba(0, 209, 255, 0.2)' : 'rgba(255, 255, 255, 0.08)'}`,
+                color: format === 'xlsx' ? '#00D1FF' : theme.colors.textDim,
+                padding: '6px 12px',
+                borderRadius: '4px',
+                fontSize: '11px',
+                fontWeight: 700,
+                fontFamily: theme.fonts.mono,
+                cursor: 'pointer',
+                textTransform: 'uppercase',
+                transition: 'all 0.2s',
+              }}
+              onMouseOver={e => { e.currentTarget.style.background = format === 'xlsx' ? 'rgba(0,209,255,0.15)' : 'rgba(255,255,255,0.08)'; }}
+              onMouseOut={e => { e.currentTarget.style.background = format === 'xlsx' ? 'rgba(0, 209, 255, 0.04)' : 'rgba(255, 255, 255, 0.03)'; }}
+            >
+              {format}
+            </button>
+          ))}
+        </div>
+      </div>
+
       {/* Quick Filters */}
       <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
         {[
@@ -188,7 +486,7 @@ export function HistoryPage() {
         ].map(filter => (
           <button
             key={filter.label}
-            onClick={() => { setSearch(filter.query); fetchHistory(filter.query); }}
+            onClick={() => { setSearch(filter.query); fetchHistory(filter.query, '', startTime, endTime); }}
             style={{
               background: search === filter.query ? 'rgba(0, 209, 255, 0.2)' : 'rgba(255,255,255,0.03)',
               border: `1px solid ${search === filter.query ? theme.colors.exploit : 'rgba(255,255,255,0.1)'}`,
