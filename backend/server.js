@@ -180,6 +180,7 @@ app.get('/api/db/status', (req, res) => { // Bind GET route to query active data
 app.get('/api/history', async (req, res) => { // Bind GET route to query historic threat database records
   try { // Start try block to handle query execution safely
     const { q, ip, country, startTime, endTime } = req.query; // Destructure search variables from request query params
+    console.log('[API GET /api/history] Request parameters:', { q, ip, country, startTime, endTime, limit: req.query.limit });
     let query = {}; // Initialize empty MongoDB query selector object
 
     if (ip) { // If search filter target is an IP address
@@ -221,14 +222,19 @@ app.get('/api/history', async (req, res) => { // Bind GET route to query histori
     if (req.query.limit) {
       const parsed = parseInt(req.query.limit, 10);
       if (!isNaN(parsed)) {
-        limitVal = Math.min(parsed, 5000);
+        limitVal = parsed;
       }
     }
 
-    const history = await ThreatEvent.find(query) // Execute MongoDB query selector matching constructed constraints
-      .sort({ timestamp: -1 }) // Sort documents in descending order (newest first)
-      .limit(limitVal) // Restrict response list output to a maximum of limitVal documents
-      .lean(); // Return plain Javascript object array bypass document instantiation overhead
+    console.log('[API GET /api/history] Executing MongoDB query:', query, 'with limit:', limitVal);
+
+    let queryExec = ThreatEvent.find(query).sort({ timestamp: -1 }).lean();
+    if (limitVal > 0) {
+      queryExec = queryExec.limit(limitVal);
+    }
+    const history = await queryExec;
+    
+    console.log(`[API GET /api/history] Found and returning ${history.length} records.`);
     res.json(history); // Return results list as a JSON format response payload
   } catch (error) { // Catch database lookup exceptions
     console.error('[API] Error fetching history:', error.message); // Log query failures details

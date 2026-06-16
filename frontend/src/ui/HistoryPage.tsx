@@ -75,7 +75,7 @@ export function HistoryPage() {
       if (search) url.searchParams.set('q', search);
       if (startTime) url.searchParams.set('startTime', startTime);
       if (endTime) url.searchParams.set('endTime', endTime);
-      url.searchParams.set('limit', '5000'); // request up to 5000 records from the database
+      url.searchParams.set('limit', '-1'); // request all records from the database
       
       const response = await fetch(url.toString());
       if (!response.ok) throw new Error('Failed to fetch data for export');
