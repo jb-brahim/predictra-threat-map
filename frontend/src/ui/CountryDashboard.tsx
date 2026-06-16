@@ -1,3 +1,7 @@
+// ─── COUNTRY THREAT DASHBOARD COMPONENT ──────────────────────────────────────
+// Renders the country-specific detail page overlaying the screen, displaying
+// custom risk scores, adversary profiles, target sectors, and historical logs.
+
 import { useEffect, useState, useMemo } from 'react';
 import { useStreamStore } from '../stream/useStreamStore';
 import { theme } from '../theme/theme';
@@ -30,6 +34,8 @@ export function CountryDashboard() {
   const countryName = selectedCountry?.name || 'Unknown Region';
   const countryCode = selectedCountry?.code || '??';
 
+  // ─── API DATA FETCHING ──────────────────────────────────────────────────────
+  // Queries history lines, global baseline metrics, and regional stats in parallel.
   useEffect(() => {
     if (!countryCode || countryCode === '??') {
       return;

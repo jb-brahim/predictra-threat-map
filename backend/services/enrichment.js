@@ -1,7 +1,5 @@
 /**
- * Intelligence-driven Sector Enrichment Service
- * 
- * This service maps raw threat data (victim names, ports, malware families)
+ * maps raw threat data (victim names, ports, malware families)
  * to real-world industrial sectors.
  */
 
@@ -20,7 +18,7 @@ async function getIpOrganization(ip) {
 
   try {
     // Using rdap.org as a redirector to the correct regional registry (ARIN, RIPE, etc.)
-    const response = await axios.get(`https://rdap.org/ip/${ip}`, { 
+    const response = await axios.get(`https://rdap.org/ip/${ip}`, {
       timeout: 3000,
       headers: { 'Accept': 'application/rdap+json' }
     });
@@ -95,7 +93,7 @@ function getEnrichedSector(event) {
   const malwareFamily = (event.meta?.malware_family || '').toLowerCase();
   const threatType = (event.meta?.threat_type || '').toLowerCase();
   const port = event.meta?.port;
-  
+
   const combinedText = `${victimName} ${attackName} ${malwareFamily} ${threatType}`;
 
   // Helper for matching with word boundaries

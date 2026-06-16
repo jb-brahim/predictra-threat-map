@@ -1,11 +1,16 @@
+// ─── IMPACT MARKERS VISUALIZER COMPONENT ──────────────────────────────────────
+// Renders glowing start/end visual points at attack launch and landing sites.
+// Source: expanding concentric pulse. Target: multi-ring shockwave ripple.
+
 import { useRef, useEffect } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import { useStreamStore } from '../stream/useStreamStore';
 import { pulseEasing, easeOutExpo } from '../utils/easing';
 
-// ── Shared geometry pool (created once, reused for all markers) ──
-
+// ─── GEOMETRY POOL PREALLOCATION ─────────────────────────────────────────────
+// Pre-defines meshes to prevent garbage collection sweeps from choking WebGL
+// pipelines during heavy attack periods.
 const _sharedCoreGeo = new THREE.CircleGeometry(0.012, 12);
 const _sharedRing1Geo = new THREE.RingGeometry(0.015, 0.022, 24);
 const _sharedRing2Geo = new THREE.RingGeometry(0.025, 0.030, 24);
@@ -25,12 +30,6 @@ function getMarkerColorHex(type: string): number {
   }
 }
 
-/**
- * Renders animated impact markers at source/destination positions.
- * Uses imperative Three.js objects with shared geometries for performance.
- * Source: expanding halo pulse
- * Destination: shockwave ripple
- */
 export function ImpactMarkers() {
   const groupRef = useRef<THREE.Group>(null);
   const markers = useStreamStore(s => s.markers);
@@ -43,12 +42,14 @@ export function ImpactMarkers() {
     isSource: boolean;
   }>>(new Map());
 
-  // Sync Three.js objects with marker state
+  // ─── INSTANTIATION LIFECYCLE ───────────────────────────────────────────────
+  // Cleans up expired markers and constructs new indicators, orienting their faces
+  // parallel to the globe surface normals using Quaternions.
   useEffect(() => {
     const group = groupRef.current;
     if (!group) return;
 
-    // Clear everything if mode changes or if we want a fresh sync
+    // Flush old references on projection change
     while (group.children.length > 0) {
       const child = group.children[0] as any;
       if (child.geometry) child.geometry.dispose();
@@ -57,7 +58,7 @@ export function ImpactMarkers() {
     }
     markerObjectsRef.current.clear();
 
-    // Re-add all markers
+    // Map markers to 3D spherical positions or 2D layouts
     for (const marker of markers) {
       const colorHex = getMarkerColorHex(marker.attackType);
       
@@ -99,7 +100,9 @@ export function ImpactMarkers() {
     }
   }, [markers, projectionMode]);
 
-  // Animate markers each frame
+  // ─── WAVE ANIMATION LOOP ───────────────────────────────────────────────────
+  // Animates marker rings. Explodes rings for sources, and ripples dual rings
+  // for destination landing sites.
   useFrame(() => {
     for (const marker of markers) {
       const obj = markerObjectsRef.current.get(marker.id);
@@ -117,7 +120,7 @@ export function ImpactMarkers() {
       obj.ring1.visible = true;
 
       if (obj.isSource) {
-        // Source: expanding pulse with fade
+        // Source: single expanding pulse fading away
         const pulseScale = 1 + easeOutExpo(p) * 0.1;
         const pulseOpacity = pulseEasing(p);
 
@@ -127,7 +130,7 @@ export function ImpactMarkers() {
         const coreOpacity = Math.max(0, 1 - easeOutExpo(p));
         (obj.core.material as THREE.MeshBasicMaterial).opacity = coreOpacity * 0.9;
       } else {
-        // Destination: shockwave ripple
+        // Destination: dual shockwave rings expanding sequentially
         const ripple1 = easeOutExpo(Math.min(p * 2, 1));
         const fadeOut = Math.max(0, 1 - easeOutExpo(p));
 

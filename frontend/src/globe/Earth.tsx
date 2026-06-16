@@ -1,3 +1,7 @@
+// ─── 3D EARTH / 2D MAP RENDERING LAYERS ──────────────────────────────────────
+// Renders the physical planet surface, volumetric continent extrusions,
+// dynamic grid lines, country hover effects, and atmospheric glow shaders.
+
 import { useRef, useMemo, useState, useEffect } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
@@ -46,6 +50,9 @@ function isPointInPolygon(point: number[], vs: number[][]) {
 
 // --- Sub-components ---
 
+// ─── LATITUDE & LONGITUDE GRID LINES ──────────────────────────────────────────
+// Draws lines representing latitude and longitude. Adapts to 3D sphere shape
+// or 2D flat layout based on projection modes.
 function GridLines() {
   const projectionMode = useStreamStore(s => s.projectionMode);
   const linesGeo = useMemo(() => {
@@ -94,7 +101,9 @@ function GridLines() {
   );
 }
 
-
+// ─── DOT MATRIX CONTINENTS ───────────────────────────────────────────────────
+// Renders a glowing point-cloud grid mapped only on land masses.
+// Uses a custom fragment shader to execute a tech-style sweep scanning light.
 function CountryDotGrid() {
   const projectionMode = useStreamStore(s => s.projectionMode);
   const [pointsGeo, setPointsGeo] = useState<THREE.BufferGeometry | null>(null);
@@ -191,6 +200,9 @@ function CountryDotGrid() {
   return pointsGeo ? <points geometry={pointsGeo} material={dotMaterial} /> : null;
 }
 
+// ─── 3D VOLUMETRIC LAND EXTRUSION ────────────────────────────────────────────
+// Fetches high-res GeoJSON boundaries and extrudes them into 3D meshes with depth.
+// Houses raycast hover highlights and country selection click triggers.
 function VolumetricLand() {
   const [mesh, setMesh] = useState<THREE.Group | null>(null);
   const projectionMode = useStreamStore(s => s.projectionMode);
@@ -387,12 +399,13 @@ function VolumetricLand() {
   ) : null;
 }
 
+// ─── 2D CONTINENTAL SHAPE FILLS ──────────────────────────────────────────────
+// Draws flat country meshes with responsive hover highlights in 2D mode.
 function CountryFills2D() {
   const [meshes, setMeshes] = useState<THREE.Group | null>(null);
   const setSelectedCountry = useStreamStore(s => s.setSelectedCountry);
   const setView = useStreamStore(s => s.setView);
   
-  // Track hovered country to update material properties
   const [hoveredCountryName, setHoveredCountryName] = useState<string | null>(null);
 
   useEffect(() => {
@@ -434,7 +447,6 @@ function CountryFills2D() {
             const mesh = new THREE.Mesh(geometry, material);
             mesh.position.z = 0.002;
             
-            // Attach data for raycasting
             mesh.userData = { countryName, code, originalColor: 0x3B82F6, originalOpacity: 0.1 };
             group.add(mesh);
           }
@@ -444,7 +456,6 @@ function CountryFills2D() {
       return () => { active = false; }
   }, []);
 
-  // Sync hover state to materials (we do this outside the render cycle over the children)
   useEffect(() => {
     if (!meshes) return;
     meshes.children.forEach((child: any) => {
@@ -476,7 +487,7 @@ function CountryFills2D() {
     if (countryName && code) {
       setSelectedCountry({ name: countryName, code });
       setView('country');
-      setHoveredCountryName(null); // Clear highlight when transitioning
+      setHoveredCountryName(null);
       document.body.style.cursor = 'default';
     }
   };
@@ -490,6 +501,10 @@ function CountryFills2D() {
     />
   ) : null;
 }
+
+// ─── MAIN PLANET CONTROLLER ──────────────────────────────────────────────────
+// The core wrapper rendering the physical sphere mesh, the wireframe layers,
+// grid lines, continents, and atmospheric glow shaders.
 export function Earth({ children }: { children?: React.ReactNode }) {
   const meshRef = useRef<THREE.Group>(null);
   const config = useStreamStore(s => s.config);
@@ -534,15 +549,13 @@ export function Earth({ children }: { children?: React.ReactNode }) {
     }
   });
 
-
-
-  // 2D Map Shader Material (Enterprise Overhaul)
+  // 2D Map Shader Material
   const map2DMaterial = useMemo(() => {
     return new THREE.ShaderMaterial({
       uniforms: {
         time: { value: 0 },
-        color: { value: new THREE.Color(0x0F172A) }, // Slate background
-        gridColor: { value: new THREE.Color(0xFFFFFF) }, // Subtle white grid
+        color: { value: new THREE.Color(0x0F172A) },
+        gridColor: { value: new THREE.Color(0xFFFFFF) },
       },
       vertexShader: `
         varying vec2 vUv;
@@ -557,7 +570,6 @@ export function Earth({ children }: { children?: React.ReactNode }) {
         varying vec2 vUv;
 
         void main() {
-          // Subtle Static Grid
           vec2 gUv = vUv * vec2(60.0, 30.0);
           vec2 gridLine = abs(fract(gUv - 0.5) - 0.5) / fwidth(gUv);
           float grid = 1.0 - min(min(gridLine.x, gridLine.y), 1.0);

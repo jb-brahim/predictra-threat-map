@@ -1,13 +1,18 @@
+// ─── COUNTRY OUTLINES COMPONENT ──────────────────────────────────────────────
+// Fetches geographical country boundaries and draws bright neon vector borders.
+// Stacks multiple line layers to amplify light emission under postprocessing Bloom.
+
 import { useRef, useEffect, useState } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import { useStreamStore } from '../stream/useStreamStore';
 
-// Use the 110m dataset that is proven to work
 const GEOJSON_URL = 'https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json';
 const GLOBE_RADIUS = 1.052;
 const DEG2RAD = Math.PI / 180;
 
+// ─── COORDINATE TRANSFORMATIONS ──────────────────────────────────────────────
+// Translates flat geodetic coordinates (Latitude/Longitude) into 3D Vector points on a sphere.
 function latLonToVec3(lat: number, lon: number, r: number): THREE.Vector3 {
   const phi = (90 - lat) * DEG2RAD;
   const theta = (lon + 180) * DEG2RAD;
@@ -18,6 +23,8 @@ function latLonToVec3(lat: number, lon: number, r: number): THREE.Vector3 {
   );
 }
 
+// ─── TOPOJSON DECODING HELPERS ───────────────────────────────────────────────
+// Decodes delta-encoded arcs from world atlas TopoJSON specifications.
 function decodeTopology(topology: any): number[][][] {
   const { arcs: topoArcs, transform } = topology;
   const { scale, translate } = transform || { scale: [1, 1], translate: [0, 0] };
@@ -61,19 +68,12 @@ function extractPolygons(topology: any): number[][][] {
   return polygons;
 }
 
-/**
- * Country outlines with permanent neon glow.
- *
- * The glow is achieved by stacking FIVE additive layers at increasing
- * scales — from a sharp core to a wide soft halo — all using bright
- * colors above the Bloom luminance threshold so the postprocessing
- * pipeline amplifies them into a real glow.
- */
 export function CountryOutlines() {
   const groupRef = useRef<THREE.Group>(null);
   const projectionMode = useStreamStore(s => s.projectionMode);
   const [loadedData, setLoadedData] = useState<any>(null);
 
+  // Fetch geographic boundary geometries on mount
   useEffect(() => {
     fetch(GEOJSON_URL)
       .then(res => res.json())
@@ -81,11 +81,14 @@ export function CountryOutlines() {
       .catch(err => console.warn('Failed to load country outlines:', err));
   }, []);
 
+  // ─── GEOMETRY GENERATOR ────────────────────────────────────────────────────
+  // Triggers when topology completes loading or when the projection mode is toggled.
+  // Converts coordinate points into lines segments and builds the glow layers.
   useEffect(() => {
     const group = groupRef.current;
     if (!group || !loadedData) return;
 
-    // Clear previous lines
+    // Dispose old elements to prevent memory leaks
     while (group.children.length > 0) {
       const child = group.children[0] as any;
       if (child.geometry) child.geometry.dispose();
@@ -101,11 +104,12 @@ export function CountryOutlines() {
         const [lon2, lat2] = polygon[i + 1];
         
         if (projectionMode === '3d') {
+          // Exclude edge-wrap segments to avoid crossing back through the center of the sphere
           if (Math.abs(lon2 - lon1) > 90) continue;
           linePoints.push(latLonToVec3(lat1, lon1, GLOBE_RADIUS));
           linePoints.push(latLonToVec3(lat2, lon2, GLOBE_RADIUS));
         } else {
-          // 2D Projection
+          // Flat 2D Projection
           const x1 = (lon1 / 180) * 2.5;
           const y1 = (lat1 / 90) * 1.25;
           const x2 = (lon2 / 180) * 2.5;
@@ -116,6 +120,7 @@ export function CountryOutlines() {
       }
     }
 
+    // Stack multiple additive segments together to create core glow and outer glow outlines
     if (linePoints.length > 0) {
       const geometry = new THREE.BufferGeometry().setFromPoints(linePoints);
       const layers = [
@@ -133,17 +138,19 @@ export function CountryOutlines() {
           blending: THREE.AdditiveBlending,
         });
         const lines = new THREE.LineSegments(geometry, mat);
-        lines.userData = { baseOpacity: layer.opacity }; // For pulsing
+        lines.userData = { baseOpacity: layer.opacity };
         if (projectionMode === '3d') lines.scale.setScalar(layer.scale);
         group.add(lines);
       }
     }
   }, [loadedData, projectionMode]);
 
+  // ─── BREATHE LOOP ──────────────────────────────────────────────────────────
+  // Cycles the outline opacity values dynamically over time to create a breathing animation.
   useFrame(({ clock }) => {
     if (!groupRef.current) return;
     const t = clock.getElapsedTime();
-    const pulse = Math.sin(t * 2.0) * 0.15 + 0.85; // Breathes between 0.7 and 1.0
+    const pulse = Math.sin(t * 2.0) * 0.15 + 0.85;
     
     groupRef.current.children.forEach((child: any) => {
       if (child.material) {

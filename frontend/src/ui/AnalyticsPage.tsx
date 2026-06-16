@@ -1,3 +1,9 @@
+// ─── THREAT ANALYTICS PAGE COMPONENT ──────────────────────────────────────────
+// This page shows detailed statistics and graphs about security threats.
+// It displays information about threat actors, malware/ransomware, attack types,
+// country classifications, and trend lines over time. It gets its data
+// from the backend API, including open-source MISP Galaxy details.
+
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { GlassPanel } from './GlassPanel';
 import { theme, getAttackColor } from '../theme/theme';
@@ -52,11 +58,14 @@ const FLAG: Record<string, string> = {
   IR:'🇮🇷',CZ:'🇨🇿',GR:'🇬🇷',FI:'🇫🇮',NZ:'🇳🇿',IE:'🇮🇪',AT:'🇦🇹',EE:'🇪🇪',SA:'🇸🇦',AE:'🇦🇪',
   KP:'🇰🇵',TW:'🇹🇼',MY:'🇲🇾',PH:'🇵🇭',
 };
+// Gets the emoji flag icon for a country code.
 function flag(co: string) {
   if (!co || co === '??') return '🌐';
   if (FLAG[co]) return FLAG[co];
   try { return String.fromCodePoint(...[...co.toUpperCase()].map(c => 0x1F1E6 + c.charCodeAt(0) - 65)); } catch { return co; }
 }
+
+// Formats numbers so they are easy to read (like 1.2M or 4.5K).
 function fmt(n: number) { if (n >= 1e6) return (n/1e6).toFixed(1)+'M'; if (n >= 1e3) return (n/1e3).toFixed(1)+'K'; return n.toLocaleString(); }
 
 // Country name → CC for Galaxy data display
@@ -71,6 +80,8 @@ const CNAME_TO_CC: Record<string, string> = {
   'belgium':'BE','switzerland':'CH','norway':'NO','luxembourg':'LU','south africa':'ZA',
   'nepal':'NP','myanmar':'MM','cambodia':'KH','laos':'LA',
 };
+
+// Converts a country's full name to its two-letter code.
 function countryToCC(name: string) { return CNAME_TO_CC[name.toLowerCase()] || name.slice(0,2).toUpperCase(); }
 
 const SECTOR_COLORS: Record<string, string> = {
@@ -81,6 +92,8 @@ const SECTOR_COLORS: Record<string, string> = {
   'Intelligence': '#8B5CF6', 'Mining': '#78716C', 'Justice': '#475569',
   'Political party': '#D946EF',
 };
+
+// Gets a unique color for each industry sector.
 function sectorColor(s: string) {
   if (SECTOR_COLORS[s]) return SECTOR_COLORS[s];
   let hash = 0;
@@ -96,6 +109,8 @@ interface ActorFilters {
 
 /* ─── Main Component ──────────────────────────────────────────────────────── */
 
+// Main Threat Analytics component. It manages which tab is open,
+// controls date/time filtering (24h, 7d, 30d), and holds state for all metrics.
 export function AnalyticsPage() {
   const [tab, setTab] = useState<Tab>('actors');
   const [period, setPeriod] = useState<Period>('24h');
@@ -274,6 +289,8 @@ export function AnalyticsPage() {
 /*  TAB 1: Threat Actors (MISP Galaxy)                                       */
 /* ═══════════════════════════════════════════════════════════════════════════ */
 
+// Displays a list of hacker groups (Threat Actors).
+// Users can filter them by search keywords, country code, or target sector.
 function ActorsTab({ actors, initialFilters, onFiltersChange }: {
   actors: GalaxyActor[];
   initialFilters: ActorFilters;
@@ -495,6 +512,8 @@ function ActorsTab({ actors, initialFilters, onFiltersChange }: {
 /*  TAB 2: Malware & Ransomware (MISP Galaxy)                                */
 /* ═══════════════════════════════════════════════════════════════════════════ */
 
+// Displays ransomware families and hacker tools.
+// Allows sub-tab switching between ransomware and tools, and simple search filtering.
 function MalwareTab({ ransomware, tools }: { ransomware: GalaxyRansomware[]; tools: GalaxyTool[] }) {
   const [subTab, setSubTab] = useState<'ransomware' | 'tools'>('ransomware');
   const [search, setSearch] = useState('');
@@ -627,6 +646,8 @@ function MalwareTab({ ransomware, tools }: { ransomware: GalaxyRansomware[]; too
 /*  TAB 3: Countries                                                         */
 /* ═══════════════════════════════════════════════════════════════════════════ */
 
+// Displays target and origin country classifications in a table and a bar chart.
+// Clicking a country drills down into its specific risk ratio and attack types.
 function CountriesTab({ countries, totalGlobal, selected, onSelect }: {
   countries: CountryRow[]; totalGlobal: number; selected: string | null; onSelect: (c: string | null) => void;
 }) {
@@ -757,6 +778,8 @@ function CountriesTab({ countries, totalGlobal, selected, onSelect }: {
 /*  TAB 4: Trends                                                            */
 /* ═══════════════════════════════════════════════════════════════════════════ */
 
+// Displays trend graphs showing total and type-based attack volumes over time.
+// Renders an interactive SVG chart and compares numbers with previous periods.
 function TrendsTab({ timeline, byType, changePercent, currentTotal, period, country, onCountryChange, onRefresh }: {
   timeline: TrendPoint[]; byType: TrendTypePoint[]; changePercent: number; currentTotal: number;
   period: string; country: string; onCountryChange: (c: string) => void; onRefresh: () => void;
@@ -871,6 +894,8 @@ function TrendsTab({ timeline, byType, changePercent, currentTotal, period, coun
 /*  TAB 5: Galaxy Explorer                                                   */
 /* ═══════════════════════════════════════════════════════════════════════════ */
 
+// Displays overview statistics about the entire MISP Galaxy threat database.
+// Shows breakdown metrics by state sponsor, targeted sectors, victim countries, and incident types.
 function ExplorerTab({ stats, onDrillDown }: { stats: GalaxyStats | null; onDrillDown: (f: Partial<ActorFilters>) => void }) {
   if (!stats) return <div style={{ padding: 40, textAlign: 'center', color: theme.colors.textDim }}>Loading Galaxy statistics…</div>;
 

@@ -1,16 +1,20 @@
+// ─── STARS BACKGROUND FIELD COMPONENT ────────────────────────────────────────
+// Generates static point-cloud particles randomly distributed over a shell sphere
+// to simulate stars in deep space.
+
 import { useMemo } from 'react';
 import * as THREE from 'three';
 
-/**
- * Star field background rendered as a point cloud.
- */
 export function Starfield({ count = 3000 }: { count?: number }) {
+  // ─── PARTICLE COORDINATE GENERATOR ──────────────────────────────────────────
+  // Distributes particles in 3D spherical coordinates using random angles
+  // (theta and phi) multiplied by a large radius.
   const geometry = useMemo(() => {
     const positions = new Float32Array(count * 3);
     const sizes = new Float32Array(count);
 
     for (let i = 0; i < count; i++) {
-      // Random positions on a large sphere
+      // Random coordinates distributed on a large outer sphere shell
       const radius = 50 + Math.random() * 100;
       const theta = Math.random() * Math.PI * 2;
       const phi = Math.acos(2 * Math.random() - 1);

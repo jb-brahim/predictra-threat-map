@@ -1,0 +1,726 @@
+Presentation loaded. Total slides: 40
+
+--- Slide 1 ---
+Layout: Blank
+Title: (No Title Shape)
+Text Blocks:
+  - Réalisé par:
+  - Mohamed salah DAHMANI &
+  - Imen GHANMI
+  - Encadré par:
+  - Mr Raed BEN KHLIFA
+  - Mme Hadhemi ISSAOUI
+  - 2024/2025
+  - INSTITUT SUPÉRIEUR DES ETUDES TECHNOLOGIQUES DE
+  - Gafsa DÉPARTEMENT TECHNOLOGIES DE
+  - L'INFORMATIQUE
+  - Projet de fin d’études
+  - DEVELOPEMENT D’UNE PLATEFORME DE MARKETING
+  - D’INFLUENCE POUR MICRO MARQUES
+  - Page 1
+Notes:
+1.7.2013
+
+Bonjour Mesdames, Messieurs,
+
+Je tiens tout d’abord à remercier les membres du jury pour leur présence ainsi que pour l’attention qu’ils ont portée à notre travail.
+
+Ce projet a été réalisé par moi-même, Moula Maïssa, et ma collègue Smeti Eya, sous la supervision de Mme Nacef Abir, encadrante académique à l’Institut Supérieur des Études Technologiques de Kélibia, et de Mme Zahou Aïcha, encadrante professionnelle.
+
+‹#›
+
+--- Slide 2 ---
+Layout: Blank
+Title: (No Title Shape)
+Text Blocks:
+  - Plan
+  - de la présentation
+  - 01
+  - Introduction
+  - 02
+  - Cadre du projet
+  - 03
+  - Analyse et  spécification des besoins
+  - 04
+  - Conception et réalisation releases 1
+  - 05
+  - Release2 – Gestion des marques et des influenceurs
+  - 06
+  - Release 3 Collaboration,
+  - communicationet paiements
+  - 07
+  - Conclusion et perspectives
+  - Page 2
+Notes:
+1.7.2013
+
+je commence par une introduction du projet, puis je vous présente le cadre du projet, en mettant en avant l’entreprise Web2code, la problématique rencontrée et la solution proposée.
+
+je poursuivre avec l’analyse et la spécification des besoins, en exposant les acteurs du système, les besoins fonctionnels et non fonctionnels, ainsi que les outils utilisés.
+
+Ensuite, nous aborderons la phase de conception, à travers la présentation du diagramme de cas d’utilisation global et du diagramme de classes global.
+
+Puis, nous passerons à la phase de réalisation, en illustrant les principales fonctionnalités de l’application 
+micro brand à l’aide de captures d’écran de l’interface, expérimentée par les différents utilisateurs.
+
+Enfin, nous conclurons par un résumé de notre travail et proposerons des perspectives d’évolution.
+
+‹#›
+
+--- Slide 3 ---
+Layout: Blank
+Title: (No Title Shape)
+Text Blocks:
+  - Introduction
+  - La plateforme vise à digitaliser et simplifier les collaborations marketing entre marques et influenceurs.
+  - Elle permet un suivi structuré et transparent des campagnes en temps réel.
+  - Ce projet répond à un besoin réel du marché tunisien en offrant une solution accessible et adaptée.
+  - Page 3
+Notes:
+1.7.2013
+
+Passons maintenant à la première partie de notre présentation :
+La plateforme Micro Brand a pour objectif de digitaliser et simplifier les collaborations marketing entre les marques et les influenceurs.
+Elle permet un suivi structuré et transparent des campagnes en temps réel.
+Ce projet répond à un besoin réel du marché tunisien, en proposant une solution accessible, efficace et adaptée aux acteurs locaux.
+
+‹#›
+
+--- Slide 4 ---
+Layout: Blank
+Title: (No Title Shape)
+Text Blocks:
+  - Cadre du projet
+  - Organisme d’accueil
+  - Etude de l’existant
+  - Problématique
+  - Solution proposée
+  - Page 4
+Notes:
+1.7.2013
+
+[Prenez une respiration et établissez un contact visuel avec le public]  
+
+on passe maintenant au cadre du projet. Ce cadre est essentiel pour comprendre le contexte dans lequel j' évolue
+
+Tout d'abord, on parle de l'organisme d’accueil. j'ai choisi Web2code, une agence dynamique située à Tunis, fondée en 2017 [Marquez une pause ici pour permettre au public d'absorber l'information]  
+
+Ensuite, j'ai effectué une étude de l’existant, qui m' a permis d'identifier les besoins et les défis actuels dans le domaine des collaborations marketing. [Accentuez ce point pour souligner son importance]  
+
+La problématique que j'ai identifiée est cruciale : comment rendre ces collaborations plus efficaces et transparentes ?  
+
+Enfin, la solution que je propose est une plateforme qui non seulement répond à cette problématique, mais aussi simplifie les processus pour les marques et les influenceurs.  
+
+[Regardez autour de vous pour engager les différents membres du public]  
+
+Cela nous amène à discuter des services que nous offrons et des bénéfices de cette solution. [Transitionnez doucement vers la prochaine diapositive]
+
+‹#›
+
+--- Slide 5 ---
+Layout: Blank
+Title: (No Title Shape)
+Text Blocks:
+  - Fondée en : 2019
+  - Localisation :
+  - Manzel Temin
+  - Nos services
+  - Designet : est une agnece de création site web en Tunisie
+  - organisme d’accueil
+  - Présentation de l’entreprise
+  - Page 5
+Notes:
+1.7.2013
+
+Bonjour à tous,
+Aujourd'hui, je vais vous parler de Web2code, une agence dynamique fondée en 2017 et localisée à Tunis.
+
+[Pause]
+
+Je me spécialise dans la création de sites web, en proposant des solutions innovantes aux entreprises tunisiennes.
+
+[Emphase]
+Mon objectif principal est de digitaliser et d'optimiser la collaboration entre marques et influenceurs.
+
+Je suis convaincu que la transparence et le suivi des performances sont essentiels pour les campagnes de marketing digital, et c’est exactement ce que je m’efforce d’offrir.
+
+[Pause]
+Dans la suite de cette présentation, je vais vous présenter l’étude de l’existant et les défis actuels du marché.
+
+[Transition]
+Restez avec moi, car vous allez découvrir comment ma solution peut réellement transformer le paysage du marketing en Tunisie.
+
+--- Slide 6 ---
+Layout: Blank
+Title: (No Title Shape)
+Text Blocks:
+  - Etude de l’existant
+  - Influence4You
+  - Findly
+  - Heepsy
+  - Page 6
+Notes:
+1.7.2013
+
+J' ai étudié trois plateformes internationales de marketing d'influence : Influence4You, Findly et Heepsy.  
+🔹 Elles fournissent des outils performants pour les grandes marques et les macro-influenceurs.  
+🔹 Cependant, leur coût élevé les rend peu accessibles aux micro-marques et aux micro-influenceurs.  
+
+‹#›
+
+--- Slide 7 ---
+Layout: Blank
+Title: (No Title Shape)
+Text Blocks:
+  - Problématique
+  - Page 7
+Notes:
+1.7.2013
+
+Pas de plateforme locale dédiée
+🔄 Processus de collaboration non structuré
+💰 Manque de transparence dans les paiements
+📉 Difficulté à évaluer les performances
+⚠️ Absence de cadre professionnel clair
+Les plateformes internationales existantes sont coûteuses, orientées vers les grandes marques, et inadaptées au marché tunisien.
+
+‹#›
+
+--- Slide 8 ---
+Layout: Blank
+Title: (No Title Shape)
+Text Blocks:
+  - Solution proposée
+  - Solution proposée
+  - Fonctionnalités principales
+  - Page 8
+Notes:
+1.7.2013
+
+Solution proposée : Plateforme tunisienne de marketing d’influence
+Développement d’une plateforme digitale professionnelle facilitant la collaboration entre marques et influenceurs dans un cadre structuré, sécurisé et localement adapté.
+🔍 Fonctionnalités principales :
+1-Gestion des utilisateurs : inscription personnalisée et espace dédié selon le rôle (marque/influenceur).
+2-Espace marques : création et suivi des campagnes, analyses statistiques, collaboration guidée, paiements automatisés.
+3-Espace influenceurs : profil enrichi, accès aux campagnes, candidatures, communication en temps réel, sécurisation des paiements.
+4-Système de paiement intégré :
+ transactions automatisées, traçables et sécurisées, avec suivi en temps réel.
+
+‹#›
+
+--- Slide 9 ---
+Layout: Blank
+Title: (No Title Shape)
+Text Blocks:
+  - Méthodologie de travail  et Technologies utilisées
+  - Page 9
+
+--- Slide 10 ---
+Layout: Blank
+Title: (No Title Shape)
+Text Blocks:
+  - Méthodologie de travail
+  - Méthodologie SCRUM
+  - Page 10
+  - Sprint 4 : Statistiques d'audience, gestion des contacts et recette générale du projet , intelligence artificielle .
+  - Sprint 1 : Authentification, Gestion du profil et des rôles. Administration générale de la plateforme.
+  - Sprint 3 : Collaboration, messagerie instantanée, système de notifications temps-réel et gestion des transactions financières.
+  - Sprint 2 : Gestion des campagnes de marketing d'influence par la marque et des publications par l'influenceur.
+Notes:
+1.7.2013
+j'ai adopté une méthode agile SCRUM pour organiser mon travail par sprints :
+- Sprint 0 : spécification des besoins et planification du projet.
+- Sprint 1 : authentification et gestion des entités principales.
+- Sprint 2 : gestion des marques et des influenceurs.
+- Sprint 3 : collaboration, communication et paiements.
+
+‹#›
+
+--- Slide 11 ---
+Layout: Blank
+Title: (No Title Shape)
+Text Blocks:
+  - Technologies utilisées
+  - StarUmL
+  - Visual Studio Code
+  - Heid SQL
+  - Laragon
+  - HTML5
+  - CSS3
+  - JavaScript
+  - PHP
+  - Bootsrap
+  - Laravel
+  - Page 11
+Notes:
+1.7.2013
+
+Nous avons utilisé plusieurs technologies pour ce projet :
+- Frameworks : Laravel (back-end), Blade (front-end), Bootstrap (design responsive).
+- Langages : HTML5, CSS3, JavaScript, PHP.
+- Outils : Laragon (environnement local), HeidiSQL (gestion de base de données), Visual Studio Code (éditeur de code), StarUML (modélisation UML).
+
+‹#›
+
+--- Slide 12 ---
+Layout: Blank
+Title: (No Title Shape)
+Text Blocks:
+  - Architecture
+  - Architecture MVC
+  - Page 12
+Notes:
+1.7.2013
+
+La plateforme microbrand utilise une architecturMVC de Laravel, facilitant maintenance et évolution :
+
+- Couche Présentation (Vue) : interface utilisateur avec des espaces spécifiques pour Administrateurs, Marques et Influenceurs.
+- Couche Métier (Contrôleur) : logique applicative gérée par des contrôleurs (AdminController, MarqueController, InfluenceurController) reliant vues et données.
+- Couche Données (Modèle) : modèles Eloquent gérant l'accès à la base de données, représentant des entités métiers (Utilisateur, Campagne, Annonce, Paiement).
+
+Cette architecture assure un code clair, modulable et évolutif.
+
+‹#›
+
+--- Slide 13 ---
+Layout: Blank
+Title: (No Title Shape)
+Text Blocks:
+  - Spécification des besoins
+  - Page 13
+
+--- Slide 14 ---
+Layout: Blank
+Title: (No Title Shape)
+Text Blocks:
+  - Spécification des besoins
+  - Les besoins fonctionnels
+  - Administrateur
+  - Marque
+  - Influenceur
+  - Page 14
+Notes:
+1.7.2013
+
+L’analyse des besoins est une étape clé dans le développement de monprojet. Elle permet de bien comprendre, formaliser et valider les exigences du système afin d’éviter des erreurs coûteuses plus tard.
+
+À ce stade, mon objectif est de définir précisément les attentes fonctionnelles, pour construire une base solide avant la modélisation technique.
+
+j'ai identifié trois acteurs principaux avec des besoins spécifiques :
+
+L’administrateur, qui supervise la plateforme, gère les utilisateurs, les campagnes et les paiements.
+
+Les marques (micro-marques), qui créent des campagnes, et suivent les participations ainsi que les résultats.
+
+Les influenceurs, qui postulent aux campagnes, publient du contenu et suivent leurs performances.
+
+‹#›
+
+--- Slide 15 ---
+Layout: Blank
+Title: (No Title Shape)
+Text Blocks:
+  - Spécification des besoins
+  - Les besoins fonctionnels
+  - Administrateur
+  - Page 15
+Notes:
+1.7.2013
+
+L’analyse des besoins représente une étape cruciale du développement d’un projet. Elle permet de comprendre, formaliser et valider les exigences du système à concevoir. Une spécification rigoureuse est indispensable pour éviter les erreurs coûteuses en phase avancée du projet.
+
+Notre objectif à ce stade est de définir de manière complète et précise les attentes fonctionnelles du système. Cette étape servira de base solide pour la modélisation technique.
+
+Nous avons identifié les besoins fonctionnels spécifiques pour trois types d’acteurs principaux :
+
+L’administrateur : supervise la plateforme, gère les utilisateurs, les campagnes et les paiements.
+
+Les marques (micro-marques) : créent des campagnes, suivent les participations et les résultats.
+
+Les influenceurs : postulent aux campagnes, publient du contenu et suivent leurs performances.
+
+Administrateur
+•	S’authentifier
+•	Gérer les sous-admis
+•	Gérer profil
+•	Gérer les inscriptions des marques
+•	Gérer les marques
+•	Gérer les influenceurs
+•	Gérer les tarifications
+•	Gérer contacts
+•	Visualiser les collaborations
+•	Visualiser les statistiques
+•	Visualisations des transactions financières 
+•	Visualisation de l’historique des convocations 
+
+Marque
+•	S’inscrire
+•	S’authentifier
+•	Visualiser les statistiques
+•	Gérer les campagnes
+•	Gérer annonce
+•	Contacter admin
+•	Contacter influenceur
+•	Consulter les profils des influenceurs
+•	Gérer postulations
+•	Suivi des convocations de service avant et après la publication
+•	Suivi des revenues de chaque convocation de service
+•	Gérer les paiements
+•	Gérer notifications
+•	Ajouter des avis
+ 
+Influenceur 
+•	S’inscrire
+•	S’authentifier
+•	Gérer les publications
+•	Ajouter avis
+•	Consulter les annonces disponibles
+•	Postuler à une annonce 
+•	Consulter les listes de participation au service
+•	Gérer notification 
+•	Contacter marque 
+•	Visualiser les statistiques
+
+‹#›
+
+--- Slide 16 ---
+Layout: Blank
+Title: (No Title Shape)
+Text Blocks:
+  - Spécification des besoins
+  - Les besoins fonctionnels
+  - Marque
+  - Page 16
+Notes:
+1.7.2013
+
+L’analyse des besoins représente une étape cruciale du développement d’un projet. Elle permet de comprendre, formaliser et valider les exigences du système à concevoir. Une spécification rigoureuse est indispensable pour éviter les erreurs coûteuses en phase avancée du projet.
+
+Notre objectif à ce stade est de définir de manière complète et précise les attentes fonctionnelles du système. Cette étape servira de base solide pour la modélisation technique.
+
+Nous avons identifié les besoins fonctionnels spécifiques pour trois types d’acteurs principaux :
+
+L’administrateur : supervise la plateforme, gère les utilisateurs, les campagnes et les paiements.
+
+Les marques (micro-marques) : créent des annonces et campagnes, suivent les participations et les résultats.
+
+Les influenceurs : postulent aux campagnes, publient du contenu et suivent leurs performances.
+
+Administrateur
+•	S’authentifier
+•	Gérer les sous-admis
+•	Gérer profil
+•	Gérer les inscriptions des marques
+•	Gérer les marques
+•	Gérer les influenceurs
+•	Gérer les tarifications
+•	Gérer contacts
+•	Visualiser les collaborations
+•	Visualiser les statistiques
+•	Visualisations des transactions financières 
+•	Visualisation de l’historique des convocations 
+
+Marque
+•	S’inscrire
+•	S’authentifier
+•	Visualiser les statistiques
+•	Gérer les campagnes
+•	Gérer annonce
+•	Contacter admin
+•	Contacter influenceur
+•	Consulter les profils des influenceurs
+•	Gérer postulations
+•	Suivi des convocations de service avant et après la publication
+•	Suivi des revenues de chaque convocation de service
+•	Gérer les paiements
+•	Gérer notifications
+•	Ajouter des avis
+ 
+Influenceur 
+•	S’inscrire
+•	S’authentifier
+•	Gérer les publications
+•	Ajouter avis
+•	Consulter les annonces disponibles
+•	Postuler à une annonce 
+•	Consulter les listes de participation au service
+•	Gérer notification 
+•	Contacter marque 
+•	Visualiser les statistiques
+
+‹#›
+
+--- Slide 17 ---
+Layout: Blank
+Title: (No Title Shape)
+Text Blocks:
+  - Spécification des besoins
+  - Les besoins fonctionnels
+  - Influenceur
+  - Page 17
+Notes:
+1.7.2013
+
+L’analyse des besoins représente une étape cruciale du développement d’un projet. Elle permet de comprendre, formaliser et valider les exigences du système à concevoir. Une spécification rigoureuse est indispensable pour éviter les erreurs coûteuses en phase avancée du projet.
+
+Notre objectif à ce stade est de définir de manière complète et précise les attentes fonctionnelles du système. Cette étape servira de base solide pour la modélisation technique.
+
+Nous avons identifié les besoins fonctionnels spécifiques pour trois types d’acteurs principaux :
+
+L’administrateur : supervise la plateforme, gère les utilisateurs, les campagnes et les paiements.
+
+Les marques (micro-marques) : créent des annonces et campagnes, suivent les participations et les résultats.
+
+Les influenceurs : postulent aux campagnes, publient du contenu et suivent leurs performances.
+
+Administrateur
+•	S’authentifier
+•	Gérer les sous-admis
+•	Gérer profil
+•	Gérer les inscriptions des marques
+•	Gérer les marques
+•	Gérer les influenceurs
+•	Gérer les tarifications
+•	Gérer contacts
+•	Visualiser les collaborations
+•	Visualiser les statistiques
+•	Visualisations des transactions financières 
+•	Visualisation de l’historique des convocations 
+
+Marque
+•	S’inscrire
+•	S’authentifier
+•	Visualiser les statistiques
+•	Gérer les campagnes
+•	Gérer annonce
+•	Contacter admin
+•	Contacter influenceur
+•	Consulter les profils des influenceurs
+•	Gérer postulations
+•	Suivi des convocations de service avant et après la publication
+•	Suivi des revenues de chaque convocation de service
+•	Gérer les paiements
+•	Gérer notifications
+•	Ajouter des avis
+ 
+Influenceur 
+•	S’inscrire
+•	S’authentifier
+•	Gérer les publications
+•	Ajouter avis
+•	Consulter les annonces disponibles
+•	Postuler à une annonce 
+•	Consulter les listes de participation au service
+•	Gérer notification 
+•	Contacter marque 
+•	Visualiser les statistiques
+
+‹#›
+
+--- Slide 18 ---
+Layout: Blank
+Title: (No Title Shape)
+Text Blocks:
+  - Spécification des besoins
+  - Les besoins non fonctionnels
+  - Performance
+  - TEMPS DE RÉPONSE RAPIDE POUR LES REQUÊTES DANS LE TABLEAU DE BORD.
+  - FIABILITÉ
+  - S'ASSURER QUE LES DONNÉES COLLECTÉES, ANALYSÉES ET AFFICHÉES SONT EXACTES.
+  - SÉCURITÉ
+  - MISE EN PLACE D’UN PROCESSUS D’AUTHENTIFICATION INCLUANT UNE VÉRIFICATION PAR EMAIL.
+  - SCALABILITÉ
+  - CAPACITÉ À INTÉGRER DE NOUVELLES PLATEFORMES OU FONCTIONNALITÉS À L’AVENIR
+  - .
+  - INTERFACE UTILISATEUR INTUITIVE POUR PERMETTRE UNE UTILISATION FACILE PAR L‘ADMINISTRATEUR.
+  - Page 18
+  - accessibilité
+
+--- Slide 19 ---
+Layout: Blank
+Title: (No Title Shape)
+Text Blocks:
+  - Conception et réalisation
+  - Page 19
+
+--- Slide 20 ---
+Layout: Blank
+Title: (No Title Shape)
+Text Blocks:
+  - Diagramme de cas d’utilisation global
+  - Conception et réalisation
+  - Page 20
+
+--- Slide 21 ---
+Layout: Blank
+Title: (No Title Shape)
+Text Blocks:
+  - Diagramme de classe global
+  - Conception et réalisation
+  - Page 21
+
+--- Slide 22 ---
+Layout: Blank
+Title: (No Title Shape)
+Text Blocks:
+  - Conception et réalisation
+  - Foire aux questions
+  - Nos offres
+  - Page 23
+
+--- Slide 23 ---
+Layout: Blank
+Title: (No Title Shape)
+Text Blocks:
+  - Conception et réalisation
+  - Interface Login de Administrateur
+  - Interface Tableau de bord
+  - Page 24
+
+--- Slide 24 ---
+Layout: Blank
+Title: (No Title Shape)
+Text Blocks:
+  - Conception et réalisation
+  - Interface Liste
+  - des Administrateurs
+  - Interface Liste
+  - des Marques
+  - Page 25
+
+--- Slide 25 ---
+Layout: Blank
+Title: (No Title Shape)
+Text Blocks:
+  - Conception et réalisation
+  - Interface Liste des Influenceurs
+  - Interface Liste des Campagnes
+  - Page 26
+
+--- Slide 26 ---
+Layout: Blank
+Title: (No Title Shape)
+Text Blocks:
+  - Conception et réalisation
+  - Interface Liste des Paiements
+  - Interface l’historique des collaborationss
+  - Page 27
+
+--- Slide 27 ---
+Layout: Blank
+Title: (No Title Shape)
+Text Blocks:
+  - Conception et réalisation
+  - Interface Liste de contact
+  - Notification contact
+  - Interface détails message de contact
+  - Page 28
+
+--- Slide 28 ---
+Layout: Blank
+Title: (No Title Shape)
+Text Blocks:
+  - Conception et réalisation
+  - Interface login espace marque
+  - Interface Inscription Marque
+  - Page 29
+
+--- Slide 29 ---
+Layout: Blank
+Title: (No Title Shape)
+Text Blocks:
+  - Conception et réalisation
+  - Interface Tableau de bord Marque
+  - Page 30
+
+--- Slide 30 ---
+Layout: Blank
+Title: (No Title Shape)
+Text Blocks:
+  - Conception et réalisation
+  - Payer frais annonce
+  - Page 31
+
+--- Slide 31 ---
+Layout: Blank
+Title: (No Title Shape)
+Text Blocks:
+  - Conception et réalisation
+  - Interface Liste des postulations
+  - Page 32
+
+--- Slide 32 ---
+Layout: Blank
+Title: (No Title Shape)
+Text Blocks:
+  - Conception et réalisation
+  - Historique transaction
+  - Page 34
+
+--- Slide 33 ---
+Layout: Blank
+Title: (No Title Shape)
+Text Blocks:
+  - Conception et réalisation
+  - login espace influenceur
+  - Interface Inscription Influenceur
+  - Page 36
+
+--- Slide 34 ---
+Layout: Blank
+Title: (No Title Shape)
+Text Blocks:
+  - Conception et réalisation
+  - Interface Tableau de bord influenceur
+  - Interface Ajouter avis
+  - Page 37
+
+--- Slide 35 ---
+Layout: Blank
+Title: (No Title Shape)
+Text Blocks:
+  - Conception et réalisation
+  - Interface liste
+  - des Participations
+  - Notification d’acceptation de la participation
+  - Page 39
+
+--- Slide 36 ---
+Layout: Blank
+Title: (No Title Shape)
+Text Blocks:
+  - Conception et réalisation
+  - Interface Ajouter publication
+  - Interface Liste des publications
+  - Page 40
+
+--- Slide 37 ---
+Layout: Blank
+Title: (No Title Shape)
+Text Blocks:
+  - Conclusion et perspectives
+  - Page 41
+
+--- Slide 38 ---
+Layout: Blank
+Title: (No Title Shape)
+Text Blocks:
+  - Conclusion
+  - Page 42
+
+--- Slide 39 ---
+Layout: Blank
+Title: (No Title Shape)
+Text Blocks:
+  - perspectives
+  - application web
+  - l’hébergement en ligne
+  - l’intégration de l’intelligence artificielle
+  - Page 43
+
+--- Slide 40 ---
+Layout: Blank
+Title: (No Title Shape)
+Text Blocks:
+  - Merci pour votre attention.
+  - Page 44

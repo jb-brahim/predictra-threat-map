@@ -21,6 +21,7 @@ const FLAG_FALLBACK: Record<string, string> = {
   NP: '🇳🇵', KE: '🇰🇪', TN: '🇹🇳', MA: '🇲🇦', SA: '🇸🇦', AE: '🇦🇪',
 };
 
+// Gets the emoji flag icon for a country code.
 function getFlag(co: string): string {
   if (!co || co === '??') return '🌐';
   if (FLAG_FALLBACK[co]) return FLAG_FALLBACK[co];
@@ -30,6 +31,7 @@ function getFlag(co: string): string {
   } catch { return co; }
 }
 
+// Calculates how long ago an event happened (like '5s ago' or '3m ago').
 function relativeTime(isoStr?: string | Date): string {
   if (!isoStr) return 'just now';
   const diffSec = Math.floor((Date.now() - new Date(isoStr).getTime()) / 1000);
@@ -40,12 +42,14 @@ function relativeTime(isoStr?: string | Date): string {
   return `${Math.floor(diffMin / 60)}h ago`;
 }
 
+// Formats numbers so they are easy to read (like 1.2M or 4.5K).
 function fmt(n: number): string {
   if (n >= 1_000_000) return (n / 1_000_000).toFixed(1) + 'M';
   if (n >= 1_000) return (n / 1_000).toFixed(1) + 'K';
   return n.toLocaleString();
 }
 
+// Checks if a threat event matches the user's search text.
 function matchesSearch(event: ThreatEvent, q: string): boolean {
   if (!q) return true;
   const lower = q.toLowerCase();
@@ -67,6 +71,9 @@ type SortMode = 'count' | 'alpha';
 
 /* ─── main component ──────────────────────────────────────────────────────── */
 
+// Main Dashboard page of the Threat Map. It integrates the 3D globe with
+// overlay HUD panels showing threat counts, categories, and target metrics.
+// Users can filter data and export reports to CSV, JSON, or Excel.
 export function DashboardPage() {
   const currentView     = useStreamStore(s => s.currentView);
   const totalAttacks_raw    = useStreamStore(s => s.totalAttacks);
@@ -821,6 +828,8 @@ export function DashboardPage() {
 
 /* ─── FeedEventCard ───────────────────────────────────────────────────────── */
 
+// Shows details for a single threat alert.
+// Clicking it expands to show details like port, malware family, or source tags.
 function FeedEventCard({ event, expanded, onToggle, onCountryClick }: { event: ThreatEvent; expanded: boolean; onToggle: () => void; onCountryClick: (co: string) => void }) {
   const [hovered, setHovered] = useState(false);
   const color = getAttackColor(event.a_t);
@@ -905,6 +914,7 @@ function MetaTag({ label, value, color }: { label: string; value: string; color:
 
 /* ─── TrendSparkline ──────────────────────────────────────────────────────── */
 
+// Draws a mini bar chart showing active threats over the last 10 minutes.
 function TrendSparkline({ data }: { data: number[] }) {
   const bars = data.slice(0, 60).reverse(); // oldest → newest
   const maxVal = Math.max(...bars, 1);
@@ -949,6 +959,8 @@ function TrendSparkline({ data }: { data: number[] }) {
 
 /* ─── CountryDrillOver ────────────────────────────────────────────────────── */
 
+// A side panel that slides in when you click a country. It displays that
+// country's threat levels, targeted vectors, and list of source IPs.
 function CountryDrillOver({ data, onClose }: { data: { co: string; asOrigin: number; asTarget: number; topVectors: [string, number][]; corridors: string[]; topIPs: string[] }; onClose: () => void }) {
   return (
     <div style={{
@@ -1049,6 +1061,7 @@ const hudBtnStyle: React.CSSProperties = {
 
 /* ─── HUD Panel with Corner Brackets ─────────────────────────────────────── */
 
+// A reusable panel box with high-tech corner borders, custom color accents, and a pulse LED.
 function HudPanel({ children, title, accent = 'red' }: {
   children: React.ReactNode;
   title?: string;

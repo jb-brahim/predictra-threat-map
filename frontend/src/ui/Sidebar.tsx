@@ -1,3 +1,7 @@
+// ─── DASHBOARD SIDEBAR PANEL COMPONENT ────────────────────────────────────────
+// Displays real-time aggregated counts, sparkline graphs, threat distributions,
+// and a scrolling list of recent cyber threat events.
+
 import { useStreamStore } from '../stream/useStreamStore';
 import { GlassPanel } from './GlassPanel';
 import { theme, getAttackColor } from '../theme/theme';
@@ -73,6 +77,9 @@ function TypeBadge({ type }: { type: string }) {
   );
 }
 
+// ─── SIDEBAR COMPONENT ────────────────────────────────────────────────────────
+// Subscribes to slices of the Zustand state (totals, distributions, trends, feeds)
+// and handles sorting to output list widgets.
 export function Sidebar() {
   const totalAttacks = useStreamStore(s => s.totalAttacks);
   const counterData = useStreamStore(s => s.counterData);

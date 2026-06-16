@@ -1,3 +1,7 @@
+// ─── 2D VIEWPORT BACKGROUND EFFECTS ──────────────────────────────────────────
+// Handles visual backgrounds in 2D mode, rendering a distant parallax grid,
+// vertical data stream particles, and depth fog planes.
+
 import { useRef, useMemo } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
@@ -5,10 +9,10 @@ import { useStreamStore } from '../stream/useStreamStore';
 
 export function BackgroundEffects() {
   const quality = useStreamStore(s => s.config.qualityPreset);
-
   const groupRef = useRef<THREE.Group>(null);
   
-  // Distant parallax grid
+  // ─── DISTANT PARALLAX GRID ─────────────────────────────────────────────────
+  // Creates static points positioned far behind the map to simulate stars.
   const gridPoints = useMemo(() => {
     const points: THREE.Vector3[] = [];
     for (let i = 0; i < 200; i++) {
@@ -21,7 +25,8 @@ export function BackgroundEffects() {
     return new THREE.BufferGeometry().setFromPoints(points);
   }, []);
 
-  // Moving particle streams
+  // ─── DYNAMIC PARTICLE STREAMS ──────────────────────────────────────────────
+  // Generates positions and speeds for rain-like vertical streaming points.
   const particles = useMemo(() => {
     const count = quality === 'low' ? 500 : 2000;
     const pos = new Float32Array(count * 3);
@@ -37,6 +42,9 @@ export function BackgroundEffects() {
 
   const particleRef = useRef<THREE.Points>(null);
 
+  // ─── ANIMATION SCHEDULE ────────────────────────────────────────────────────
+  // Smoothly interpolates background parallax position based on mouse offsets
+  // and animates particle stream positions downward.
   useFrame((state, delta) => {
     if (!groupRef.current) return;
     
@@ -46,7 +54,7 @@ export function BackgroundEffects() {
     groupRef.current.position.x = THREE.MathUtils.lerp(groupRef.current.position.x, mouseX, 0.05);
     groupRef.current.position.y = THREE.MathUtils.lerp(groupRef.current.position.y, mouseY, 0.05);
 
-    // Animate particles
+    // Animate particle streams downwards
     if (particleRef.current) {
       const positions = particleRef.current.geometry.attributes.position.array as Float32Array;
       for (let i = 0; i < particles.vel.length; i++) {

@@ -1,3 +1,7 @@
+// ─── 3D HOLOGRAPHIC REGION VIEWPORT COMPONENT ────────────────────────────────
+// Isolates coordinates for a selected country and extrudes a rotating, floating
+// 3D holographic shape applying custom WebGL Fresnel edge glow shaders.
+
 import { useRef, useEffect, useState, useMemo } from 'react';
 import * as THREE from 'three';
 import { useFrame } from '@react-three/fiber';
@@ -102,6 +106,9 @@ export function CountryHologram() {
 
   if (geometries.length === 0) return null;
 
+  // ─── GLSL CUSTOM SHADERS ───────────────────────────────────────────────────
+  // Custom GLSL programs running on the GPU. The vertex shader maps normals,
+  // while the fragment shader computes the Fresnel edge glow and scanlines.
   const vertexShader = `
     varying vec3 vNormal;
     varying vec3 vPos;

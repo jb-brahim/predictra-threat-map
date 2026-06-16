@@ -1,5 +1,8 @@
-import { Canvas, useFrame } from '@react-three/fiber';
+// ─── 3D GLOBE / 2D MAP CANVA CONTAINER ────────────────────────────────────────
+// Sets up the React Three Fiber viewport canvas, loads lights, camera limits,
+// controls, environment particle fields, and postprocessing bloom layers.
 
+import { Canvas, useFrame } from '@react-three/fiber';
 import { OrbitControls, Stars } from '@react-three/drei';
 import { EffectComposer, Bloom } from '@react-three/postprocessing';
 import { Earth } from './Earth';
@@ -9,9 +12,9 @@ import { BackgroundEffects } from './BackgroundEffects';
 import { useStreamStore } from '../stream/useStreamStore';
 import { perfTelemetry } from '../utils/perf';
 
-/**
- * Animation loop that ticks the store and updates perf telemetry.
- */
+// ─── FRAME TICK TRIGGER ──────────────────────────────────────────────────────
+// An animation helper rendering frames inside the loop to tick state managers
+// and update browser rendering stats.
 function AnimationLoop() {
   const tick = useStreamStore(s => s.tick);
 
@@ -23,18 +26,9 @@ function AnimationLoop() {
   return null;
 }
 
-/**
- * Main GlobeScene — the R3F Canvas with all 3D layers.
- */
 export function GlobeScene() {
-  const { qualityPreset } = useStreamStore(s => s.config); // Modified this line
+  const { qualityPreset } = useStreamStore(s => s.config);
   const projectionMode = useStreamStore(s => s.projectionMode);
-
-  // Removed bloomIntensity as it was unused.
-  // const bloomIntensity = useMemo(() =>
-  //   qualityPreset === 'cinematic' ? 1.2
-  //   : qualityPreset === 'high' ? 0.8 : 0.4,
-  // [qualityPreset]);
 
   return (
     <div style={{
@@ -59,7 +53,7 @@ export function GlobeScene() {
         }}
         dpr={qualityPreset === 'low' ? 1 : Math.min(window.devicePixelRatio, 2)}
       >
-        {/* Lighting (Deep Space in 3D, Even in 2D) */}
+        {/* ─── LIGHTING LAYERS ────────────────────────────────────────────────── */}
         <ambientLight intensity={projectionMode === '3d' ? 0.05 : 0.15} color="#ffffff" />
         <directionalLight 
           position={projectionMode === '3d' ? [10, 5, 5] : [5, 3, 5]} 
@@ -70,13 +64,13 @@ export function GlobeScene() {
           <directionalLight position={[-5, -2, -5]} intensity={0.1} color="#0044AA" />
         )}
 
-        {/* Background */}
+        {/* ─── ENVIRONMENT BACKGROUNDS ────────────────────────────────────────── */}
         <color attach="background" args={[projectionMode === '3d' ? '#000000' : '#050B14']} />
         <fog attach="fog" args={[projectionMode === '3d' ? '#000000' : '#050B14', 5, 30]} />
         <Stars radius={100} depth={50} count={qualityPreset === 'low' ? 2000 : 5000} factor={4} saturation={0} fade speed={1} />
         {projectionMode !== '3d' && <BackgroundEffects />}
 
-        {/* Global Tech Grid (Static Background) */}
+        {/* ─── BACKGROUND STATIC DECORATIVE TECH GRID ─────────────────────────── */}
         <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -2, -5]}>
           <planeGeometry args={[100, 100, 50, 50]} />
           <meshBasicMaterial 
@@ -87,27 +81,27 @@ export function GlobeScene() {
           />
         </mesh>
 
-        {/* Globe and Attacks */}
+        {/* ─── PHYSICAL GLOBE & CYBER ARC COMPOSITES ──────────────────────────── */}
         <Earth>
           <AttackArcs />
           <ImpactMarkers />
         </Earth>
 
-        {/* Controls */}
+        {/* ─── INTERACTION CONTROLLERS ────────────────────────────────────────── */}
         <OrbitControls
           enablePan={projectionMode === '2d'}
           minDistance={1.5}
           maxDistance={6}
           enableDamping
           dampingFactor={0.05}
-          rotateSpeed={projectionMode === '3d' ? 0.5 : 0.1} // Allow slight tilt in 2D
+          rotateSpeed={projectionMode === '3d' ? 0.5 : 0.1}
           zoomSpeed={0.8}
           autoRotate={false}
-          maxPolarAngle={projectionMode === '3d' ? Math.PI : Math.PI / 1.8} // Prevent flipping in 2D
-          minPolarAngle={projectionMode === '3d' ? 0 : Math.PI / 4} // Allow looking "ahead"
+          maxPolarAngle={projectionMode === '3d' ? Math.PI : Math.PI / 1.8}
+          minPolarAngle={projectionMode === '3d' ? 0 : Math.PI / 4}
         />
 
-        {/* Post-processing */}
+        {/* ─── POSTPROCESSING COMBINED GLOW COMPOSERS ─────────────────────────── */}
         <EffectComposer multisampling={qualityPreset === 'low' ? 0 : 8}>
           <Bloom
             luminanceThreshold={0.5}
@@ -117,7 +111,6 @@ export function GlobeScene() {
           />
         </EffectComposer>
 
-        {/* Animation loop */}
         <AnimationLoop />
       </Canvas>
     </div>

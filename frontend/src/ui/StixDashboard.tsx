@@ -54,6 +54,8 @@ interface ParsedStixData {
 }
 
 // ─── STIX PARSER ─────────────────────────────────────────────────────────────
+// This function takes a STIX bundle (like CISA or Ivanti) and sorts the objects inside.
+// It groups them by type (reports, attack patterns, indicators, locations) and returns them.
 function parseBundle(bundle: StixBundle): ParsedStixData {
   const reports: StixObject[] = [];
   const attackPatterns: StixObject[] = [];
@@ -85,6 +87,7 @@ function parseBundle(bundle: StixBundle): ParsedStixData {
   };
 }
 
+// Merges CISA and Ivanti threat data and removes duplicates.
 function mergeData(a: ParsedStixData, b: ParsedStixData): ParsedStixData {
   const objectMap = new Map([...a.objectMap, ...b.objectMap]);
   return {
@@ -100,6 +103,7 @@ function mergeData(a: ParsedStixData, b: ParsedStixData): ParsedStixData {
   };
 }
 
+// Filters out duplicate threat items from a list using a Set of IDs.
 function dedup(arr: StixObject[]): StixObject[] {
   const seen = new Set<string>();
   return arr.filter(o => {
@@ -136,6 +140,7 @@ const KILL_CHAIN_PHASES = [
   { id: 'c2', label: 'Command & Control', keywords: ['command and control', 'proxy', 'data obfuscation', 'ingress tool', 'protocol impersonation'], color: '#8B5CF6' },
 ];
 
+// Maps a MITRE ATT&CK technique to its kill chain phase by scanning keywords in its name.
 function mapAttackToPhase(name: string): string[] {
   const lower = name.toLowerCase();
   const phases: string[] = [];
@@ -148,6 +153,7 @@ function mapAttackToPhase(name: string): string[] {
 }
 
 // ─── INDICATOR CLASSIFIER ────────────────────────────────────────────────────
+// Parses an indicator's pattern text using Regex to extract its type and value.
 function classifyIndicator(obj: StixObject): { type: string; value: string; icon: string } {
   const pattern = obj.pattern || '';
   if (pattern.includes('ipv4-addr')) {
@@ -229,19 +235,19 @@ export function StixDashboard() {
   }, [data]);
 
   return (
-    <div style={{ 
-      display: 'grid', 
+    <div style={{
+      display: 'grid',
       gridTemplateColumns: '340px 1fr' + (selectedItem ? ' 420px' : ''),
-      height: '100%', 
+      height: '100%',
       overflow: 'hidden',
       background: 'rgba(5, 5, 15, 0.4)',
       gap: 0,
       transition: 'grid-template-columns 0.3s cubic-bezier(0.4, 0, 0.2, 1)'
     }}>
       {/* ─── LEFT SIDEBAR: REPORT BROWSER ────────────────────────── */}
-      <div style={{ 
-        borderRight: '1px solid rgba(255,255,255,0.06)', 
-        display: 'flex', 
+      <div style={{
+        borderRight: '1px solid rgba(255,255,255,0.06)',
+        display: 'flex',
         flexDirection: 'column',
         background: 'rgba(10, 15, 30, 0.4)',
         zIndex: 10
@@ -260,8 +266,8 @@ export function StixDashboard() {
         </div>
 
         <div style={{ flex: 1, overflow: 'auto', padding: '12px 16px' }}>
-          <div style={{ 
-            fontSize: 10, fontWeight: 800, color: theme.colors.textDim, 
+          <div style={{
+            fontSize: 10, fontWeight: 800, color: theme.colors.textDim,
             textTransform: 'uppercase', letterSpacing: 1, marginBottom: 16,
             display: 'flex', alignItems: 'center', gap: 8
           }}>
@@ -285,38 +291,38 @@ export function StixDashboard() {
       {/* ─── MAIN CONTENT ─────────────────────────────────────────── */}
       <div style={{ display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
         {/* TELEMETRY STRIP (Compact Header) */}
-        <div style={{ 
-          display: 'flex', alignItems: 'center', justifyContent: 'space-between', 
+        <div style={{
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
           padding: '16px 24px', borderBottom: '1px solid rgba(255,255,255,0.06)',
           background: 'rgba(15, 23, 42, 0.3)', backdropFilter: 'blur(10px)'
         }}>
           <div style={{ display: 'flex', gap: 32 }}>
-            <TelemetryItem 
-              label="Intelligence" 
-              value={data.reports.length} 
-              color="#8B5CF6" 
-              icon="📄" 
+            <TelemetryItem
+              label="Intelligence"
+              value={data.reports.length}
+              color="#8B5CF6"
+              icon="📄"
               onClick={() => setSelectedItem({ type: 'definition', id: 'threat-reports' })}
             />
-            <TelemetryItem 
-              label="Techniques" 
-              value={data.attackPatterns.length} 
-              color={theme.colors.exploit} 
-              icon="⚔️" 
+            <TelemetryItem
+              label="Techniques"
+              value={data.attackPatterns.length}
+              color={theme.colors.exploit}
+              icon="⚔️"
               onClick={() => setSelectedItem({ type: 'definition', id: 'attack-patterns' })}
             />
-            <TelemetryItem 
-              label="IOCs" 
-              value={data.indicators.length} 
-              color={theme.colors.malware} 
-              icon="🎯" 
+            <TelemetryItem
+              label="IOCs"
+              value={data.indicators.length}
+              color={theme.colors.malware}
+              icon="🎯"
               onClick={() => setSelectedItem({ type: 'definition', id: 'indicators' })}
             />
-            <TelemetryItem 
-              label="Kill Chain" 
-              value={`${Object.keys(killChainMap).filter(k => k !== 'unknown').length}/${KILL_CHAIN_PHASES.length}`} 
-              color="#06B6D4" 
-              icon="🔗" 
+            <TelemetryItem
+              label="Kill Chain"
+              value={`${Object.keys(killChainMap).filter(k => k !== 'unknown').length}/${KILL_CHAIN_PHASES.length}`}
+              color="#06B6D4"
+              icon="🔗"
               onClick={() => setSelectedItem({ type: 'definition', id: 'kill-chain' })}
             />
           </div>
@@ -423,7 +429,7 @@ function OverviewTab({ data, killChainMap, selectedReport, setSelectedItem }: {
             const techniques = filteredKillChainMap[phase.id] || [];
             const isActive = techniques.length > 0;
             const isSelected = activePhase === phase.id;
-            
+
             return (
               <div
                 key={phase.id}
@@ -473,15 +479,15 @@ function OverviewTab({ data, killChainMap, selectedReport, setSelectedItem }: {
           display: 'flex', alignItems: 'center', gap: 8,
         }}>
           <span style={{ width: 6, height: 6, borderRadius: '50%', background: theme.colors.malware, boxShadow: `0 0 8px ${theme.colors.malware}` }} />
-          INTELLIGENCE MATRIX {selectedReport ? `— FILTERED BY ${selectedReport.id.split('--')[1].substring(0,8)}` : ''}
+          INTELLIGENCE MATRIX {selectedReport ? `— FILTERED BY ${selectedReport.id.split('--')[1].substring(0, 8)}` : ''}
         </div>
-        
+
         <GlassPanel style={{ flex: 1, overflow: 'auto', padding: 20 }}>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(400px, 1fr))', gap: 24 }}>
             {KILL_CHAIN_PHASES.filter(p => !activePhase || activePhase === p.id).map(phase => {
               const techniques = filteredKillChainMap[phase.id];
               if (!techniques || techniques.length === 0) return null;
-              
+
               return (
                 <div key={phase.id}>
                   <div style={{
@@ -493,7 +499,7 @@ function OverviewTab({ data, killChainMap, selectedReport, setSelectedItem }: {
                     <span style={{ fontSize: 14 }}>{getPhaseIcon(phase.id)}</span>
                     {phase.label} ({techniques.length})
                   </div>
-                  
+
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                     {techniques.map(tech => {
                       const mitreRef = tech.external_references?.find(r => r.source_name === 'mitre-attack');
@@ -531,16 +537,16 @@ function OverviewTab({ data, killChainMap, selectedReport, setSelectedItem }: {
                               </span>
                             )}
                           </div>
-                          
+
                           <div style={{ fontSize: 10, color: theme.colors.textDim, lineHeight: 1.4, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
                             {tech.description || 'No detailed TTP analysis available.'}
                           </div>
-                          
+
                           {/* Mini-stats for the technique */}
                           <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
-                             <div style={{ fontSize: 8, color: theme.colors.textDim, textTransform: 'uppercase', letterSpacing: 0.5 }}>
-                               Detected in {data.reports.filter(r => r.object_refs?.includes(tech.id)).length} reports
-                             </div>
+                            <div style={{ fontSize: 8, color: theme.colors.textDim, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                              Detected in {data.reports.filter(r => r.object_refs?.includes(tech.id)).length} reports
+                            </div>
                           </div>
                         </div>
                       );
@@ -750,8 +756,8 @@ function getIOCColor(type: string): string {
 // ═══════════════════════════════════════════════════════════════════════════════
 // INTELLIGENCE DETAIL PANEL (Slide-In)
 // ═══════════════════════════════════════════════════════════════════════════════
-function DetailPanel({ item, onClose }: { 
-  item: { type: string; id: string; data?: any }; 
+function DetailPanel({ item, onClose }: {
+  item: { type: string; id: string; data?: any };
   onClose: () => void;
 }) {
   let content: Definition | null = null;
@@ -783,7 +789,7 @@ function DetailPanel({ item, onClose }: {
       <style>{`
         @keyframes slideIn { from { transform: translateX(100%); } to { transform: translateX(0); } }
       `}</style>
-      
+
       {/* Panel Header */}
       <div style={{ padding: '24px 30px', borderBottom: '1px solid rgba(255,255,255,0.05)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <div style={{ fontSize: 10, fontWeight: 900, textTransform: 'uppercase', letterSpacing: 2.5, color: accentColor }}>
@@ -814,11 +820,11 @@ function DetailPanel({ item, onClose }: {
               </span>
             </div>
             <h3 style={{ fontSize: 22, fontWeight: 900, fontFamily: theme.fonts.display, margin: '0 0 20px', color: '#fff' }}>{stixData.name || stixData.id}</h3>
-            
+
             <div style={{ padding: 16, borderRadius: 8, background: 'rgba(255,255,255,0.02)', marginBottom: 24 }}>
-               <p style={{ fontSize: 13, color: theme.colors.textSecondary, lineHeight: 1.6, margin: 0 }}>
-                 {stixData.description || 'No detailed description available for this threat object.'}
-               </p>
+              <p style={{ fontSize: 13, color: theme.colors.textSecondary, lineHeight: 1.6, margin: 0 }}>
+                {stixData.description || 'No detailed description available for this threat object.'}
+              </p>
             </div>
 
             {stixData.external_references && stixData.external_references.length > 0 && (
@@ -970,16 +976,16 @@ function TelemetryItem({ label, value, color, icon, onClick }: {
   label: string; value: number | string; color: string; icon: string; onClick: () => void;
 }) {
   return (
-    <div 
+    <div
       onClick={onClick}
       style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer', opacity: 0.8, transition: 'opacity 0.2s' }}
       onMouseEnter={e => e.currentTarget.style.opacity = '1'}
       onMouseLeave={e => e.currentTarget.style.opacity = '0.8'}
     >
-      <div style={{ 
-        width: 32, height: 32, borderRadius: 8, background: `${color}15`, 
-        display: 'flex', alignItems: 'center', justifyContent: 'center', 
-        fontSize: 14, border: `1px solid ${color}30` 
+      <div style={{
+        width: 32, height: 32, borderRadius: 8, background: `${color}15`,
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        fontSize: 14, border: `1px solid ${color}30`
       }}>
         {icon}
       </div>

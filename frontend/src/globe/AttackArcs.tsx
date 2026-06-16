@@ -1,3 +1,7 @@
+// ─── ATTACK ARCS VISUALIZER COMPONENT ─────────────────────────────────────────
+// Renders the 3D curves connecting the source attacker and target victim.
+// Animates a tracer sphere along the curve using an exponential ease-out function.
+
 import { useRef, useEffect } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
@@ -7,12 +11,12 @@ import { easeOutExpo } from '../utils/easing';
 
 const MAX_ARC_SEGMENTS = 64;
 
-// ── Shared geometry & material pools (created once, reused for all arcs) ──
-
+// ─── GEOMETRY & MATERIAL POOLS ───────────────────────────────────────────────
+// Preallocates static geometry and material definitions to prevent GPU memory
+// reallocation spikes during high-frequency attack streaming.
 const _sharedTracerGeo = new THREE.SphereGeometry(0.015, 6, 6);
 const _sharedGlowGeo = new THREE.SphereGeometry(0.04, 6, 6);
 
-// Only 3 attack-type colors; pool materials per type
 const _lineMaterials: Record<string, THREE.LineBasicMaterial> = {};
 const _tracerMaterials: Record<string, THREE.MeshBasicMaterial> = {};
 const _glowMaterials: Record<string, THREE.MeshBasicMaterial> = {};
@@ -56,19 +60,13 @@ function getGlowMaterial(type: string): THREE.MeshBasicMaterial {
   return _glowMaterials[type];
 }
 
-// Pre-allocate a large bounding sphere so we never need to recompute it
 const _largeBoundingSphere = new THREE.Sphere(new THREE.Vector3(0, 0, 0), 3);
 
-/**
- * Renders animated great-circle arcs for active attacks.
- * Uses imperative Three.js Line objects with pooled geometries/materials.
- */
 export function AttackArcs() {
   const groupRef = useRef<THREE.Group>(null);
   const arcs = useStreamStore(s => s.arcs);
   const config = useStreamStore(s => s.config);
 
-  // Store refs to line objects keyed by arc id
   const lineObjectsRef = useRef<Map<string, {
     line: THREE.Line;
     tracer: THREE.Mesh;
@@ -78,7 +76,9 @@ export function AttackArcs() {
 
   const projectionMode = useStreamStore(s => s.projectionMode);
 
-  // Sync Three.js objects with arc state
+  // ─── LIFECYCLE SYNC ────────────────────────────────────────────────────────
+  // Creates, updates, or disposes Three.js meshes based on changes in active
+  // streamed arcs or projection mode toggles.
   useEffect(() => {
     const group = groupRef.current;
     if (!group) return;
@@ -86,7 +86,7 @@ export function AttackArcs() {
     const existingIds = new Set(lineObjectsRef.current.keys());
     const currentIds = new Set(arcs.map(a => a.id));
 
-    // Remove old arcs
+    // Cleanup retired arcs to free GPU memory
     for (const id of existingIds) {
       if (!currentIds.has(id)) {
         const obj = lineObjectsRef.current.get(id);
@@ -100,31 +100,30 @@ export function AttackArcs() {
       }
     }
 
-    // Add/Update arcs
+    // Instantiates new line segments and assigns shared materials
     for (const arc of arcs) {
       const existing = lineObjectsRef.current.get(arc.id);
       
-      // If projection mode changed, we need to re-generate points
       if (!existing) {
         let points: THREE.Vector3[] = [];
         if (projectionMode === '3d') {
+          // 3D Spherical Coordinates using Great Circle path
           points = greatCirclePoints(
             arc.sourceLat, arc.sourceLon,
             arc.targetLat, arc.targetLon,
             MAX_ARC_SEGMENTS,
-            1.052 // Aligned with volumetric land surface
+            1.052
           );
         } else {
-          // 2D Projection
+          // 2D Cartesian Coordinates using Bezier curves
           const x1 = (arc.sourceLon / 180) * 2.5;
           const y1 = (arc.sourceLat / 90) * 1.25;
           const x2 = (arc.targetLon / 180) * 2.5;
           const y2 = (arc.targetLat / 90) * 1.25;
           
-          // Cubic Bezier for 2D arc - Sleeker Tactical Height
           const curve = new THREE.QuadraticBezierCurve3(
             new THREE.Vector3(x1, y1, 0.02),
-            new THREE.Vector3((x1 + x2) / 2, (y1 + y2) / 2, 0.4), // Sleeker 0.4 instead of 0.8
+            new THREE.Vector3((x1 + x2) / 2, (y1 + y2) / 2, 0.4),
             new THREE.Vector3(x2, y2, 0.02)
           );
           points = curve.getPoints(MAX_ARC_SEGMENTS);
@@ -154,7 +153,9 @@ export function AttackArcs() {
     }
   }, [arcs, projectionMode]);
 
-  // Animate arcs each frame
+  // ─── FRAME RENDER LOOP ──────────────────────────────────────────────────────
+  // Triggers each frame via R3F's animation scheduler. Updates the line draws and
+  // positions the leading tracers according to the easeOutExpo interpolation.
   useFrame(() => {
     for (const arc of arcs) {
       const obj = lineObjectsRef.current.get(arc.id);
@@ -184,7 +185,6 @@ export function AttackArcs() {
         continue;
       }
 
-      // Update line positions
       const positions = line.geometry.attributes.position as THREE.BufferAttribute;
       for (let i = 0; i < visibleCount; i++) {
         const pi = tailStart + i;
@@ -193,14 +193,10 @@ export function AttackArcs() {
       }
       positions.needsUpdate = true;
       line.geometry.setDrawRange(0, visibleCount);
-      // NO computeBoundingSphere() — we've pre-set a fixed large one
 
-      // Fade opacity (shared material — set per-type, affects all arcs of same type collectively)
-      // This is acceptable since arcs of same type fade similarly
       const fadeOpacity = progress > 0.75 ? Math.max(0.1, (1 - progress) / 0.25) : 0.9;
       (line.material as THREE.LineBasicMaterial).opacity = fadeOpacity;
 
-      // Tracer position
       if (headIndex < points.length && progress < 0.95) {
         tracer.visible = true;
         tracerGlow.visible = true;

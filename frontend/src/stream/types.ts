@@ -1,22 +1,28 @@
+// ─── THREAT STREAM DATA SCHEMAS ──────────────────────────────────────────────
+// Defines TS interfaces and types mapping the websocket/SSE payloads,
+// live visual geometries, and store distributions.
+
 export type AttackType = 'exploit' | 'malware' | 'phishing';
 
 export type ConnectionStatus = 'live' | 'reconnecting' | 'paused' | 'disconnected';
 
+// ─── THREAT EVENT DATA STRUCTURE ─────────────────────────────────────────────
+// The main event schema representing individual cyber attack logs.
 export interface ThreatEvent {
   id: string;
   _id?: string;
-  a_c: number;
-  a_n: string;
-  a_t: AttackType;
-  s_co: string;
-  s_la: number;
-  s_lo: number;
-  d_co: string;
-  d_la: number;
-  d_lo: number;
-  s_ip?: string;
-  d_ip?: string;
-  source_api?: string;
+  a_c: number; // Attack count
+  a_n: string; // Attack name
+  a_t: AttackType; // Attack type
+  s_co: string; // Source country
+  s_la: number; // Source latitude
+  s_lo: number; // Source longitude
+  d_co: string; // Destination country
+  d_la: number; // Destination latitude
+  d_lo: number; // Destination longitude
+  s_ip?: string; // Source IP
+  d_ip?: string; // Destination IP
+  source_api?: string; // Scraper source identifier (e.g. urlhaus)
   severity?: 1 | 2 | 3 | 4 | 5;
   ts?: string;
   timestamp?: string | Date;
@@ -53,6 +59,8 @@ export interface StreamWorkerCommand {
   mockMode?: boolean;
 }
 
+// ─── ACTIVE GEOMETRY SCHEMAS ──────────────────────────────────────────────────
+// Maps details required by WebGL lines and points to animate and update frames.
 export interface ArcData {
   id: string;
   sourcePos: [number, number, number];

@@ -1,3 +1,7 @@
+// ─── MAIN APPLICATION COMPONENT ──────────────────────────────────────────────
+// Serves as the top-level container, orchestrating the global threat SSE stream,
+// handling system accessibility options, and managing routing transitions.
+
 import { useEffect } from 'react';
 
 import { Sidebar } from './ui/Sidebar';
@@ -11,14 +15,13 @@ import { StixDashboard } from './ui/StixDashboard';
 import { useStreamStore } from './stream/useStreamStore';
 import './index.css';
 
-// Assuming 'theme' is defined or imported elsewhere if used in inline styles.
-// For this change, I will assume it's not needed as the instruction only shows a snippet.
-// If the full context of the instruction implies a theme import, it would need to be added.
-
 function App() {
   const initStream = useStreamStore(s => s.initStream);
   const currentView = useStreamStore(s => s.currentView);
 
+  // ─── INITIALIZATION LIFECYCLE ──────────────────────────────────────────────
+  // Sets accessibility preferences based on OS configurations (e.g., disabling
+  // rotation on reduced-motion requests) and starts/stops the EventSource stream.
   useEffect(() => {
     const prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     if (prefersReduced) {
@@ -33,6 +36,9 @@ function App() {
     };
   }, [initStream]);
 
+  // ─── LAYOUT RENDERER ────────────────────────────────────────────────────────
+  // Configures UI panels based on current active view context. Views like 'map',
+  // 'stix', and 'dashboard' render full-screen widgets without standard sidebar templates.
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', width: '100vw', background: '#050B14', overflow: 'hidden' }}>
       <StatusBar />

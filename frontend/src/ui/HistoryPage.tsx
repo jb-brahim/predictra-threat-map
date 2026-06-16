@@ -1,8 +1,14 @@
+// ─── ATTACK HISTORY SEARCH COMPONENT ──────────────────────────────────────────
+// Displays log data records fetched from MongoDB. Enables advanced searches,
+// client IP scanning matches, and CSV/JSON reporting formats.
+
 import { useEffect, useState } from 'react';
 import type { ThreatEvent } from '../stream/types';
 import { theme, getAttackColor } from '../theme/theme';
 import { GlassPanel } from './GlassPanel';
 
+// This component displays a list of the last 100 recorded threat alerts from MongoDB.
+// It allows users to search by IP or keyword, filter by threat types, and inspect logs.
 export function HistoryPage() {
   const [history, setHistory] = useState<ThreatEvent[]>([]);
   const [loading, setLoading] = useState(true);
@@ -10,6 +16,8 @@ export function HistoryPage() {
   
   const [search, setSearch] = useState('');
 
+  // ─── QUERY DATABASE CONTROLLER ──────────────────────────────────────────────
+  // Requests list of logs from MongoDB matching queries or IP values.
   const fetchHistory = async (query = '', ip = '') => {
     setLoading(true);
     try {
@@ -354,6 +362,7 @@ export function HistoryPage() {
   );
 }
 
+// Gets the emoji flag icon for a country code.
 function getFlagEmoji(countryCode: string) {
   if (!countryCode || countryCode === '??' || countryCode === 'UN') return '🌐';
   const codePoints = [...countryCode.toUpperCase()].map(c => 0x1F1E6 + c.charCodeAt(0) - 65);

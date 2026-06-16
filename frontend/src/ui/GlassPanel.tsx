@@ -1,3 +1,7 @@
+// ─── GLASS PANEL WRAPPER COMPONENT ───────────────────────────────────────────
+// Translucent layout container applying CSS backdrop blur filters (glassmorphism)
+// and neon borders to fit the futuristic sci-fi theme.
+
 import React from 'react';
 import { theme } from '../theme/theme';
 
@@ -8,10 +12,6 @@ interface GlassPanelProps extends React.HTMLAttributes<HTMLDivElement> {
   hoverable?: boolean;
 }
 
-/**
- * Reusable glassmorphism panel with translucent background, blur, and neon border.
- * Accepts any standard div HTML attributes (onClick, onMouseEnter, etc.).
- */
 export function GlassPanel({ children, className, style, hoverable = false, ...rest }: GlassPanelProps) {
   return (
     <div

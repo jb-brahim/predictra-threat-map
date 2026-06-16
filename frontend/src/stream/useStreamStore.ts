@@ -1,3 +1,7 @@
+// ─── STATE MANAGEMENT STORE COMPONENT ─────────────────────────────────────────
+// A global Zustand store managing connection status, incoming event ring buffers,
+// active 3D curves/points, and dynamic dashboard metrics.
+
 import { create } from 'zustand';
 import type { ThreatEvent, CounterData, ConnectionStatus, TypeDistribution, ArcData, MarkerData } from './types';
 import { RingBuffer, perfTelemetry, fastId } from '../utils/perf';
@@ -120,6 +124,9 @@ export const useStreamStore = create<StreamState>((set, get) => ({
   },
   _cleanup: null,
 
+  // ─── STREAM EVENT RECEIVER & FILTER ────────────────────────────────────────
+  // Appends new threat records to the sliding memory buffer, applies adaptive
+  // sampling to drop visual items if frame rates (FPS) drop, and schedules meshes.
   addEvents: (events: ThreatEvent[]) => {
     const state = get();
     const buffer = state.eventBuffer;
@@ -130,6 +137,7 @@ export const useStreamStore = create<StreamState>((set, get) => ({
     const newMarkers: MarkerData[] = [];
 
     // Layer 2: Adaptive Sampling for Visuals (arcs/markers)
+    // Drops rendering curves during lag spikes to maintain smooth UI scroll transitions.
     const fps = perfTelemetry.stats.fps;
     let visualEvents = events;
     if (fps < 30) {
@@ -251,7 +259,9 @@ export const useStreamStore = create<StreamState>((set, get) => ({
     nextState.trendData = currentTrend;
     nextState.lastTrendTime = lastTime;
 
-    // Flush analytics to Zustand only every 1s
+    // ─── THROTTLED ANALYTICS STATE FLUSH ─────────────────────────────────────
+    // Gathers statistics in simple memory variables, and writes to Zustand state
+    // only once per second. This prevents layout recalculation loops.
     if (now - lastAnalyticsFlush > 1000) {
       const state = get();
       const mergeDist = (target: Record<string, number>, source: Record<string, number>) => {
@@ -307,6 +317,9 @@ export const useStreamStore = create<StreamState>((set, get) => ({
     });
   },
 
+  // ─── VISUAL TELEMETRY TICK LOOP ────────────────────────────────────────────
+  // Invoked on every animation frame. Increments progress factors on lines
+  // and landing markers, and removes expired meshes from memory.
   tick: (now: number) => {
     const state = get();
     let arcsChanged = false;
@@ -373,6 +386,9 @@ export const useStreamStore = create<StreamState>((set, get) => ({
 
   setProjectionMode: (mode) => set({ projectionMode: mode }),
 
+  // ─── SERVER-SENT EVENTS NETWORK CONNECTION ────────────────────────────────
+  // Establishes standard HTTP stream connection to listen to backend notifications.
+  // Performs automatic reconnections with exponential backoff on dropouts.
   initStream: () => {
     const state = get();
     if (state._cleanup) state._cleanup();

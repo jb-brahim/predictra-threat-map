@@ -1,3 +1,7 @@
+// ─── STATUS BAR HEADER COMPONENT ─────────────────────────────────────────────
+// Renders the global layout header displaying backend connection status,
+// navigation buttons, 2D/3D toggle controls, and settings menus.
+
 import { useState, useRef, useEffect } from 'react';
 import { useStreamStore } from '../stream/useStreamStore';
 import { theme } from '../theme/theme';
@@ -45,6 +49,9 @@ function StatusDot({ status }: { status: ConnectionStatus }) {
   );
 }
 
+// ─── STATUS BAR COMPONENT ────────────────────────────────────────────────────
+// Subscribes to connection statuses and layout preferences, rendering the header
+// dashboard tabs and the settings dropdown menus.
 export function StatusBar() {
   const status = useStreamStore(s => s.status);
   const config = useStreamStore(s => s.config);

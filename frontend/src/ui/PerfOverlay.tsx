@@ -1,3 +1,7 @@
+// ─── PERFORMANCE MONITORING OVERLAY COMPONENT ────────────────────────────────
+// Visualizes frames-per-second (FPS), active visual elements, sliding buffer
+// capacity, and socket reconnection statistics in real-time.
+
 import { useState, useEffect } from 'react';
 import { GlassPanel } from './GlassPanel';
 import { theme } from '../theme/theme';
@@ -8,6 +12,8 @@ export function PerfOverlay() {
   const showPerfOverlay = useStreamStore(s => s.config.showPerfOverlay);
   const [stats, setStats] = useState(perfTelemetry.stats);
 
+  // ─── STATISTICS REFRESH LOOP ───────────────────────────────────────────────
+  // Polls the central performance stats object every 500ms to drive state updates.
   useEffect(() => {
     if (!showPerfOverlay) return;
     const id = setInterval(() => {
