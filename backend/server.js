@@ -2,6 +2,7 @@ require('dotenv').config(); // Load environment variables from .env file into pr
 const express = require('express'); // Import Express framework for handling routing and HTTP requests
 const cors = require('cors'); // Import CORS middleware to allow cross-origin requests
 const mongoose = require('mongoose'); // Import Mongoose library to manage MongoDB connections and states
+const { pipeline, Transform } = require('stream'); // Import stream utilities for backpressure-aware memory safety
 const connectDB = require('./config/db'); // Import database connector module function
 const ThreatEvent = require('./models/ThreatEvent'); // Import Mongoose ThreatEvent database model definition
 const { startCheckpoint } = require('./services/scrapers/checkpoint'); // Import Checkpoint SSE scraper activation trigger
@@ -177,47 +178,49 @@ app.get('/api/db/status', (req, res) => { // Bind GET route to query active data
 }); // End of db/status route definition
 
 // History Endpoint with Search
+const buildHistoryQuery = (queryParams) => { // Helper to build MongoDB query based on query params
+  const { q, ip, country, startTime, endTime } = queryParams;
+  let query = {};
+
+  if (ip) {
+    query.$or = [{ s_ip: ip }, { d_ip: ip }];
+  } else if (country) {
+    query.$or = [{ s_co: country.toUpperCase() }, { d_co: country.toUpperCase() }];
+  } else if (q) {
+    const searchRegex = new RegExp(q, 'i');
+    query.$or = [
+      { a_n: searchRegex },
+      { s_ip: searchRegex },
+      { d_ip: searchRegex },
+      { 'meta.tags': searchRegex },
+      { 'meta.malware_family': searchRegex },
+      { 'meta.threat_type': searchRegex },
+      { 'meta.as_name': searchRegex },
+      { 'meta.port': String(q) }
+    ];
+  }
+
+  if ((startTime && startTime !== '') || (endTime && endTime !== '')) {
+    query.timestamp = {};
+    if (startTime && startTime !== '') {
+      const d = new Date(startTime);
+      if (!isNaN(d.getTime())) query.timestamp.$gte = d;
+    }
+    if (endTime && endTime !== '') {
+      const d = new Date(endTime);
+      if (!isNaN(d.getTime())) query.timestamp.$lte = d;
+    }
+    if (Object.keys(query.timestamp).length === 0) {
+      delete query.timestamp;
+    }
+  }
+
+  return query;
+};
+
 app.get('/api/history', async (req, res) => { // Bind GET route to query historic threat database records
   try { // Start try block to handle query execution safely
-    const { q, ip, country, startTime, endTime } = req.query; // Destructure search variables from request query params
-    console.log('[API GET /api/history] Request parameters:', { q, ip, country, startTime, endTime, limit: req.query.limit });
-    let query = {}; // Initialize empty MongoDB query selector object
-
-    if (ip) { // If search filter target is an IP address
-      query.$or = [{ s_ip: ip }, { d_ip: ip }]; // Target query to search matching IP on source or destination fields
-    } else if (country) { // If search filter target is a country code
-      query.$or = [{ s_co: country.toUpperCase() }, { d_co: country.toUpperCase() }]; // Target query to match country code on source or destination country fields
-    } else if (q) { // If a general search query string is specified
-      const searchRegex = new RegExp(q, 'i'); // Compile search parameter into a case-insensitive regular expression object
-      query.$or = [ // Define logic to search matching regular expression across multiple text fields
-        { a_n: searchRegex }, // Search matching regex signature against attack name field
-        { s_ip: searchRegex }, // Search matching regex signature against source IP address field
-        { d_ip: searchRegex }, // Search matching regex signature against destination IP address field
-        { 'meta.tags': searchRegex }, // Search matching regex signature against tags list metadata attribute
-        { 'meta.malware_family': searchRegex }, // Search matching regex signature against malware family field
-        { 'meta.threat_type': searchRegex }, // Search matching regex signature against threat type category field
-        { 'meta.as_name': searchRegex }, // Search matching regex signature against Autonomous System name field
-        { 'meta.port': String(q) } // Search matching regex string query against port metadata attribute
-      ]; // End of $or logic list definition
-    } // End of query construction check block
-
-    // Add time filtration constraints if present
-    if ((startTime && startTime !== '') || (endTime && endTime !== '')) {
-      query.timestamp = {};
-      if (startTime && startTime !== '') {
-        const d = new Date(startTime);
-        if (!isNaN(d.getTime())) query.timestamp.$gte = d;
-      }
-      if (endTime && endTime !== '') {
-        const d = new Date(endTime);
-        if (!isNaN(d.getTime())) query.timestamp.$lte = d;
-      }
-      // Clean up if no valid dates were parsed
-      if (Object.keys(query.timestamp).length === 0) {
-        delete query.timestamp;
-      }
-    }
-
+    const query = buildHistoryQuery(req.query);
     let limitVal = 200;
     if (req.query.limit) {
       const parsed = parseInt(req.query.limit, 10);
@@ -241,6 +244,118 @@ app.get('/api/history', async (req, res) => { // Bind GET route to query histori
     res.status(500).json({ error: 'Failed to fetch attack history' }); // Return HTTP Internal Server Error payload message
   } // End of try-catch block
 }); // End of history route definition
+
+app.get('/api/history/export/csv', async (req, res) => { // Endpoint to stream database records as a CSV download
+  try {
+    const query = buildHistoryQuery(req.query);
+    console.log('[API GET /api/history/export/csv] Streaming CSV export for query:', query);
+
+    res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+    res.setHeader('Content-Disposition', `attachment; filename="Threat_History_Report_${new Date().toISOString().slice(0, 10)}.csv"`);
+    
+    res.write('\uFEFF'); // Write UTF-8 BOM
+    res.write('Event ID,Local Time,Threat Type,Attack Vector,Source IP,Source Country,Target IP,Target Country,Intel Source\n');
+
+    const cursor = ThreatEvent.find(query).sort({ timestamp: -1 }).lean().cursor();
+
+    const csvTransform = new Transform({
+      writableObjectMode: true,
+      transform(e, encoding, callback) {
+        try {
+          const date = new Date(e.timestamp || Date.now()).toLocaleString();
+          const type = (e.a_t || '').toUpperCase();
+          const name = `"${String(e.a_n || '').replace(/"/g, '""')}"`;
+          const row = [
+            e._id.toString(),
+            `"${date}"`,
+            type,
+            name,
+            e.s_ip || 'unknown',
+            e.s_co || '??',
+            e.d_ip || 'unknown',
+            e.d_co || '??',
+            e.source_api || 'unknown'
+          ].join(',');
+          this.push(row + '\n');
+          callback();
+        } catch (err) {
+          callback(err);
+        }
+      }
+    });
+
+    pipeline(cursor, csvTransform, res, (err) => {
+      if (err) {
+        console.error('[API Export CSV] Pipeline failure or cancellation:', err.message);
+        if (!res.headersSent) {
+          res.status(500).send('Export stream encountered an error');
+        } else {
+          res.end();
+        }
+      } else {
+        console.log('[API Export CSV] Streaming export finished successfully.');
+      }
+    });
+  } catch (error) {
+    console.error('[API Export CSV] Error:', error.message);
+    res.status(500).send('Failed to prepare CSV stream');
+  }
+});
+
+app.get('/api/history/export/json', async (req, res) => { // Endpoint to stream database records as a JSON download
+  try {
+    const query = buildHistoryQuery(req.query);
+    console.log('[API GET /api/history/export/json] Streaming JSON export for query:', query);
+
+    res.setHeader('Content-Type', 'application/json; charset=utf-8');
+    res.setHeader('Content-Disposition', `attachment; filename="Threat_History_Report_${new Date().toISOString().slice(0, 10)}.json"`);
+
+    const cursor = ThreatEvent.find(query).sort({ timestamp: -1 }).lean().cursor();
+
+    let first = true;
+    const jsonTransform = new Transform({
+      writableObjectMode: true,
+      transform(e, encoding, callback) {
+        try {
+          let prefix = '';
+          if (first) {
+            prefix = '[\n';
+            first = false;
+          } else {
+            prefix = ',\n';
+          }
+          this.push(prefix + JSON.stringify(e));
+          callback();
+        } catch (err) {
+          callback(err);
+        }
+      },
+      flush(callback) {
+        if (first) {
+          this.push('[\n');
+        }
+        this.push('\n]');
+        callback();
+      }
+    });
+
+    pipeline(cursor, jsonTransform, res, (err) => {
+      if (err) {
+        console.error('[API Export JSON] Pipeline failure or cancellation:', err.message);
+        if (!res.headersSent) {
+          res.status(500).send('Export stream encountered an error');
+        } else {
+          res.end();
+        }
+      } else {
+        console.log('[API Export JSON] Streaming export finished successfully.');
+      }
+    });
+  } catch (error) {
+    console.error('[API Export JSON] Error:', error.message);
+    res.status(500).send('Failed to prepare JSON stream');
+  }
+});
 
 // Helper to get analytics match stage
 const getAnalyticsMatchStage = (query = {}) => { // Define helper method to build MongoDB aggregation matching stage parameters

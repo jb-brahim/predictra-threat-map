@@ -69,112 +69,107 @@ export function HistoryPage() {
   };
 
   const handleExport = async (format: 'csv' | 'json' | 'xlsx') => {
+    if (format === 'csv' || format === 'json') {
+      const url = new URL(`/api/history/export/${format}`, window.location.origin);
+      if (search) url.searchParams.set('q', search);
+      if (startTime) url.searchParams.set('startTime', startTime);
+      if (endTime) url.searchParams.set('endTime', endTime);
+      
+      // Open in a new tab to initiate a stream download directly from backend
+      window.open(url.toString(), '_blank');
+      return;
+    }
+
     setLoading(true);
     try {
       const url = new URL('/api/history', window.location.origin);
       if (search) url.searchParams.set('q', search);
       if (startTime) url.searchParams.set('startTime', startTime);
       if (endTime) url.searchParams.set('endTime', endTime);
-      url.searchParams.set('limit', '-1'); // request all records from the database
+      url.searchParams.set('limit', '10000'); // fetch up to 10k records for client-side Excel parsing
       
       const response = await fetch(url.toString());
       if (!response.ok) throw new Error('Failed to fetch data for export');
       const dataToExport: ThreatEvent[] = await response.json();
-      console.log('[HistoryPage] Exporting data:', dataToExport);
+      console.log('[HistoryPage] Exporting XLSX data:', dataToExport);
       
       if (dataToExport.length === 0) {
         alert('No data found matching current filters to export.');
         return;
       }
 
-      const fileDate = new Date().toISOString().slice(0, 10);
-
-      if (format === 'json') {
-        const json = JSON.stringify(dataToExport, null, 2);
-        const blob = new Blob([json], { type: "application/json" });
-        saveAs(blob, `Threat_History_Report_${fileDate}.json`);
-      } else if (format === 'csv') {
-        const BOM = "\uFEFF";
-        const headers = ['Event ID', 'Local Time', 'Threat Type', 'Attack Vector', 'Source IP', 'Source Country', 'Target IP', 'Target Country', 'Intel Source'];
-        
-        const rows = dataToExport.map(e => {
-          const date = new Date(e.timestamp || e.ts || Date.now()).toLocaleString();
-          const type = (e.a_t || '').toUpperCase();
-          const name = `"${String(e.a_n || '').replace(/"/g, '""')}"`;
-          return [
-            e.id || e._id, `"${date}"`, type, name, e.s_ip, e.s_co, e.d_ip, e.d_co, e.source_api
-          ].join(',');
-        });
-        
-        const csvContent = "data:text/csv;charset=utf-8," + encodeURIComponent(BOM + headers.join(',') + '\n' + rows.join('\n'));
-        const link = document.createElement("a");
-        link.setAttribute("href", csvContent);
-        link.setAttribute("download", `Threat_History_Report_${fileDate}.csv`);
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-      } else if (format === 'xlsx') {
-        const workbook = new ExcelJS.Workbook();
-        const sheet = workbook.addWorksheet('Threat History Report');
-
-        sheet.mergeCells('A1', 'I2');
-        const titleCell = sheet.getCell('A1');
-        titleCell.value = 'Global Command Center - Threat History Report';
-        titleCell.font = { size: 16, bold: true, color: { argb: 'FFFFFFFF' } };
-        titleCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1A233A' } };
-        titleCell.alignment = { vertical: 'middle', horizontal: 'center' };
-
-        sheet.getRow(4).values = ['Event ID', 'Local Time', 'Threat Type', 'Attack Vector', 'Source IP', 'Source Country', 'Target IP', 'Target Country', 'Intel Source'];
-        const headerRow = sheet.getRow(4);
-        headerRow.font = { bold: true, color: { argb: 'FFFFFFFF' } };
-        headerRow.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF00D1FF' } };
-        headerRow.alignment = { vertical: 'middle', horizontal: 'center' };
-
-        sheet.columns = [
-            { key: 'id', width: 32 },
-            { key: 'time', width: 22 },
-            { key: 'type', width: 14 },
-            { key: 'name', width: 40 },
-            { key: 'sip', width: 16 },
-            { key: 'sco', width: 16 },
-            { key: 'dip', width: 16 },
-            { key: 'dco', width: 16 },
-            { key: 'api', width: 15 },
-        ];
-
-        dataToExport.forEach(e => {
-            const row = sheet.addRow({
-                id: e.id || e._id,
-                time: new Date(e.timestamp || e.ts || Date.now()).toLocaleString(),
-                type: (e.a_t || '').toUpperCase(),
-                name: e.a_n,
-                sip: e.s_ip,
-                sco: e.s_co,
-                dip: e.d_ip,
-                dco: e.d_co,
-                api: e.source_api
-            });
-            
-            const typeCell = row.getCell('type');
-            typeCell.font = { bold: true, color: { argb: e.a_t === 'exploit' ? 'FFFF4444' : e.a_t === 'malware' ? 'FFFFD700' : 'FFCC33FF' } };
-        });
-
-        sheet.eachRow((row, rowNumber) => {
-            if (rowNumber >= 4) {
-                row.eachCell(cell => {
-                    cell.border = {
-                        top: {style:'thin', color: {argb:'FFEEEEEE'}},
-                        left: {style:'thin', color: {argb:'FFEEEEEE'}},
-                        bottom: {style:'thin', color: {argb:'FFEEEEEE'}},
-                        right: {style:'thin', color: {argb:'FFEEEEEE'}}
-                    };
-                });
-            }
-        });
-
-        const buffer = await workbook.xlsx.writeBuffer();
-        saveAs(new Blob([buffer]), `Threat_History_Report_${fileDate}.xlsx`);
+      if (dataToExport.length === 10000) {
+        const confirmExport = window.confirm(
+          'Excel (XLSX) exports are limited to the first 10,000 records to prevent browser memory crashes. ' +
+          'For the full dataset, please use the CSV or JSON options which support unlimited streaming. ' +
+          'Do you want to proceed downloading the first 10,000 records?'
+        );
+        if (!confirmExport) {
+          return;
+        }
       }
+
+      const fileDate = new Date().toISOString().slice(0, 10);
+      const workbook = new ExcelJS.Workbook();
+      const sheet = workbook.addWorksheet('Threat History Report');
+
+      sheet.mergeCells('A1', 'I2');
+      const titleCell = sheet.getCell('A1');
+      titleCell.value = 'Global Command Center - Threat History Report';
+      titleCell.font = { size: 16, bold: true, color: { argb: 'FFFFFFFF' } };
+      titleCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1A233A' } };
+      titleCell.alignment = { vertical: 'middle', horizontal: 'center' };
+
+      sheet.getRow(4).values = ['Event ID', 'Local Time', 'Threat Type', 'Attack Vector', 'Source IP', 'Source Country', 'Target IP', 'Target Country', 'Intel Source'];
+      const headerRow = sheet.getRow(4);
+      headerRow.font = { bold: true, color: { argb: 'FFFFFFFF' } };
+      headerRow.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF00D1FF' } };
+      headerRow.alignment = { vertical: 'middle', horizontal: 'center' };
+
+      sheet.columns = [
+          { key: 'id', width: 32 },
+          { key: 'time', width: 22 },
+          { key: 'type', width: 14 },
+          { key: 'name', width: 40 },
+          { key: 'sip', width: 16 },
+          { key: 'sco', width: 16 },
+          { key: 'dip', width: 16 },
+          { key: 'dco', width: 16 },
+          { key: 'api', width: 15 },
+      ];
+
+      dataToExport.forEach(e => {
+          const row = sheet.addRow({
+              id: e.id || e._id,
+              time: new Date(e.timestamp || e.ts || Date.now()).toLocaleString(),
+              type: (e.a_t || '').toUpperCase(),
+              name: e.a_n,
+              sip: e.s_ip,
+              sco: e.s_co,
+              dip: e.d_ip,
+              dco: e.d_co,
+              api: e.source_api
+          });
+          
+          const typeCell = row.getCell('type');
+          typeCell.font = { bold: true, color: { argb: e.a_t === 'exploit' ? 'FFFF4444' : e.a_t === 'malware' ? 'FFFFD700' : 'FFCC33FF' } };
+      });
+
+      sheet.eachRow((row, rowNumber) => {
+          if (rowNumber >= 4) {
+              row.eachCell(cell => {
+                  cell.border = {
+                      top: {style:'thin', color: {argb:'FFEEEEEE'}},
+                      left: {style:'thin', color: {argb:'FFEEEEEE'}},
+                      bottom: {style:'thin', color: {argb:'FFEEEEEE'}},
+                      right: {style:'thin', color: {argb:'FFEEEEEE'}}
+                  };
+              });
+          }
+      });
+
+      const buffer = await workbook.xlsx.writeBuffer();
+      saveAs(new Blob([buffer]), `Threat_History_Report_${fileDate}.xlsx`);
     } catch (err: any) {
       console.error(err);
       alert('Failed to export threat history: ' + err.message);
