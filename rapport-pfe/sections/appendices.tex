@@ -1,0 +1,1056 @@
+\chapter*{Appendices}
+\addcontentsline{toc}{chapter}{Appendices}
+\markboth{APPENDICES}{APPENDICES}
+
+\section*{Appendix A: Operational Installation and Deployment Guide}
+To facilitate the deployment, replication, and testing of the \textbf{Predictra Threat Map} platform, this appendix provides a complete step-by-step developer installation guide.
+
+\subsection*{A.1 Prerequisites and Runtime Environments}
+Ensure the target deployment virtual machine or local workstation is equipped with the following dependencies:
+\begin{itemize}
+    \item \textbf{Node.js Runtime:} Version v20.x.x LTS or higher.
+    \item \textbf{Package Manager:} npm version 10.x.x or higher.
+    \item \textbf{Database:} MongoDB Atlas cloud database cluster (M1 tier or higher) or a local MongoDB community edition service.
+\end{itemize}
+
+\subsection*{A.2 Backend Configuration Variables}
+Create a configuration file named `.env` in the `/backend` root directory. The file must contain the following variables:
+\begin{verbatim}
+PORT=3001
+MONGO_URI=mongodb://<user>:<pwd>@cluster.mongodb.net/db
+NODE_ENV=production
+BATCH_INTERVAL_MS=300
+MAX_PENDING=500
+BATCH_DB_INSERT=25
+\end{verbatim}
+
+\subsection*{A.3 Installation and Local Execution Commands}
+To launch the complete platform locally in development mode:
+\begin{enumerate}
+    \item \textbf{Clone the Repository:}
+    \begin{verbatim}
+    git clone https://github.com/predictra/predictra-threat-map.git
+    cd predictra-threat-map
+    \end{verbatim}
+    \item \textbf{Install Root and Package Dependencies:}
+    \begin{verbatim}
+    npm install
+    \end{verbatim}
+    \item \textbf{Launch Backend Server (Port 3001):}
+    \begin{verbatim}
+    cd backend
+    npm install
+    npm run dev
+    \end{verbatim}
+    \item \textbf{Launch Frontend App (Port 5173):}
+    \begin{verbatim}
+    cd ../frontend
+    npm install
+    npm run dev
+    \end{verbatim}
+\end{enumerate}
+
+\subsection*{A.4 Production Process Management (PM2)}
+In future production environments, the backend server must be managed using the PM2 process manager to ensure zero-downtime clustering and automated crash recoveries:
+\begin{verbatim}
+pm2 start server.js --name "predictra-backend" -i max --watch
+pm2 save
+pm2 startup
+\end{verbatim}
+
+\section*{Appendix B: API Integrations and Data Streams Reference}
+This section provides a quick-reference catalog of the internal REST API endpoints exposed by the Node.js Express server to facilitate security tool integrations (e.g. connecting the Threat Map feeds to internal corporate SIEM dashboards).
+
+\subsection*{B.1 Threat Feeds Stream Endpoint}
+\begin{itemize}
+    \item \textbf{Endpoint:} \texttt{GET /api/feed}
+    \item \textbf{Protocol:} Server-Sent Events (SSE)
+    \item \textbf{Response Headers:}
+    \begin{verbatim}
+    Content-Type: text/event-stream
+    Cache-Control: no-cache
+    Connection: keep-alive
+    \end{verbatim}
+    \item \textbf{Event Type:} \texttt{event: attacks}
+    \item \textbf{Payload Example:}
+    \begin{verbatim}
+    data: [
+      {
+        "a_c": 1,
+        "a_n": "Cobalt Strike C2 Active",
+        "a_t": "malware",
+        "s_ip": "185.220.101.5",
+        "s_co": "DE",
+        "s_la": 51.2993,
+        "s_lo": 9.491,
+        "d_ip": "192.168.10.4",
+        "d_co": "US",
+        "d_la": 37.0902,
+        "d_lo": -95.7129,
+        "source_api": "c2tracker",
+        "timestamp": "2026-05-21T12:00:00.000Z"
+      }
+    ]
+    \end{verbatim}
+\end{itemize}
+
+\subsection*{B.2 Historical Intelligence Queries API}
+\begin{itemize}
+    \item \textbf{Endpoint:} \texttt{GET /api/history}
+    \item \textbf{Query Parameters:}
+    \begin{itemize}
+        \item \texttt{page} (Number): Page index (default: \texttt{1})
+        \item \texttt{limit} (Number): Page size limit (default: \texttt{50})
+        \item \texttt{query} (String): Search keyword matching country, sector, or IP
+    \end{itemize}
+    \item \textbf{Response Format:} Paginated JSON array containing BSON documents matching database schemas.
+\end{itemize}
+
+\section*{Appendix C: Automated Integration Test Suites (Jest \& Supertest)}
+To guarantee backend regression safety, route integrity, and database transaction safety, the Predictra platform implements automated test suites using the \textbf{Jest} unit testing framework and the \textbf{Supertest} HTTP assertion library.
+
+\subsection*{C.1 Ingestion API Integration Test Config (\texttt{tests/api.test.js})}
+The backend API testing environment mocks active database calls using an in-memory MongoDB service (\texttt{mongodb-memory-server}), checking that geocoding routes and threat storage pipelines operate correctly without writing fake logs to production collections:
+\begin{verbatim}
+const request = require('supertest');
+const mongoose = require('mongoose');
+const { MongoMemoryServer } = require('mongodb-memory-server');
+const app = require('../server_app'); // Express App Core
+const ThreatEvent = require('../models/ThreatEvent');
+
+let mongoServer;
+
+beforeAll(async () => {
+  mongoServer = await MongoMemoryServer.create();
+  const uri = mongoServer.getUri();
+  await mongoose.disconnect(); // Avoid active database conflicts
+  await mongoose.connect(uri, {
+    useNewUrlParser: true,
+    useUnifiedTopology: true
+  });
+});
+
+afterAll(async () => {
+  await mongoose.disconnect();
+  await mongoServer.stop();
+});
+
+beforeEach(async () => {
+  await ThreatEvent.deleteMany({}); // Flush collections between tests
+});
+
+describe('POST /api/test/threat-ingestion', () => {
+  it('should parse and geocode events', async () => {
+    const rawPayload = {
+      srcIp: '185.220.101.5',
+      dstIp: '8.8.8.8',
+      attackName: 'Mirai Botnet Command Beacon',
+      attackType: 'malware',
+      severity: 'critical'
+    };
+
+    const response = await request(app)
+      .post('/api/test/threat-ingestion')
+      .send(rawPayload)
+      .expect(201);
+
+    expect(response.body).toHaveProperty('success', true);
+    expect(response.body).toHaveProperty('data');
+    expect(response.body.data.a_n).toBe('Mirai Botnet Command Beacon');
+
+    // Confirm collection persistence
+    const savedEvent = await ThreatEvent
+      .findOne({ s_ip: '185.220.101.5' });
+    expect(savedEvent).toBeDefined();
+    expect(savedEvent.a_t).toBe('malware');
+    expect(savedEvent.s_co).toBe('DE'); // Geocoder translation check
+  });
+
+  it('should refuse malformed payloads', async () => {
+    const badPayload = {
+      attackName: 'Malformed Attack',
+      severity: 'low'
+      // Missing vital IPs
+    };
+
+    await request(app)
+      .post('/api/test/threat-ingestion')
+      .send(badPayload)
+      .expect(400);
+
+    const count = await ThreatEvent.countDocuments();
+    expect(count).toBe(0);
+  });
+});
+\end{verbatim}
+
+\section*{Appendix D: Vercel CDN and Reverse-Proxy Configurations}
+To orchestrate secure client-to-server communications and bypass standard browser
+CORS (\textbf{Cross-Origin Resource Sharing}) restrictions without compromising
+security headers, we implemented a Vercel reverse-proxy configuration.
+
+\subsection*{D.1 Production Vercel Router (\texttt{frontend/vercel.json})}
+The production file located in the frontend root ensures that all visual components issue requests directly to the same CDN origin host, routing backend queries behind internal proxy links to prevent CORS failures:
+\begin{verbatim}
+{
+  "version": 2,
+  "rewrites": [
+    {
+      "source": "/api/feed",
+      "destination": "https://api.predictra.io/api/feed"
+    },
+    {
+      "source": "/api/history",
+      "destination": "https://api.predictra.io/api/history"
+    },
+    {
+      "source": "/api/(.*)",
+      "destination": "https://api.predictra.io/api/$1"
+    },
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
+    }
+  ],
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        {
+          "key": "X-Content-Type-Options",
+          "value": "nosniff"
+        },
+        {
+          "key": "X-Frame-Options",
+          "value": "DENY"
+        },
+        {
+          "key": "X-XSS-Protection",
+          "value": "1; mode=block"
+        },
+        {
+          "key": "Referrer-Policy",
+          "value": "strict-origin-when-cross-origin"
+        }
+      ]
+    }
+  ]
+}
+\end{verbatim}
+
+\section*{Appendix E: Global Frontend Zustand Storage Engine}
+To maintain a high framerate on our 3D visualization canvas while receiving dense threat updates over SSE channels, the client application relies on a decoupled, centralized Zustand state manager.
+
+\subsection*{E.1 Core Stream Store (\texttt{stream/useStreamStore.ts})}
+The client store acts as the central state hub, handling server-sent events, managing active canvas arc counts, tracking rendering frame rates, and dropping incoming threat events if performance falls below acceptable thresholds:
+\begin{verbatim}
+import { create } from 'zustand';
+import { RingBuffer } from '../utils/perf';
+
+interface ThreatEvent {
+  id: string;
+  a_n: string;
+  a_t: string;
+  s_co: string;
+  s_la: number;
+  s_lo: number;
+  d_co: string;
+  d_la: number;
+  d_lo: number;
+  source_api: string;
+  timestamp: string;
+}
+
+interface StreamState {
+  eventsBuffer: RingBuffer<ThreatEvent>;
+  activeArcs: ThreatEvent[];
+  fps: number;
+  dropRate: number;
+  isStreaming: boolean;
+  setFps: (fps: number) => void;
+  initializeStream: (endpointUrl: string) => void;
+  addThreatEvent: (event: ThreatEvent) => void;
+  clearStore: () => void;
+}
+
+export const useStreamStore = create<StreamState>((set, get) => {
+  // Preallocate 5000 slots
+  const eventsBuffer =
+    new RingBuffer<ThreatEvent>(5000);
+  let eventSource: EventSource | null = null;
+
+  return {
+    eventsBuffer,
+    activeArcs: [],
+    fps: 60,
+    dropRate: 0.0,
+    isStreaming: false,
+
+    setFps: (fps) => {
+      let dropRate = 0.0;
+      if (fps < 30) {
+        dropRate = 0.75; // Heavy load: drop 75% visual arcs
+      } else if (fps < 48) {
+        dropRate = 0.40; // Moderate load: drop 40% visual arcs
+      }
+      set({ fps, dropRate });
+    },
+
+    initializeStream: (endpointUrl) => {
+      if (eventSource) return;
+
+      set({ isStreaming: true });
+      eventSource = new EventSource(endpointUrl);
+
+      eventSource.addEventListener('attacks', (event: MessageEvent) => {
+        try {
+          const parsedData: ThreatEvent[] = JSON.parse(event.data);
+          parsedData.forEach((threat) => {
+            get().addThreatEvent(threat);
+          });
+        } catch (err) {
+          console.error('Error parsing streaming event:', err);
+        }
+      });
+
+      eventSource.onerror = (err) => {
+        console.error('EventSource connection error:', err);
+        eventSource?.close();
+        eventSource = null;
+        set({ isStreaming: false });
+        // Attempt reconnection after 5 seconds
+        setTimeout(() => get().initializeStream(endpointUrl), 5000);
+      };
+    },
+
+    addThreatEvent: (threat) => {
+      // Dynamic drop check for 3D visual arcs
+      const currentDrop = get().dropRate;
+      const shouldRenderVisual = Math.random() >= currentDrop;
+
+      eventsBuffer.push(threat);
+
+      if (shouldRenderVisual) {
+        set((state) => {
+          // Cap active arcs list to avoid memory leak
+          const updatedArcs = [...state.activeArcs, threat];
+          if (updatedArcs.length > 150) {
+            updatedArcs.shift(); // Remove oldest arc line
+          }
+          return { activeArcs: updatedArcs };
+        });
+      }
+    },
+
+    clearStore: () => {
+      if (eventSource) {
+        eventSource.close();
+        eventSource = null;
+      }
+      eventsBuffer.clear();
+      set({ activeArcs: [], isStreaming: false });
+    }
+  };
+});
+\end{verbatim}
+
+\section*{Appendix F: Sample Threat Event (BSON vs Enriched JSON)}
+To illustrate the data transformation performed by our backend enrichment pipeline, this section contrasts the highly compact, space-saving BSON document stored in the MongoDB Atlas database with the fully resolved, logically structured JSON document exposed to the client application.
+
+\subsection*{F.1 Compact BSON Document Database Structure (82 Bytes)}
+This optimized model reduces the storage footprint of each record by over $55\%$, enabling millions of threats to be cached within the database without exceeding storage boundaries:
+\begin{verbatim}
+{
+  "_id": {"$oid": "664c8d1bf8e10b1a084cf4e7"},
+  "a_c": 1,
+  "a_n": "LockBit Ransomware Activity",
+  "a_t": "malware",
+  "s_ip": "103.24.15.12",
+  "s_co": "CN",
+  "s_la": 39.9042,
+  "s_lo": 116.4074,
+  "d_ip": "194.26.135.8",
+  "d_co": "RU",
+  "d_la": 55.7558,
+  "d_lo": 37.6173,
+  "source_api": "ransomwatch",
+  "timestamp": {"$date": "2026-05-21T12:00:00.000Z"}
+}
+\end{verbatim}
+
+\subsection*{F.2 Enriched Logical Client JSON Format (246 Bytes)}
+When fetched by the frontend via the historical REST API or stream channels, the controller dynamically expands the document, geolocating the addresses, mapping coordinates, and resolving the target industry sectors:
+\begin{verbatim}
+{
+  "id": "664c8d1bf8e10b1a084cf4e7",
+  "attackCount": 1,
+  "threatName": "LockBit Ransomware Activity",
+  "threatType": "malware",
+  "source": {
+    "ip": "103.24.15.12",
+    "countryCode": "CN",
+    "countryName": "China",
+    "coordinates": {
+      "latitude": 39.9042,
+      "longitude": 116.4074
+    },
+    "organization": "China Telecom Backbone Service"
+  },
+  "destination": {
+    "ip": "194.26.135.8",
+    "countryCode": "RU",
+    "countryName": "Russian Federation",
+    "coordinates": {
+      "latitude": 55.7558,
+      "longitude": 37.6173
+    },
+    "organization": "Moscow Financial Services Holding",
+    "industrySector": "Financial Services"
+  },
+  "enrichmentMetadata": {
+    "classificationLayer": 2,
+    "confidenceScore": 0.95,
+    "rdapResolved": true,
+    "rdapCacheAgeSeconds": 1420
+  },
+  "sourceApiFeed": "ransomwatch",
+  "timestamp": "2026-05-21T12:00:00.000Z"
+}
+\end{verbatim}
+
+\section*{Appendix G: Geocoding and Coordinate Mappings}
+To facilitate real-time mathematical operations in the client's web browser, the platform implements localized 3D coordinate translations, spherical linear interpolation, and geocoding transformations. This appendix provides the complete TypeScript source code for the geocoding and mapping utility.
+
+\subsection*{G.1 Geocoding and 3D Projection (\texttt{utils/geo.ts})}
+The utility below translates spherical coordinates into Three.js 3D space, computes great-circle intermediate nodes dynamically using parabolic elevation offsets, and maps standard country names to ISO Alpha-2 codes:
+\begin{verbatim}
+import * as THREE from 'three';
+
+const GLOBE_RADIUS = 1.0;
+const DEG2RAD = Math.PI / 180;
+
+/**
+ * Convert latitude/longitude to 3D position on a sphere
+ */
+export function latLonToVector3(
+  lat: number,
+  lon: number,
+  radius: number = GLOBE_RADIUS
+): [number, number, number] {
+  const phi = (90 - lat) * DEG2RAD;
+  const theta = (lon + 180) * DEG2RAD;
+
+  const x = -(radius * Math.sin(phi) * Math.cos(theta));
+  const y = radius * Math.cos(phi);
+  const z = radius * Math.sin(phi) * Math.sin(theta);
+
+  return [x, y, z];
+}
+
+// Reusable vectors for greatCirclePoints to reduce allocation pressure
+const _startVec = new THREE.Vector3();
+const _endVec = new THREE.Vector3();
+const _interpVec = new THREE.Vector3();
+
+/**
+ * Generate great-circle arc points between two positions on the globe.
+ * Returns elevated Vector3 arc points.
+ * Optimized: reuses temporary vectors for interpolation.
+ */
+export function greatCirclePoints(
+  startLat: number,
+  startLon: number,
+  endLat: number,
+  endLon: number,
+  segments: number = 64,
+  radius: number = GLOBE_RADIUS
+): THREE.Vector3[] {
+  const sPos = latLonToVector3(startLat, startLon, radius);
+  const ePos = latLonToVector3(endLat, endLon, radius);
+  _startVec.set(sPos[0], sPos[1], sPos[2]);
+  _endVec.set(ePos[0], ePos[1], ePos[2]);
+
+  const distance = _startVec.distanceTo(_endVec);
+  const maxArcHeight = arcHeight(distance, radius);
+
+  // Pre-allocate result array
+  const points = new Array<THREE.Vector3>(segments + 1);
+
+  for (let i = 0; i <= segments; i++) {
+    const t = i / segments;
+
+    // Spherical interpolation for position on globe surface
+    _interpVec.copy(_startVec).lerp(_endVec, t);
+    _interpVec.normalize();
+
+    // Elevation: parabolic arc above the surface
+    const elevation = Math.sin(t * Math.PI) * maxArcHeight;
+    _interpVec.multiplyScalar(radius + elevation);
+
+    points[i] = _interpVec.clone();
+  }
+
+  return points;
+}
+
+/**
+ * Calculate arc peak height based on distance between points.
+ * Longer distances = taller arcs.
+ */
+export function arcHeight(
+  distance: number,
+  radius: number = GLOBE_RADIUS
+): number {
+  // Clamp distance relative to globe size
+  const normalizedDist = Math.min(distance / (2 * radius), 1);
+  // Arc height: 5% to 30% of radius depending on distance
+  return radius * (0.05 + normalizedDist * 0.25);
+}
+
+/**
+ * Clamp latitude to valid range [-90, 90]
+ */
+export function clampLat(lat: number): number {
+  return Math.max(-90, Math.min(90, lat));
+}
+
+/**
+ * Clamp longitude to valid range [-180, 180]
+ */
+export function clampLon(lon: number): number {
+  return ((lon + 180) % 360 + 360) % 360 - 180;
+}
+
+/**
+ * Validate coordinates
+ */
+export function isValidCoordinate(lat: number, lon: number): boolean {
+  return (
+    typeof lat === 'number' &&
+    typeof lon === 'number' &&
+    !isNaN(lat) &&
+    !isNaN(lon) &&
+    lat >= -90 &&
+    lat <= 90 &&
+    lon >= -180 &&
+    lon <= 180
+  );
+}
+
+import { getCountryInfo } from './countryNames';
+
+// Build a reverse lookup: country name -> alpha2 code from the table
+const _nameToAlpha2Cache: Record<string, string> = {};
+
+let _cacheBuilt = false;
+function ensureCache() {
+  if (_cacheBuilt) return;
+  _cacheBuilt = true;
+  for (let i = 0; i < 1000; i++) {
+    const info = getCountryInfo(String(i));
+    if (info.alpha2 !== '??') {
+      _nameToAlpha2Cache[info.name.toLowerCase()] = info.alpha2;
+    }
+  }
+  // Common aliases
+  _nameToAlpha2Cache['united states'] = 'US';
+  _nameToAlpha2Cache['usa'] = 'US';
+  _nameToAlpha2Cache['uk'] = 'GB';
+  _nameToAlpha2Cache['czech republic'] = 'CZ';
+  _nameToAlpha2Cache['ivory coast'] = 'CI';
+  _nameToAlpha2Cache['burma'] = 'MM';
+  _nameToAlpha2Cache['swaziland'] = 'SZ';
+  _nameToAlpha2Cache['macedonia'] = 'MK';
+}
+
+export function getIsoCode(countryName: string): string {
+  if (!countryName || countryName.startsWith('Region')) return '??';
+  ensureCache();
+  
+  const lower = countryName.toLowerCase();
+  if (_nameToAlpha2Cache[lower]) return _nameToAlpha2Cache[lower];
+  
+  for (const [name, code] of Object.entries(_nameToAlpha2Cache)) {
+    if (lower.includes(name) || name.includes(lower)) return code;
+  }
+
+  return '??';
+}
+\end{verbatim}
+
+\section*{Appendix H: GLSL Custom Shaders for Globe and Maps}
+To achieve high performance visual rendering of geographic elements and glowing indicators on the client's screen, the Predictra Threat Map shifts processing of procedural visual elements to the GPU. This is accomplished using custom WebGL shader materials implemented inside Three.js and React Three Fiber. This appendix details the complete GLSL source codes of the custom vertex and fragment shaders.
+
+\subsection*{H.1 Atmospheric Glow Shader}
+This shader generates a smooth outer Fresnel glow surrounding the 3D procedural sphere. The vertex shader calculates light-intensity vectors relative to the user's camera view angle, and the fragment shader applies an additive glowing alpha overlay:
+\begin{verbatim}
+// Atmospheric Glow - Vertex Shader
+varying float vIntensity;
+void main() {
+  vec3 vNormal = normalize(normalMatrix * normal);
+  vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
+  vec3 vNormel = normalize(-mvPosition.xyz);
+  vIntensity = pow(0.7 - dot(vNormal, vNormel), 3.0);
+  gl_Position = projectionMatrix * mvPosition;
+}
+
+// Atmospheric Glow - Fragment Shader
+uniform vec3 glowColor;
+varying float vIntensity;
+void main() {
+  gl_FragColor = vec4(glowColor, vIntensity * 0.6);
+  if (gl_FragColor.a < 0.01) discard;
+}
+\end{verbatim}
+
+\subsection*{H.2 Country Dot Grid Sweep Shader}
+This shader renders the glowing points on geographic landmasses. It includes a time-dependent linear coordinate sweep function, blending between a primary cyan color and a secondary green accent to represent real-time security scanning sweeps across coordinates:
+\begin{verbatim}
+// Country Dot Grid - Vertex Shader
+varying vec3 vPosition;
+void main() {
+  vPosition = position;
+  vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
+  gl_PointSize = (10.0 / -mvPosition.z) * 1.5;
+  gl_Position = projectionMatrix * mvPosition;
+}
+
+// Country Dot Grid - Fragment Shader
+uniform float time;
+uniform vec3 color;
+uniform vec3 accentColor;
+varying vec3 vPosition;
+void main() {
+  float dist = length(gl_PointCoord - vec2(0.5));
+  if (dist > 0.5) discard;
+  float sweep = fract(vPosition.x * 0.2 - time * 0.15);
+  float sweepIntensity = smoothstep(0.95, 1.0, sweep);
+  vec3 finalColor = mix(color, accentColor, sweepIntensity * 0.8);
+  gl_FragColor = vec4(finalColor, 0.2 + sweepIntensity * 0.4);
+}
+\end{verbatim}
+
+\subsection*{H.3 Flat 2D Enterprise Map Grid Shader}
+Used exclusively during flat map projections, this shader renders a subtle slate backgrounds with a procedural coordinate tracking grid and glowing border lines:
+\begin{verbatim}
+// 2D Map - Vertex Shader
+varying vec2 vUv;
+void main() {
+  vUv = uv;
+  gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+}
+
+// 2D Map - Fragment Shader
+uniform vec3 color;
+uniform vec3 gridColor;
+varying vec2 vUv;
+
+void main() {
+  // Subtle Procedural Coordinate Grid lines
+  vec2 gUv = vUv * vec2(60.0, 30.0);
+  vec2 gridLine = abs(fract(gUv - 0.5) - 0.5) / fwidth(gUv);
+  float grid = 1.0 - min(min(gridLine.x, gridLine.y), 1.0);
+  
+  vec3 finalColor = color + gridColor * grid * 0.02; 
+  
+  float borderX = smoothstep(0.01, 0.0, vUv.x) + 
+                  smoothstep(0.99, 1.0, vUv.x);
+  float borderY = smoothstep(0.01, 0.0, vUv.y) + 
+                  smoothstep(0.99, 1.0, vUv.y);
+  float border = borderX + borderY;
+  finalColor += gridColor * border * 0.1;
+
+  float alpha = max(grid * 0.15, border * 0.4);
+  gl_FragColor = vec4(finalColor, alpha);
+}
+\end{verbatim}
+
+\section*{Appendix I: Raw Scraper Payload Samples}
+To assist in integration testing, this section catalogs the raw JSON and CSV payloads returned by the external scrapers before normalization.
+
+\subsection*{I.1 Checkpoint Scraper Raw Payload Example}
+\begin{verbatim}
+event: threat
+data: {
+  "srcIp": "194.26.135.8",
+  "dstIp": "74.125.19.103",
+  "attackName": "Phishing Link Access",
+  "attackType": "phishing",
+  "severity": "high",
+  "srcCountry": "RU",
+  "dstCountry": "US"
+}
+\end{verbatim}
+
+\subsection*{I.2 Bitdefender Scraper Raw Payload Example}
+\begin{verbatim}
+{
+  "event": "detection",
+  "channel": "ransomware",
+  "ip": "103.24.15.2",
+  "country": "CN",
+  "malwareName": "WannaCry.B.Ransomware",
+  "port": 445
+}
+\end{verbatim}
+
+\subsection*{I.3 Fortinet Scraper Raw Payload Example}
+\begin{verbatim}
+[
+  {
+    "srcCountry": "Germany",
+    "dstCountry": "United States",
+    "signatureName": "Apache.Log4j.RCE.Exploit",
+    "attackCount": 45,
+    "victimSubnet": "198.51.100.0/24"
+  }
+]
+\end{verbatim}
+
+\subsection*{I.4 URLhaus Malware Scraper Raw Payload Example}
+\begin{verbatim}
+{
+  "query_status": "ok",
+  "urls": [
+    {
+      "id": "2810394",
+      "url": "http://185.220.101.5/payloads/cobalt.exe",
+      "url_status": "online",
+      "threat": "malware_download",
+      "reporter": "abuse_ch_bot",
+      "tags": ["CobaltStrike", "exe"]
+    }
+  ]
+}
+\end{verbatim}
+
+\subsection*{I.5 Kaspersky Feodo Botnet Tracker Raw Payload Example}
+\begin{verbatim}
+# Firstseen,DstIP,DstPort,Malware,Asname
+2026-05-21,103.5.8.12,443,Qakbot,Chinanet,Active
+\end{verbatim}
+
+\subsection*{I.6 AlienVault OTX Pulse Scraper Raw Payload Example}
+\begin{verbatim}
+{
+  "count": 1,
+  "results": [
+    {
+      "name": "APT28 Sednit Infrastructure",
+      "description": "Active C2 targeting gov.",
+      "indicators": [
+        {
+          "indicator": "194.26.135.12",
+          "type": "IPv4",
+          "title": "C2 Server"
+        }
+      ]
+    }
+  ]
+}
+\end{verbatim}
+
+\subsection*{I.7 Ransomwatch Extortion Scraper Raw Payload Example}
+\begin{verbatim}
+[
+  {
+    "group": "LockBit 3.0",
+    "post_title": "Texas Medical Center Inc",
+    "discovered": "2026-05-21T12:00:00.000Z",
+    "website": "lockbitapt...onion"
+  }
+]
+\end{verbatim}
+
+\subsection*{I.8 MontySecurity C2 Tracker Raw Payload Example}
+\begin{verbatim}
+[
+  {
+    "ip": "185.220.101.9",
+    "framework": "Cobalt Strike",
+    "port": 50050,
+    "first_seen": "2026-05-21"
+  }
+]
+\end{verbatim}
+
+\subsection*{I.9 MISP Galaxy Synthetic Scraper Raw Payload Example}
+The MISP Galaxy synthetic scraper parses internal threat intelligence models and generates standard normalized events. An example of the input template metadata format is cached locally and parsed dynamically (see Appendix F.2 for the output structure details).
+
+\subsection*{I.10 SANS ISC DShield Raw Payload Example}
+\begin{verbatim}
+[
+  {
+    "ip": "185.220.101.5",
+    "port": 23,
+    "attacks": 1420,
+    "lastseen": "2026-05-21"
+  }
+]
+\end{verbatim}
+
+\section*{Appendix J: Sample STIX 2.1 Threat Ingestion Bundle}
+This section contains the raw JSON structure of the STIX 2.1 intelligence bundle representing a nation-state campaign analyzed in Chapter 4:
+\begin{verbatim}
+{
+  "type": "bundle",
+  "id": "bundle--9d48721c-a3f1-4df2-8e10",
+  "spec_version": "2.1",
+  "objects": [
+    {
+      "type": "threat-actor",
+      "id": "threat-actor--8e0f66e0",
+      "created": "2026-05-21T12:00:00.000Z",
+      "modified": "2026-05-21T12:00:00.000Z",
+      "name": "Apex Spyder",
+      "description": "Nation-state cyber espionage active since 2018.",
+      "threat_actor_types": ["spy", "nation-state"],
+      "aliases": ["APT99", "RedHorizon"],
+      "roles": ["infrastructure-operator", "malware-author"],
+      "goals": ["espionage", "intellectual-property-theft"],
+      "sophistication": "innovator",
+      "resource_level": "government"
+    },
+    {
+      "type": "campaign",
+      "id": "campaign--4f32890b",
+      "created": "2026-05-21T12:00:00.000Z",
+      "modified": "2026-05-21T12:00:00.000Z",
+      "name": "Operation Silent Breach",
+      "description": "Targeted infiltration of telco networks.",
+      "first_seen": "2026-01-15T08:00:00Z",
+      "objective": "Establish persistence and tap fiber links."
+    },
+    {
+      "type": "malware",
+      "id": "malware--3b5f928e",
+      "created": "2026-05-21T12:00:00.000Z",
+      "modified": "2026-05-21T12:00:00.000Z",
+      "name": "SpectreShell",
+      "description": "Modular remote access trojan via encrypted DNS.",
+      "is_family": true,
+      "malware_types": ["remote-access-trojan", "exfiltration"],
+      "architecture_execution_envs": ["x86", "x64"],
+      "capabilities": ["anti-sandbox", "dns-exfil", "registry-persist"]
+    },
+    {
+      "type": "tool",
+      "id": "tool--e912b48a",
+      "created": "2026-05-21T12:00:00.000Z",
+      "modified": "2026-05-21T12:00:00.000Z",
+      "name": "SharpDump",
+      "description": "A C# tool to dump LSASS memory partitions.",
+      "tool_types": ["credential-exploitation"],
+      "aliases": ["LsassDumper"]
+    },
+    {
+      "type": "attack-pattern",
+      "id": "attack-pattern--7d29bc3b",
+      "created": "2026-05-21T12:00:00.000Z",
+      "modified": "2026-05-21T12:00:00.000Z",
+      "name": "LSASS Memory Dumping",
+      "description": "LSASS memory dumping for domain credentials.",
+      "kill_chain_phases": [
+        {
+          "kill_chain_name": "mitre-attack",
+          "phase_name": "credential-access"
+        }
+      ]
+    },
+    {
+      "type": "identity",
+      "id": "identity--8a39dfa2",
+      "created": "2026-05-21T12:00:00.000Z",
+      "modified": "2026-05-21T12:00:00.000Z",
+      "name": "TelcoGlobal Inc.",
+      "description": "International telco provider in EMEA.",
+      "identity_class": "organization",
+      "sectors": ["telecommunications", "technology"]
+    },
+    {
+      "type": "indicator",
+      "id": "indicator--bc3f829e",
+      "created": "2026-05-21T12:00:00.000Z",
+      "modified": "2026-05-21T12:00:00.000Z",
+      "name": "SpectreShell C2 Server Beacon",
+      "description": "Detects SpectreShell outbound DNS beaconing.",
+      "pattern": "[domain-name:value = 'c2.corp-updates.net']",
+      "pattern_type": "stix",
+      "valid_from": "2026-01-15T00:00:00Z"
+    },
+    {
+      "type": "relationship",
+      "id": "relationship--c112a9e8",
+      "created": "2026-05-21T12:00:00.000Z",
+      "modified": "2026-05-21T12:00:00.000Z",
+      "relationship_type": "attributed-to",
+      "source_ref": "campaign--4f32890b",
+      "target_ref": "threat-actor--8e0f66e0"
+    },
+    {
+      "type": "relationship",
+      "id": "relationship--a918bde2",
+      "created": "2026-05-21T12:00:00.000Z",
+      "modified": "2026-05-21T12:00:00.000Z",
+      "relationship_type": "uses",
+      "source_ref": "threat-actor--8e0f66e0",
+      "target_ref": "malware--3b5f928e"
+    },
+    {
+      "type": "relationship",
+      "id": "relationship--e018a1bc",
+      "created": "2026-05-21T12:00:00.000Z",
+      "modified": "2026-05-21T12:00:00.000Z",
+      "relationship_type": "uses",
+      "source_ref": "malware--3b5f928e",
+      "target_ref": "tool--e912b48a"
+    },
+    {
+      "type": "relationship",
+      "id": "relationship--103cdef1",
+      "created": "2026-05-21T12:00:00.000Z",
+      "modified": "2026-05-21T12:00:00.000Z",
+      "relationship_type": "targets",
+      "source_ref": "malware--3b5f928e",
+      "target_ref": "identity--8a39dfa2"
+    },
+    {
+      "type": "relationship",
+      "id": "relationship--d028e1bc",
+      "created": "2026-05-21T12:00:00.000Z",
+      "modified": "2026-05-21T12:00:00.000Z",
+      "relationship_type": "targets",
+      "source_ref": "campaign--4f32890b",
+      "target_ref": "identity--8a39dfa2"
+    },
+    {
+      "type": "relationship",
+      "id": "relationship--a03bf19a",
+      "created": "2026-05-21T12:00:00.000Z",
+      "modified": "2026-05-21T12:00:00.000Z",
+      "relationship_type": "indicates",
+      "source_ref": "indicator--bc3f829e",
+      "target_ref": "malware--3b5f928e"
+    }
+  ]
+}
+\end{verbatim}
+
+\section*{Appendix K: Pre-allocated Circular Memory Buffer \\ (\texttt{RingBuffer.ts})}
+This section contains the complete TypeScript implementation of the pre-allocated circular RingBuffer class used for Garbage Collection protection:
+\begin{verbatim}
+export class RingBuffer<T> {
+  private capacity: number;
+  private buffer: T[];
+  private pointer: number = 0;
+  private size: number = 0;
+
+  constructor(capacity: number) {
+    this.capacity = capacity;
+    this.buffer = new Array<T>(capacity);
+  }
+
+  public push(item: T): void {
+    this.buffer[this.pointer] = item;
+    this.pointer = (this.pointer + 1) % this.capacity;
+    if (this.size < this.capacity) {
+      this.size++;
+    }
+  }
+
+  public getAll(): T[] {
+    const result: T[] = [];
+    const start = this.size === this.capacity ? this.pointer : 0;
+    for (let i = 0; i < this.size; i++) {
+      const idx = (start + i) % this.capacity;
+      result.push(this.buffer[idx]);
+    }
+    return result;
+  }
+
+  public getLength(): number {
+    return this.size;
+  }
+}
+\end{verbatim}
+
+\section*{Appendix L: Browser-Side FPS Telemetry Hook \\ (\texttt{useFpsTelemetry.ts})}
+This hook gathers high-precision rendering latency telemetry by hook integration with the browser paint cycle:
+\begin{verbatim}
+import { useEffect, useRef } from 'react';
+import { useStreamStore } from '../stream/useStreamStore';
+
+export function useFpsTelemetry() {
+  const setFps = useStreamStore((s) => s.setFps);
+  const frameCountRef = useRef(0);
+  const lastTimeRef = useRef(performance.now());
+  const requestRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    const loop = () => {
+      frameCountRef.current++;
+      const now = performance.now();
+      const delta = now - lastTimeRef.current;
+
+      // Update telemetry average every 1 second
+      if (delta >= 1000) {
+        const calculatedFps = (frameCountRef.current * 1000) / delta;
+        setFps(Math.round(calculatedFps));
+        
+        // Reset counters
+        frameCountRef.current = 0;
+        lastTimeRef.current = now;
+      }
+      
+      requestRef.current = requestAnimationFrame(loop);
+    };
+
+    requestRef.current = requestAnimationFrame(loop);
+    return () => {
+      if (requestRef.current) {
+        cancelAnimationFrame(requestRef.current);
+      }
+    };
+  }, [setFps]);
+}
+\end{verbatim}
+
+\section*{Appendix M: STIX Parser and Classification Utilities}
+This appendix provides the core Javascript methods executing STIX parsing, object categorization, and regular expression IOC pattern classification inside the React application:
+
+\subsection*{M.1 STIX 2.1 Object separation and MITRE compiler}
+\begin{verbatim}
+const objects = stixData.objects || [];
+const actors = objects.filter(o => o.type === 'threat-actor');
+const malwares = objects.filter(o => o.type === 'malware');
+const tools = objects.filter(o => o.type === 'tool');
+const indicators = objects.filter(o => o.type === 'indicator');
+const relationships = objects.filter(o => o.type === 'relationship');
+
+const phasesMap = new Map();
+attackPatterns.forEach(ap => {
+  (ap.kill_chain_phases || []).forEach(phase => {
+    if (phase.kill_chain_name === 'mitre-attack') {
+      const phaseName = phase.phase_name.replace(/-/g, ' ');
+      if (!phasesMap.has(phaseName)) {
+        phasesMap.set(phaseName, []);
+      }
+      phasesMap.get(phaseName).push(ap);
+    }
+  });
+});
+\end{verbatim}
+
+\subsection*{M.2 Regex-based Indicator Classification}
+\begin{verbatim}
+export function classifyIndicator(pattern: string): string {
+  if (/ipv4-addr:value/.test(pattern)) return 'IPv4 Address';
+  if (/file:hashes\.'SHA-256'/.test(pattern)) return 'SHA-256 Hash';
+  if (/domain-name:value/.test(pattern)) return 'Domain Name';
+  if (/url:value/.test(pattern)) return 'URL Endpoint';
+  return 'File/Mutex Pattern';
+}
+\end{verbatim}
+
+
+

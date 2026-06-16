@@ -1,0 +1,25 @@
+@startuml
+skinparam BackgroundColor #FFFFFF
+skinparam TitleFontColor #1E293B
+
+' Define custom background colors for states
+state "Product Backlog" as product #F2F9FF
+state "Sprint Planning" as planning #F2F9FF
+state "Sprint Execution\n(2-3 Weeks Sprints)" as execution #F2F9FF
+state "Daily Scrum\n(15 Min Standup)" as daily #FFFDF2
+state "Sprint Review\n(Working Demo)" as review #F2F9FF
+state "Sprint Retrospective" as retro #F2F9FF
+state "Shippable Increment" as increment #FFF2F2
+
+[*] --> product
+product --> planning
+planning --> execution
+execution --> daily
+daily --> execution
+execution --> review
+review --> retro
+retro --> increment
+increment --> [*]
+
+retro -[dashed,#2980B9]-> planning : "Iterative Feedback"
+@enduml

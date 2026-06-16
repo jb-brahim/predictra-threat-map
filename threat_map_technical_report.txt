@@ -30,14 +30,11 @@ SYSTEM DETAILS:
 - Parsing: The "parseBundle" function ingests large JSON bundles and breaks them down into atomic objects (Reports, Indicators, Malware, Techniques) using a switch-case logic on object types.
 - TTP Analysis: The "mapAttackToPhase" function automatically maps MITRE ATT&CK techniques to the 12 Cyber Kill Chain phases using keyword-based heuristics.
 - IOC Classification: The "classifyIndicator" function uses regex to extract human-readable values from STIX patterns (e.g., extracting an IP from a cyber-observable string).
-- Visualization: Uses a force-directed graph (VisualizerTab) to show relationships between different threat entities.
-
 KEY FILES & DIRECTORIES:
 - frontend/src/ui/StixDashboard.tsx : [FILE] The main brain of the STIX dashboard. Contains the core logic:
     - parseBundle(): Categorizes raw STIX objects.
     - mapAttackToPhase(): Aligns techniques to the MITRE matrix.
     - classifyIndicator(): Decodes indicators (IPs, MD5, etc.).
-- frontend/src/ui/StixVisualizerPage.tsx : [FILE] Implements the focus-directed graph visualization for STIX relationships.
 - frontend/src/data/ : [FOLDER] Contains the embedded STIX datasets used by the app.
     - cisa.json  : Cyber security advisory data.
     - ivanti.json: Threat actor activity targeting specific vulnerabilities.

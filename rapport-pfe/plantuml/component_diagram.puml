@@ -1,0 +1,48 @@
+@startuml
+skinparam linetype ortho
+skinparam BackgroundColor #FFFFFF
+skinparam TitleFontColor #1E293B
+
+' Color Palette Definitions
+!define BASE_COLOR #F2F9FF
+!define BASE_BORDER 2980B9
+!define INC_COLOR #FFF2F2
+!define INC_BORDER C0392B
+!define EXT_COLOR #FFFDF2
+!define EXT_BORDER D35400
+
+skinparam component {
+  BackgroundColor BASE_COLOR
+  BorderColor BASE_BORDER
+  FontColor #1E293B
+  FontSize 12
+  FontStyle bold
+}
+
+skinparam database {
+  BackgroundColor INC_COLOR
+  BorderColor INC_BORDER
+  FontColor #1E293B
+  FontSize 12
+  FontStyle bold
+}
+
+skinparam ArrowColor #2980B9
+
+title Predictra Threat Map - System Component Architecture
+
+[Scrapers Module\n(Checkpoint, Feodo, etc.)] as scrapers EXT_COLOR;line:EXT_BORDER
+[Enrichment Module\n(Geocoding & Classifier)] as enrichment
+[Express Server\n(REST APIs & SSE Stream)] as server
+database "MongoDB Atlas\n(ThreatEvent Model)" as database
+[Zustand Store\n(State & Adaptive Engine)] as store
+[3D WebGL Globe\n(React Three Fiber)] as globe
+[STIX Workspace\n(D3 Force Graph)] as stix
+
+scrapers ..> enrichment : "sends raw events"
+enrichment ..> server : "provides enriched data"
+server ..> database : "persists logs"
+server ..> store : "streams events (SSE)"
+store ..> globe : "binds real-time state"
+store ..> stix : "supplies STIX data"
+@enduml

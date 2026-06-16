@@ -1,0 +1,38 @@
+@startuml
+skinparam BackgroundColor #FFFFFF
+skinparam TitleFontColor #1E293B
+skinparam ArrowColor #2980B9
+
+' Color Palette Definitions
+!define PRESENTATION_COLOR #F2F9FF
+!define PRESENTATION_BORDER 2980B9
+!define STORAGE_COLOR #FFFDF2
+!define STORAGE_BORDER D35400
+!define PROCESSING_COLOR #F5EEF8
+!define PROCESSING_BORDER 8E44AD
+!define INGESTION_COLOR #FFF2F2
+!define INGESTION_BORDER C0392B
+
+skinparam rectangle {
+  FontColor #1E293B
+  FontSize 12
+  FontStyle bold
+}
+
+title Predictra Threat Map - Application Layered Architecture
+
+rectangle "Presentation Tier (Frontend - React 19 / WebGL)\n--\nWebGL 3D Globe Scene (R3F) • STIX Force Graph • Analytics • Zustand State Store" as presentation PRESENTATION_COLOR;line:PRESENTATION_BORDER
+
+rectangle "Storage & Management Tier (MongoDB)\n--\nMongoose Schemas • 30-Day TTL Indexes • 500MB DB Quota Monitor" as storage STORAGE_COLOR;line:STORAGE_BORDER
+
+rectangle "Processing & Enrichment Tier (Node.js)\n--\n5-Layer Sector Classifier • GeoIP Geocoder • RDAP In-Memory Cache" as processing PROCESSING_COLOR;line:PROCESSING_BORDER
+
+rectangle "Data Ingestion Tier (Scrapers)\n--\n9+ Multi-Source APIs • Real-Time SSE/WebSockets • 300ms Batch Queue" as ingestion INGESTION_COLOR;line:INGESTION_BORDER
+
+ingestion -down-> processing : "Ingested events"
+processing -down-> storage : "Enriched records"
+storage -down-> presentation : "Historical queries"
+
+ingestion -[#C0392B,bold]right-> presentation : "Real-Time SSE Stream"
+
+@enduml

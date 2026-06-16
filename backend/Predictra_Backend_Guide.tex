@@ -1,0 +1,602 @@
+\documentclass[11pt,a4paper]{report}
+
+% --- Packages ---
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{geometry}
+\geometry{left=2.5cm, right=2.5cm, top=2.5cm, bottom=2.5cm}
+\usepackage{xcolor}
+\usepackage{hyperref}
+\usepackage{listings}
+\usepackage[many]{tcolorbox}
+\usepackage{booktabs}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{fancyhdr}
+\usepackage{titlesec}
+\usepackage{float}
+\usepackage{longtable}
+
+% --- Color Palette (Modern, Sleek, High-Contrast for Focus) ---
+\definecolor{primary}{HTML}{0F172A}    % Slate 900
+\definecolor{secondary}{HTML}{0D9488}  % Teal 600
+\definecolor{accent}{HTML}{D97706}     % Amber 600
+\definecolor{lightbg}{HTML}{F8FAFC}    % Slate 50
+\definecolor{darkgray}{HTML}{334155}   % Slate 700
+\definecolor{boxborder}{HTML}{E2E8F0}  % Slate 200
+
+% --- Typography & Spacing ---
+\usepackage{lmodern}
+\linespread{1.15}
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{6pt}
+
+% --- Headers & Footers ---
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\textcolor{darkgray}{\bfseries Predictra Backend Guide}}
+\fancyhead[R]{\textcolor{darkgray}{\leftmark}}
+\fancyfoot[C]{\textcolor{darkgray}{\thepage}}
+\renewcommand{\headrulewidth}{0.5pt}
+
+% --- Custom Titles ---
+\titleformat{\chapter}[display]
+  {\normalfont\huge\bfseries\color{primary}}
+  {\chaptertitlename\ \thechapter}{20pt}{\Huge}
+\titleformat{\section}
+  {\normalfont\large\bfseries\color{secondary}}
+  {\thesection}{1em}{}
+
+% --- Code Listing Config ---
+\lstdefinelanguage{JavaScript}{
+  keywords={break, case, catch, continue, debugger, default, delete, do, else, false, finally, for, function, if, in, instanceof, new, null, return, switch, this, throw, true, try, typeof, var, void, while, with, const, let, class, export, import, require, module},
+  morecomment=[l]{//},
+  morecomment=[s]{/*}{*/},
+  morestring=[b]',
+  morestring=[b]"
+}
+
+\lstset{
+  basicstyle=\ttfamily\small,
+  breaklines=true,
+  backgroundcolor=\color{lightbg},
+  frame=single,
+  rulecolor=\color{boxborder},
+  keywordstyle=\color{blue},
+  commentstyle=\color{gray},
+  stringstyle=\color{teal},
+  showstringspaces=false,
+  numbers=left,
+  numberstyle=\tiny\color{gray},
+  stepnumber=1,
+  numbersep=5pt
+}
+
+% --- Custom tcolorbox Templates (Cognitive Anchors) ---
+\newtcolorbox{memoryanchor}[2][]{
+  enhanced,
+  colback=lightbg,
+  colframe=secondary,
+  arc=5pt,
+  fonttitle=\bfseries\color{white},
+  title={\textsf{Memory Anchor: #2}},
+  attach boxed title to top left={yshift=-2mm, xshift=4mm},
+  boxed title style={colback=secondary},
+  #1
+}
+
+\newtcolorbox{deepdive}[2][]{
+  enhanced,
+  colback=white,
+  colframe=primary,
+  arc=5pt,
+  fonttitle=\bfseries\color{white},
+  title={\textsf{Deep Dive: #2}},
+  attach boxed title to top left={yshift=-2mm, xshift=4mm},
+  boxed title style={colback=primary},
+  #1
+}
+
+\newtcolorbox{activerecall}[2][]{
+  enhanced,
+  colback=lightbg,
+  colframe=accent,
+  arc=5pt,
+  fonttitle=\bfseries\color{white},
+  title={\textsf{Active Recall Challenge: #2}},
+  attach boxed title to top left={yshift=-2mm, xshift=4mm},
+  boxed title style={colback=accent},
+  #1
+}
+
+% --- Hyperref Setup ---
+\hypersetup{
+  colorlinks=true,
+  linkcolor=secondary,
+  urlcolor=secondary,
+  citecolor=secondary,
+  pdftitle={Predictra Threat Map Backend Guide},
+  pdfauthor={Predictra Team}
+}
+
+\begin{document}
+
+% =============================================================================
+% TITLE PAGE
+% =============================================================================
+\begin{titlepage}
+  \centering
+  \vspace*{2cm}
+  {\Huge \bfseries \color{primary} Predictra Threat Map Backend} \\[0.5cm]
+  {\Large \bfseries \color{secondary} Complete Architectural Analysis \& Cognitive Study Guide} \\[1.5cm]
+  
+  \rule{\textwidth}{1pt} \\[1.5cm]
+  
+  \begin{minipage}{0.8\textwidth}
+    \centering
+    \large \textcolor{darkgray}{
+      This comprehensive guide is designed to dissect and explain every backend file of the Predictra Cyber Threat Map. It employs cognitive load theory, analogies, and active recall strategies to ensure absolute conceptual retention. By the end of this reading, you will not just know the codebase --- you will remember its behavior permanently.
+    }
+  \end{minipage} \\[1.5cm]
+  
+  \rule{\textwidth}{1pt} \\[2cm]
+  
+  {\large \bfseries Sourced from Predictra Threat Map Codebase} \\[0.2cm]
+  {\large June 2026}
+  
+  \vfill
+\end{titlepage}
+
+\tableofcontents
+\newpage
+
+% =============================================================================
+% CHAPTER 1: THE NERVOUS SYSTEM
+% =============================================================================
+\chapter{The Backend Architecture (The Nervous System)}
+
+To master the Predictra backend, we must first build a high-level mental map. Think of the backend not as isolated files of code, but as a \textbf{living organism} --- a nervous system that intercepts global threat signals, processes them, and relays them to visual display modules in real-time.
+
+\begin{figure}[H]
+  \centering
+  \small
+  \begin{tabular}{|l|l|l|}
+    \hline
+    \textbf{Biological Part} & \textbf{Code Component} & \textbf{Operational Responsibility} \\ \hline
+    \textbf{Sensory Organs} & Scrapers (\texttt{services/scrapers/*}) & Intercepting public cyber threat feeds. \\ \hline
+    \textbf{Nerve Center (Brain)} & Orchestrator (\texttt{server.js}) & Filtering, queue batching, and routing data. \\ \hline
+    \textbf{Long-term Memory} & MongoDB Database (\texttt{models/ThreatEvent}) & Saving historic security logs. \\ \hline
+    \textbf{Vocal Cords} & Server-Sent Events (\texttt{/api/feed}) & Broadcasting threats to frontend maps. \\ \hline
+  \end{tabular}
+  \caption{Predictra's Biological Architectural Analogy}
+\end{figure}
+
+\section{The Core Pipeline}
+The data flow travels through four distinct stages:
+\begin{enumerate}
+  \item \textbf{Ingestion:} Scrapers pull raw JSON/Text feeds from security APIs and vendors.
+  \item \textbf{Translation \& Jittering:} Raw data is reformatted into a uniform model. Latitude and longitude are given minor \emph{jitter} offsets to avoid visual overlap when plotting.
+  \item \textbf{Enrichment:} The IP is geolocated, its owner organization is looked up via RDAP, and keywords are scanned to classify the victim's industrial sector (e.g., Healthcare, Finance).
+  \item \textbf{Batching \& Broadcast:} Events are buffered and pushed in micro-batches every 300ms to the frontend, while simultaneously written in bulk (batches of 25) to MongoDB.
+\end{enumerate}
+
+\begin{memoryanchor}{The Mnemonic Acronym: "I-T-E-B"}
+  Remember the four pipeline stages with the word \textbf{ITEB}:
+  \begin{itemize}
+    \item \textbf{I} - Ingestion (Scrapers pull data)
+    \item \textbf{T} - Translation (Standardizing keys and adding coordinate jitter)
+    \item \textbf{E} - Enrichment (RDAP lookups and industry sector mapping)
+    \item \textbf{B} - Batching (300ms flushes and bulk MongoDB saves)
+  \end{itemize}
+\end{memoryanchor}
+
+\begin{activerecall}{Visualizing the Pipeline}
+  Close your eyes and sketch the path a single threat pulse takes from Fortinet's server to the user's browser screen. Write down what \textbf{ITEB} stands for.
+\end{activerecall}
+
+\newpage
+
+% =============================================================================
+% CHAPTER 2: CONFIGURATION & SCHEMAS
+% =============================================================================
+\chapter{Configuration \& Database Foundations}
+
+Before the brain can run, its environment and memory structures must be defined. Here we look at how the database is connected, how variables are configured, and why the database storage schema is highly optimized.
+
+\section{Configuration: \texttt{package.json} and \texttt{.env}}
+The \texttt{package.json} file defines our external libraries. The key libraries and their purposes are:
+\begin{itemize}
+  \item \texttt{express} (v5.2.1): The HTTP server framework.
+  \item \texttt{mongoose} (v8.23.0): MongoDB Object Modeling, managing schemas and write streams.
+  \item \texttt{geoip-lite} (v1.4.10): Fast, local, offline MaxMind-based IP geolocation. We use this instead of querying remote APIs to keep latency near zero.
+  \item \texttt{axios} (v1.13.6): Promise-based HTTP client to fetch feeds.
+  \item \texttt{socket.io-client} (v2.4.0): For establishing live WebSocket streams with vendors like Bitdefender.
+  \item \texttt{eventsource} (v4.1.0): An implementation of the EventSource client API to read Checkpoint's Server-Sent Events (SSE) feed.
+\end{itemize}
+
+\section{Database Connector: \texttt{config/db.js}}
+This module exposes a single asynchronous function \texttt{connectDB()}. Its task is straightforward:
+\begin{lstlisting}[language=JavaScript]
+const connectDB = async () => {
+    try {
+        const uri = process.env.MONGO_URI || 'mongodb://127.0.0.1:27017/threatmap';
+        await mongoose.connect(uri);
+        console.log(`[MongoDB] Connected properly to ${uri}`);
+    } catch (error) {
+        console.error('[MongoDB] Connection error:', error.message);
+        process.exit(1); // Aborts system on database failure
+    }
+};
+\end{lstlisting}
+If the database cannot connect, the process terminates immediately (\texttt{process.exit(1)}). This is an intentional defensive programming pattern: running a threat log server without its memory store is a compromised state.
+
+\section{Optimized Memory Schema: \texttt{models/ThreatEvent.js}}
+This file defines the Mongoose schema for MongoDB. It utilizes \textbf{short field names} as database attributes. Let's analyze the schema keys:
+\begin{longtable}{lllp{6.5cm}}
+\toprule
+\textbf{Key} & \textbf{Type} & \textbf{Enum / Default} & \textbf{Real Meaning} \\
+\midrule
+\texttt{a\_c} & Number & Default: 1 & Attack Count (occurrences in batch) \\
+\texttt{a\_n} & String & Required & Attack Name (signature / CVE details) \\
+\texttt{a\_t} & String & \texttt{'exploit'}, \texttt{'malware'}, \texttt{'phishing'} & Attack Type categorization \\
+\texttt{s\_co} & String & Required & Source Country Code (2-letter ISO) \\
+\texttt{s\_la} & Number & Required & Source Latitude coordinate \\
+\texttt{s\_lo} & Number & Required & Source Longitude coordinate \\
+\texttt{d\_co} & String & Required & Destination Country Code (2-letter ISO) \\
+\texttt{d\_la} & Number & Required & Destination Latitude coordinate \\
+\texttt{d\_lo} & Number & Required & Destination Longitude coordinate \\
+\texttt{s\_ip} & String & Default: \texttt{'unknown'} & Attacker Source IP \\
+\texttt{d\_ip} & String & Default: \texttt{'unknown'} & Target Destination IP / Victim Name \\
+\texttt{meta} & Mixed & Default: \texttt{\{\}} & Arbitrary key-value metadata container \\
+\texttt{timestamp} & Date & Default: \texttt{Date.now} & Event time (Auto-expires in 30 days) \\
+\texttt{source\_api} & String & Required & Scraper identifier (e.g., \texttt{'fortinet'}) \\
+\bottomrule
+\end{longtable}
+
+\begin{deepdive}{Why use abbreviated keys like \texttt{a\_c} and \texttt{s\_la}?}
+  In high-frequency real-time logging, MongoDB stores millions of documents. Because MongoDB stores field names in every single document, using \texttt{source\_latitude} instead of \texttt{s\_la} across 10,000,000 records wastes gigabytes of disk space and memory buffers. Furthermore, shorter keys result in a \textbf{smaller network payload} size, letting WebSockets and SSE channels stream data to the browser with reduced packet sizes, preventing client-side network choking.
+\end{deepdive}
+
+Note the TTL index on the timestamp field:
+\begin{lstlisting}[language=JavaScript]
+timestamp: { type: Date, default: Date.now, expires: 2592000 }
+\end{lstlisting}
+The \texttt{expires} value \texttt{2592000} represents 30 days in seconds ($30 \times 24 \times 3600$). MongoDB automatically purges threat logs older than 30 days. This keeps our database database footprint self-cleaning and bounded.
+
+\begin{activerecall}{The Schema Translation}
+  Match the following local abbreviations to their conceptual meaning:
+  \begin{enumerate}
+    \item \texttt{a\_n} $\rightarrow$ \rule{3cm}{0.15mm}
+    \item \texttt{a\_t} $\rightarrow$ \rule{3cm}{0.15mm}
+    \item \texttt{s\_co} $\rightarrow$ \rule{3cm}{0.15mm}
+    \item \texttt{d\_lo} $\rightarrow$ \rule{3cm}{0.15mm}
+  \end{enumerate}
+\end{activerecall}
+
+\newpage
+
+% =============================================================================
+% CHAPTER 3: THE SCRAPERS
+% =============================================================================
+\chapter{The Scrapers (Sensory Receptors)}
+
+The scrapers are the sensory organs of Predictra. They run concurrently, polling web feeds, connecting to socket gateways, or parsing public intelligence feeds. Let's compare their operations:
+
+\begin{longtable}{llllp{4.5cm}}
+\toprule
+\textbf{Scraper} & \textbf{Source Type} & \textbf{Polling Rate} & \textbf{Default Type} & \textbf{Data Target} \\
+\midrule
+\texttt{fortinet} & JSON API Poll & Every 4 sec & exploit & Fortiguard live outbreaks \\
+\texttt{kaspersky} & JSON File Poll & Every 60 sec & malware/exploit & abuse.ch Feodo Tracker \\
+\texttt{urlhaus} & JSON API Poll & Every 90 sec & malware & abuse.ch URLhaus online URLs \\
+\texttt{alienvault} & JSON API Poll & Every 5 min & exploit & OTX Pulse Activity feeds \\
+\texttt{ransomwatch} & JSON API Poll & Every 10 min & malware & Ransomlook.io recent leaks \\
+\texttt{c2tracker} & Plaintext Poll & Every 15 min & malware & montysecurity C2 lists \\
+\texttt{misp-galaxy} & Static JSON Poll & Every 6 hours & random/mixed & MISP galaxy clusters Github \\
+\texttt{checkpoint} & SSE Feed (Client) & Live Stream & exploit/malware & Checkpoint live API gateway \\
+\texttt{bitdefender} & Socket.io Client & Live Stream & exploit/malware & Bitdefender live stream map \\
+\bottomrule
+\end{longtable}
+
+\section{Scraper Details \& Algorithms}
+
+\subsection{1. Checkpoint (\texttt{services/scrapers/checkpoint.js})}
+Checkpoint provides a direct Server-Sent Events stream. The scraper connects to \texttt{https://threatmap-api.checkpoint.com/ThreatMap/api/feed} and listens for incoming messages. It translates incoming attributes directly to Predictra's database parameters.
+\begin{itemize}
+  \item \textbf{Overlapping Coordinates Fix:} If the source coordinates and target coordinates are identical, the scraper offsets the destination latitude and longitude by a random jitter offset within $[-1, 1]$ degrees:
+  \begin{lstlisting}[language=JavaScript]
+  if (data.s_la === d_la_mapped && data.s_lo === d_lo_mapped) {
+      d_la_mapped += (Math.random() - 0.5) * 2;
+      d_lo_mapped += (Math.random() - 0.5) * 2;
+  }
+  \end{lstlisting}
+  This ensures the visualization shows an arc curve rather than a collapsed point on the globe.
+  \item \textbf{Russian Federation Fix:} Checkpoint uses \texttt{RF} for Russia. The scraper transforms this to \texttt{RU} to maintain standard ISO consistency:
+  \begin{lstlisting}[language=JavaScript]
+  s_co: (data.s_co === 'RF' ? 'RU' : data.s_co) || '??'
+  \end{lstlisting}
+\end{itemize}
+
+\subsection{2. Bitdefender (\texttt{services/scrapers/bitdefender.js})}
+Bitdefender operates a live WebSocket feed. We connect to their websocket endpoint using \texttt{socket.io-client}.
+\begin{itemize}
+  \item \textbf{Handshake Details:} The scraper sets up transport to use only \texttt{['websocket']} and automatically attempts reconnection every 3 seconds.
+  \item \textbf{Subscriptions:} Upon connection, it emits a subscription payload for topics: \texttt{botnet}, \texttt{portscan}, \texttt{telnet}, \texttt{ssh}, \texttt{rdp}, \texttt{vnc}, \texttt{mysql}, \texttt{mssql}, \texttt{http}, \texttt{iot}, \texttt{iot\_botnet}, \texttt{infections}, \texttt{spam}.
+  \item \textbf{One-Sided Coordinate Generation:} Often, Bitdefender events only provide an attacker location OR a victim location. If one side is missing, the scraper generates coordinates for the missing end by applying a jitter offset of up to $\pm 5$ degrees around the known point.
+  \item \textbf{Reporting Counter packets:} Every 50 attacks, the scraper broadcasts a \texttt{'counter'} payload to update session tallies.
+\end{itemize}
+
+\subsection{3. C2 Tracker (\texttt{services/scrapers/c2tracker.js})}
+C2 Tracker scans active botnet command \& control servers. It fetches IP address lists from raw GitHub files maintained by MontySecurity.
+\begin{itemize}
+  \item \textbf{Targets:} Cobalt Strike, Sliver C2, Havoc C2, Remcos RAT, and Metasploit Framework.
+  \item \textbf{Algorithm:} For each tracker, it parses plaintext lists of IPs separated by newlines. To prevent flooding the web application with thousands of locations simultaneously, the scraper extracts a random sample of 10 active IPs per cycle.
+  \item \textbf{Geolocation:} The IPs are geolocated using \texttt{geoip-lite}.
+  \item \textbf{Target Jitter:} Since victim IPs are not provided, it maps attacks to target destinations (e.g., US, UK, DE) with a minor coordinate jitter to keep the lines separated on the map.
+  \item \textbf{Staggered Emit:} Pushes updates to the UI using a staggered timer up to 10 seconds:
+  \begin{lstlisting}[language=JavaScript]
+  setTimeout(() => { broadcast('attack', mappedEvent); }, Math.random() * 10000);
+  \end{lstlisting}
+\end{itemize}
+
+\subsection{4. AlienVault OTX (\texttt{services/scrapers/alienvault.js})}
+This scraper monitors high-confidence threat reports ("Pulses") logged by the AlienVault Open Threat Exchange community.
+\begin{itemize}
+  \item \textbf{Poll:} It queries the AlienVault API every 5 minutes.
+  \item \textbf{Mapping:} It parses the top 20 pulses, maps the author names, extracts associated malware families and tags, and triggers staggered updates to the frontend.
+\end{itemize}
+
+\subsection{5. Fortinet (\texttt{services/scrapers/fortinet.js})}
+Fortinet maps outbreak-specific threats.
+\begin{itemize}
+  \item \textbf{Handshake:} The scraper first queries the active outbreak API. It skips the generic "All Outbreaks" (ID 0) to find the first real, active security threat campaign (e.g. specific malware spreading).
+  \item \textbf{Poll:} Every 4 seconds, it pulls outbreak event lists. It maps coordinates, vulnerability signatures, severity indexes, and outbreak IDs, and triggers broadcasts.
+\end{itemize}
+
+\subsection{6. Kaspersky / Feodo Tracker (\texttt{services/scrapers/kaspersky.js})}
+Since Kaspersky does not offer a free public API for their cyber map, Predictra matches their telemetry data by polling abuse.ch's \textbf{Feodo Tracker}.
+\begin{itemize}
+  \item \textbf{Source:} A JSON blocklist of active C2 botnet IP addresses updated regularly by abuse.ch.
+  \item \textbf{Poll:} Runs every 60 seconds, parses up to 40 active nodes, and maps them. It uses a customized user-agent header (\texttt{PredictraThreatMap/1.0}) as requested by abuse.ch to maintain good API citizenship.
+\end{itemize}
+
+\subsection{7. MISP Galaxy (\texttt{services/scrapers/misp-galaxy.js})}
+Instead of active network feeds, this module integrates structural intelligence. It fetches profiles of Advanced Persistent Threat (APT) groups, ransomware families, and hacking tools from the MISP Galaxy repository on GitHub.
+\begin{itemize}
+  \item \textbf{Cache:} Refreshes its local database cache every 6 hours.
+  \item \textbf{Simulation Generator:} Every 20 seconds, it selects a random threat actor and ransomware profile from the cache. It resolves suspected sponsor countries, identifies target country pools, jitters coordinates, and pushes simulated live-intel arcs.
+\end{itemize}
+
+\subsection{8. RansomWatch (\texttt{services/scrapers/ransomwatch.js})}
+This scraper monitors ransomware extortion rings. It leverages the Ransomlook.io API, which compiles postings from active Tor dark web leak sites.
+\begin{itemize}
+  \item \textbf{Rate:} Polls the API every 10 minutes.
+  \item \textbf{Anti-Flood Safeguard:} On the first load, it limits processing to the latest 15 leaks. On subsequent ticks, it calculates the difference using a count tracker (\texttt{lastRecordCount}) and emits only newly found posts.
+\end{itemize}
+
+\subsection{9. URLhaus (\texttt{services/scrapers/urlhaus.js})}
+URLhaus logs active sites distributing malicious files.
+\begin{itemize}
+  \item \textbf{Poll:} Queries abuse.ch URLhaus API every 90 seconds.
+  \item \textbf{Logic:} Filters URLs with status \texttt{'online'}, extracts the domain host, resolves location using local GeoIP search, and pushes events.
+\end{itemize}
+
+\begin{memoryanchor}{Why Jitter Coordinates?}
+  Jittering offsets coordinates by a tiny random fraction: \texttt{lat + (Math.random() - 0.5) * JITTER\_FACTOR}. Without jittering, if 20 attacks hit London or Paris, all 20 lines would point to the exact same coordinate. They would render directly on top of each other, making it look like a single attack. Jittering spreads the lines into a natural-looking "swarm," showing the user the true volume of threats visually.
+\end{memoryanchor}
+
+\begin{activerecall}{Scraper Mechanics}
+  \begin{enumerate}
+    \item Why does Bitdefender require a coordinate generation fallback?
+    \item What is the purpose of \texttt{lastRecordCount} in the RansomWatch scraper?
+    \item Why do we stagger event emissions in the C2 Tracker scraper using \texttt{setTimeout}?
+  \end{enumerate}
+\end{activerecall}
+
+\newpage
+
+% =============================================================================
+% CHAPTER 4: THE ENRICHMENT CORE
+% =============================================================================
+\chapter{Sector Enrichment \& IP Organization Lookups}
+
+Raw threat indicators contain data that is difficult for humans to quickly grasp, such as IP addresses, ports, or raw malware tags. The enrichment engine (\texttt{services/enrichment.js}) transforms these raw data points into actionable insights by answering two critical questions:
+\begin{enumerate}
+  \item Who owns the IP address?
+  \item Which industrial sector is being targeted?
+\end{enumerate}
+
+\section{Modern WHOIS Lookups: RDAP Protocol with Cache}
+Historically, systems used WHOIS queries to lookup IP ownership, which is slow and hard to parse. The enrichment service uses the modern \textbf{Registration Data Access Protocol (RDAP)}.
+\begin{itemize}
+  \item \textbf{Gateway API:} It queries the redirection service \texttt{https://rdap.org/ip/\{ip\}}, which redirects to the proper regional registry (ARIN, RIPE, APNIC, LACNIC, or AFRINIC) and returns JSON data.
+  \item \textbf{Parsing Engine:} It checks the registry payload for organization names. It scans the structured \texttt{entities} array, flattens card data (\texttt{vcardArray}), and falls back to check the main body \texttt{name} field.
+  \item \textbf{In-Memory Cache (Performance Guard):} Performing RDAP requests for every incoming threat would block scrapers and exceed API rate limits. The system uses a simple JS \texttt{Map} named \texttt{rdapCache} to cache results:
+  \begin{lstlisting}[language=JavaScript]
+  const rdapCache = new Map();
+  // ...
+  if (rdapCache.has(ip)) return rdapCache.get(ip);
+  // ... (perform request)
+  rdapCache.set(ip, orgName);
+  \end{lstlisting}
+\end{itemize}
+
+\section{Sector Classification Logic}
+To assign an attack to an industry sector (e.g., Healthcare, Finance, Utilities), the service processes threat metadata through a \textbf{five-tier fallback classification hierarchy}:
+
+\begin{figure}[H]
+  \centering
+  \small
+  \begin{tabular}{|c|p{4cm}|p{7.5cm}|}
+    \hline
+    \textbf{Tier} & \textbf{Classifier Method} & \textbf{Logic \& Parameters} \\ \hline
+    \textbf{1} & Target Name Keywords & Checks the victim organization name against lists of keywords. \\ \hline
+    \textbf{2} & Combined Text Scan & Scans malware signatures, attack descriptions, and threat tags. \\ \hline
+    \textbf{3} & Port Fallbacks & Assigns infrastructure roles based on destination ports (e.g., Port 443 $\rightarrow$ Web Services). \\ \hline
+    \textbf{4} & MISP Galaxy Targets & Maps industry designations from threat actor records. \\ \hline
+    \textbf{5} & Scraper Source Default & Assigns sector defaults based on scraper origin. \\ \hline
+  \end{tabular}
+  \caption{Predictra's Sector Enrichment Hierarchy}
+\end{figure}
+
+Let's look at the port-based classification helper inside \texttt{getEnrichedSector}:
+\begin{lstlisting}[language=JavaScript]
+if (port) {
+  const p = parseInt(port);
+  if ([80, 443, 8080, 8443].includes(p)) return 'Web Services';
+  if ([3306, 5432, 1433, 27017, 6379].includes(p)) return 'Database Services';
+  if ([22, 23, 21, 53, 161].includes(p)) return 'IT Infrastructure';
+  if ([445, 139, 3389].includes(p)) return 'Enterprise Network';
+  if ([25, 587, 465, 110, 143].includes(p)) return 'Email / Communication';
+}
+\end{lstlisting}
+
+If all checks fail, the system falls back to the scraper source. For example, events from \texttt{ransomwatch} are mapped to \texttt{'Finance / Business'} (since ransomware is typically financial extortion), while alerts from \texttt{c2tracker} default to \texttt{'IT Infrastructure'}.
+
+\begin{memoryanchor}{The Sector Map Hierarchy}
+  Use the mnemonic \textbf{N-T-P-M-S} (Name, Text, Port, MISP, Source):
+  \begin{itemize}
+    \item \textbf{N} - Name (Check victim name keywords)
+    \item \textbf{T} - Text (Check combined text keywords)
+    \item \textbf{P} - Port (Fallback to port mapping)
+    \item \textbf{M} - MISP (Fallback to MISP Galaxy tags)
+    \item \textbf{S} - Source (Fallback to scraper source default)
+  \end{itemize}
+\end{memoryanchor}
+
+\begin{activerecall}{Sector Enrichment}
+  \begin{enumerate}
+    \item What is the purpose of \texttt{rdapCache}? What would happen if it were removed?
+    \item What sector is assigned to an attack on port \texttt{1433}? What about port \texttt{3389}?
+    \item Write down the five tiers of sector classification (\textbf{N-T-P-M-S}).
+  \end{enumerate}
+\end{activerecall}
+
+\newpage
+
+% =============================================================================
+% CHAPTER 5: THE ORCHESTRATOR
+% =============================================================================
+\chapter{The Orchestrator (\texttt{server.js})}
+
+At the center of the Predictra backend is \texttt{server.js}. This orchestrator handles incoming threats, manages connected users, saves logs to the database, and exposes REST endpoints.
+
+\section{The Batching Pipeline}
+The system receives dozens of threat updates per second. Sending each update immediately over SSE and writing it to MongoDB causes \textbf{computational bottlenecks} --- leading to high CPU usage on the server, write lockups in MongoDB, and browser rendering lag. To prevent this, \texttt{server.js} implements a batching queue:
+\begin{lstlisting}[language=JavaScript]
+const BATCH_INTERVAL_MS = 300;   // Flush buffer every 300ms
+const MAX_PENDING = 500;          // Drop oldest events if queue overflows
+const BATCH_DB_INSERT = 25;       // Bulk-insert MongoDB when we have 25 docs
+\end{lstlisting}
+
+\begin{figure}[H]
+  \centering
+  \small
+  \begin{tabular}{rcccl}
+    \textbf{Scrapers} & $\rightarrow$ & \texttt{pendingEvents[]} \& \texttt{pendingDbDocs[]} & $\rightarrow$ & \textbf{SSE Clients (every 300ms)} \\
+                      &               &                                                     & $\rightarrow$ & \textbf{MongoDB (when docs $\ge$ 25)}
+  \end{tabular}
+  \caption{Visual Representation of the Batching Pipeline}
+\end{figure}
+
+The \texttt{flushBatch} function runs on a 300ms loop:
+\begin{lstlisting}[language=JavaScript]
+const flushBatch = () => {
+  if (pendingEvents.length === 0) return;
+  const batch = pendingEvents;
+  pendingEvents = [];
+  
+  // Broadcast ONE single message with the entire array
+  const payload = JSON.stringify(batch);
+  clients.forEach(client => {
+    try { client.res.write(`event: attacks\ndata: ${payload}\n\n`); } catch (e) {}
+  });
+
+  // Bulk-insert into MongoDB
+  if (isDatabaseEnabled && !dbSizeLimitReached && pendingDbDocs.length >= BATCH_DB_INSERT) {
+    const docs = pendingDbDocs.splice(0, pendingDbDocs.length);
+    ThreatEvent.insertMany(docs, { ordered: false })
+      .catch(err => console.error('[MongoDB] Bulk insert error:', err.message));
+  }
+};
+\end{lstlisting}
+\begin{itemize}
+  \item \textbf{ordered: false}: Tells MongoDB to insert documents in parallel. If one insert fails (e.g. duplicate key), it continues writing the remaining items instead of aborting the entire batch.
+\end{itemize}
+
+\section{The Database Quota Monitor}
+If the system runs for weeks, logging every threat could fill the database storage and crash the host machine. To prevent this, the server monitors database size:
+\begin{lstlisting}[language=JavaScript]
+const MAX_DB_SIZE_BYTES = 500 * 1024 * 1024; // 500 MB limit
+setInterval(async () => {
+  if (!mongoose.connection || mongoose.connection.readyState !== 1) return;
+  try {
+    const stats = await mongoose.connection.db.stats();
+    const size = stats.totalSize || (stats.storageSize + stats.indexSize) || stats.dataSize;
+    if (size >= MAX_DB_SIZE_BYTES) {
+      if (!dbSizeLimitReached) {
+        console.warn(`[MongoDB] Database size (${(size / 1024 / 1024).toFixed(2)} MB) exceeds 500 MB limit! Disabling database storage.`);
+        dbSizeLimitReached = true;
+        isDatabaseEnabled = false; // Automatically stop saving data
+      }
+    }
+  } catch (err) {
+    console.error('[MongoDB] Error checking db size:', err.message);
+  }
+}, 60000);
+\end{lstlisting}
+This background process checks MongoDB metrics every minute. If storage reaches 500MB, it turns off database saves (\texttt{isDatabaseEnabled = false}) while letting live SSE visual streaming continue. This is an elegant safety switch.
+
+\section{REST API Endpoints}
+The server exposes several endpoints for frontend modules:
+\begin{itemize}
+  \item \texttt{GET /api/feed}: Establishes the real-time EventSource connection for the UI client.
+  \item \texttt{GET /api/history}: Returns up to 200 historical events matching search queries (\texttt{q}, \texttt{ip}, or \texttt{country}) using case-insensitive RegExp scans on database properties.
+  \item \texttt{GET /api/stats}: Returns counts categorized by attack type, country of origin, destination target, attack vectors, and scraper source API.
+  \item \texttt{GET /api/analytics/sectors}: Classifies and aggregates sector-specific attack breakdowns (limited to 5,000 events to maintain performance).
+  \item \texttt{GET /api/galaxy/*}: Serves cached data for Threat Actors, Ransomware families, and Adversary tools.
+\end{itemize}
+
+\begin{activerecall}{Server Management}
+  \begin{enumerate}
+    \item Explain the problem that the 300ms batching loop solves.
+    \item What is the significance of the \texttt{\{ ordered: false \}} configuration when performing \texttt{insertMany}?
+    \item What happens to the database write pipeline if MongoDB usage exceeds 500MB?
+  \end{enumerate}
+\end{activerecall}
+
+\newpage
+
+% =============================================================================
+% CHAPTER 6: RECALL EXERCISE
+% =============================================================================
+\chapter{Active Recall \& Memory Consolidation}
+
+To finalize our guide, let's complete a comprehensive review. Try to answer these questions from memory before checking the source code.
+
+\section{Quick-Fire Questions}
+\begin{enumerate}
+  \item \textbf{Question:} Which scraper connects directly to a WebSocket client stream?
+  \item \textbf{Question:} Why does the server check database size every 60 seconds?
+  \item \textbf{Question:} What is the purpose of \texttt{rdapCache} inside \texttt{enrichment.js}?
+  \item \textbf{Question:} Why does the database schema specify \texttt{expires: 2592000}?
+  \item \textbf{Question:} Under what abbreviation is the attack name saved in MongoDB?
+\end{enumerate}
+
+\section{Mental Exercises}
+\begin{itemize}
+  \item \textbf{Exercise 1:} Describe to a peer why coordinate jittering is critical for geographic visualizers.
+  \item \textbf{Exercise 2:} Walk through the five steps of the sector enrichment fallback pipeline.
+  \item \textbf{Exercise 3:} Contrast the data collection methods of \texttt{checkpoint.js} (SSE stream) versus \texttt{c2tracker.js} (plaintext lists).
+\end{itemize}
+
+\section{Answer Key}
+\begin{enumerate}
+  \item Bitdefender (\texttt{bitdefender.js}) uses \texttt{socket.io-client}.
+  \item To prevent storage depletion by turning off MongoDB writes once the database size reaches 500MB.
+  \item Caches IP organization ownership queries to avoid rate-limiting and minimize lookup latency.
+  \item It instructs MongoDB to auto-expire and delete document logs after 30 days.
+  \item It is saved under the key \texttt{a\_n}.
+\end{enumerate}
+
+\end{document}

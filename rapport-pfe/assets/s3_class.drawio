@@ -1,0 +1,18 @@
+<mxfile host="Electron" modified="2026-06-08T14:48:00.000Z" agent="Mozilla/5.0" version="21.6.8" type="device">
+  <diagram id="S3Class" name="Sprint 3 Class Diagram">
+    <mxGraphModel dx="1000" dy="800" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+
+        <!-- 1. StixDashboard Class Box -->
+        <mxCell id="stixDash" value="&lt;table border=&quot;0&quot; cellPadding=&quot;4&quot; cellSpacing=&quot;0&quot; style=&quot;width: 100%; height: 100%; border-collapse: collapse; font-family: Helvetica; font-size: 12px;&quot;&gt;&lt;tr&gt;&lt;td align=&quot;center&quot; style=&quot;border-bottom: 1px solid #333333;&quot;&gt;&lt;b&gt;StixDashboard (UI)&lt;/b&gt;&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td align=&quot;left&quot; style=&quot;border-bottom: 1px solid #333333;&quot;&gt;+ bundleData : STIXBundle | null&lt;br&gt;+ activeTab : String&lt;br&gt;+ selectedObject : STIXObject | null&lt;br&gt;+ indicatorsList : STIXIndicator[]&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td align=&quot;left&quot;&gt;+ parseBundle(jsonText : String) : void&lt;br&gt;+ extractIndicators(objects) : List&lt;br&gt;+ mapToKillChain(objects) : Map&lt;br&gt;+ exportIOCsToCSV() : void&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#333333;strokeWidth=1.5;shadow=0;align=left;verticalAlign=top;" parent="1" vertex="1">
+          <mxGeometry x="50" y="50" width="240" height="150" as="geometry" />
+        </mxCell>
+
+
+
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

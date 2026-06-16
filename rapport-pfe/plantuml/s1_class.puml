@@ -1,0 +1,74 @@
+@startuml
+skinparam classAttributeIconSize 0
+skinparam linetype ortho
+left to right direction
+
+' Style Customizations
+skinparam BackgroundColor #FFFFFF
+skinparam TitleFontColor #1E293B
+skinparam ArrowColor #475569
+skinparam ArrowFontSize 10
+skinparam ArrowFontColor #475569
+
+skinparam PackageBorderColor #64748B
+skinparam PackageBackgroundColor #F8FAFC
+skinparam PackageFontSize 13
+skinparam PackageFontStyle bold
+
+!define BACKEND_COLOR #F2F9FF
+!define BACKEND_BORDER 2980B9
+
+title Sprint 1 - Core Ingestion Backend Class Diagram
+
+package "Backend Ingestion & Persistence Tier" {
+    
+    class "Express Server (server.js)" as Server BACKEND_COLOR;line:BACKEND_BORDER;line.bold {
+        - app: ExpressApp
+        - port: Number
+        - pendingBatch: ThreatEvent[]
+        - activeScrapers: Scraper[]
+        --
+        + startServer(): void
+        + initDatabase(): void
+        + runScheduler(): void
+        + queueEvent(event): void
+        - flushBatch(): void
+    }
+
+    class EnrichmentService BACKEND_COLOR;line:BACKEND_BORDER;line.bold {
+        - rdapCache: Map
+        - keywordMap: Record
+        --
+        + getEnrichedSector(event): String
+        + getIpOrganization(ip): Promise<string>
+        + geolocateIp(ip): Object
+    }
+
+    class ScraperService BACKEND_COLOR;line:BACKEND_BORDER;line.bold {
+        - name: String
+        - frequency: Number
+        - isActive: Boolean
+        - apiUrl: String
+        --
+        + run(): Promise<void>
+        + fetchFeed(): Promise<rawJSON>
+        + normalize(raw): ThreatEvent[]
+    }
+
+    class "ThreatEvent (Mongoose Model)" as ThreatEvent BACKEND_COLOR;line:BACKEND_BORDER;line.bold {
+        + a_c: Number
+        + a_n: String
+        + a_t: String
+        + s_ip / d_ip: String
+        + s_co / d_co: String
+        + s_la / s_lo: Number
+        + source_api: String
+        + timestamp: Date
+    }
+
+    Server --> ScraperService : "schedules & runs"
+    Server --> EnrichmentService : "utilizes"
+    Server --> ThreatEvent : "persists"
+    EnrichmentService ..> ThreatEvent : "enriches attributes of"
+}
+@enduml

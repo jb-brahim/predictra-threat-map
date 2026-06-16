@@ -1,0 +1,55 @@
+@startuml
+skinparam actorStyle awesome
+skinparam linetype ortho
+left to right direction
+
+!define BASE_COLOR #F2F9FF
+!define BASE_BORDER 2980B9
+!define INC_COLOR #FFF2F2
+!define INC_BORDER C0392B
+!define EXT_COLOR #FFFDF2
+!define EXT_BORDER D35400
+
+skinparam BackgroundColor #FFFFFF
+skinparam TitleFontColor #1E293B
+skinparam ActorBorderColor #1E293B
+skinparam ActorBackgroundColor #FFFFFF
+skinparam ActorFontSize 12
+skinparam ActorFontStyle bold
+
+skinparam RectangleBorderColor #475569
+skinparam RectangleBackgroundColor #F8FAFC
+skinparam RectangleFontSize 12
+skinparam RectangleFontStyle bold
+
+skinparam ArrowColor #475569
+skinparam ArrowFontSize 9
+skinparam ArrowFontColor #475569
+
+title Sprint 3 - STIX 2.1 Analytics & Visual Relationship Graph Use Cases
+
+actor "Security Analyst" as analyst
+
+rectangle "Sprint 3: STIX Workspace Boundary" {
+    usecase "Upload STIX 2.1 Bundle" as uc1 BASE_COLOR;line:BASE_BORDER;line.bold
+    usecase "Analyze MITRE Kill Chain" as uc2 BASE_COLOR;line:BASE_BORDER;line.bold
+    usecase "Navigate Relationship Graph" as uc3 BASE_COLOR;line:BASE_BORDER;line.bold
+    usecase "Filter Indicator IOCs" as uc4 BASE_COLOR;line:BASE_BORDER;line.bold
+    
+    usecase "Validate JSON Schema" as ucVal INC_COLOR;line:INC_BORDER
+    usecase "Render D3 Force Graph" as ucD3 INC_COLOR;line:INC_BORDER
+    usecase "Select Node Details" as ucSel EXT_COLOR;line:EXT_BORDER
+    usecase "Search IOC Keyword" as ucSearch EXT_COLOR;line:EXT_BORDER
+
+    uc1 ..> ucVal : <<include>>
+    uc3 ..> ucD3 : <<include>>
+    
+    uc3 <.. ucSel : <<extend>>
+    uc4 <.. ucSearch : <<extend>>
+}
+
+analyst --> uc1
+analyst --> uc2
+analyst --> uc3
+analyst --> uc4
+@enduml

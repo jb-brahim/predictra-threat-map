@@ -1,0 +1,73 @@
+@startuml
+skinparam classAttributeIconSize 0
+skinparam linetype ortho
+left to right direction
+
+' Style Customizations
+skinparam BackgroundColor #FFFFFF
+skinparam TitleFontColor #1E293B
+skinparam ArrowColor #475569
+skinparam ArrowFontSize 10
+skinparam ArrowFontColor #475569
+
+skinparam PackageBorderColor #64748B
+skinparam PackageBackgroundColor #F8FAFC
+skinparam PackageFontSize 13
+skinparam PackageFontStyle bold
+
+!define STATE_COLOR #F5EEF8
+!define STATE_BORDER 8E44AD
+!define UI_COLOR #FFFDF2
+!define UI_BORDER D35400
+
+title Sprint 4 - Historical Search & Performance Optimization Class Diagram
+
+package "Client Analytics & Performance Store" {
+
+    class "HistoryPage (HistoryPage.tsx)" as HistoryPage UI_COLOR;line:UI_BORDER;line.bold {
+        + filterQuery : String
+        + threatLogs : ThreatEvent[]
+        + isTargetingMe : Boolean
+        + totalPages : Number
+        --
+        + fetchHistory(page : Number, size : Number, query : String) : void
+        + exportToExcelFile() : void
+        + executeTargetMyIP() : void
+    }
+
+    class "RingBuffer<T> (utils/perf.ts)" as RingBuffer STATE_COLOR;line:STATE_BORDER;line.bold {
+        - capacity : Number
+        - buffer : T[]
+        - pointer : Number
+        --
+        + push(item : T) : void
+        + getAll() : T[]
+        + clear() : void
+        + getLength() : Number
+    }
+
+    class "perfTelemetry (utils/perf.ts)" as PerfTelemetry STATE_COLOR;line:STATE_BORDER;line.bold {
+        - stats : Stats
+        --
+        + recordEvent() : void
+        + updateFps(fps : Number) : void
+        + getReport() : Object
+    }
+
+    class "Zustand Store (useStreamStore)" as ZustandStore STATE_COLOR;line:STATE_BORDER;line.bold {
+        + eventBuffer : RingBuffer
+        + totalAttacks : Number
+        + attacksPerSecond : Number
+        + fps : Number
+        + adaptiveDropRate : Number
+        --
+        + addEvents(events : ThreatEvent[]) : void
+        + calculateFps() : void
+    }
+
+    HistoryPage ..> ZustandStore : "binds to state"
+    ZustandStore --> RingBuffer : "aggregates"
+    ZustandStore --> PerfTelemetry : "tracks metrics via"
+    HistoryPage ..> RingBuffer : "queries logs from"
+}
+@enduml

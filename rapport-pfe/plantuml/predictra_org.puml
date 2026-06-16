@@ -1,0 +1,31 @@
+@startwbs
+skinparam BackgroundColor #FFFFFF
+skinparam TitleFontColor #1E293B
+
+<style>
+wbsDiagram {
+  .board {
+    BackgroundColor #F2F9FF
+    RoundCorner 10
+    LineColor #2980B9
+    LineThickness 2.0
+    FontColor #1E293B
+    FontStyle bold
+  }
+  .dept {
+    BackgroundColor #FFFDF2
+    RoundCorner 10
+    LineColor #D35400
+    LineThickness 1.5
+    FontColor #1E293B
+  }
+}
+</style>
+
+title Predictra Organizational Structure
+
+* Predictra Board <<board>>
+** Threat Research\nDepartment <<dept>>
+** Security Engineering\nDepartment <<dept>>
+** Sales & Operations\nDepartment <<dept>>
+@endwbs

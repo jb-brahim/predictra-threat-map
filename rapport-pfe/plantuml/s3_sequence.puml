@@ -1,0 +1,33 @@
+@startuml
+skinparam BackgroundColor #FFFFFF
+skinparam TitleFontColor #1E293B
+skinparam ArrowColor #2980B9
+skinparam SequenceLifeLineBorderColor #475569
+skinparam SequenceLifeLineBackgroundColor #F8FAFC
+skinparam SequenceParticipantBorderColor #475569
+skinparam SequenceParticipantBackgroundColor #F2F9FF
+skinparam SequenceParticipantFontColor #1E293B
+skinparam SequenceParticipantFontSize 12
+skinparam SequenceParticipantFontStyle bold
+
+title Sprint 3 - STIX 2.1 Parsing & Analysis Sequence Diagram
+
+actor "Security Analyst" as Analyst
+participant "StixDashboard (UI)" as Dashboard
+participant "parseBundle()\n(Parser Service)" as Parser
+
+Analyst -> Dashboard : Upload STIX 2.1 JSON Bundle File
+activate Dashboard
+
+Dashboard -> Parser : Trigger: parseBundle(jsonText)
+activate Parser
+
+Parser -> Parser : Validate JSON Schema & SDO Types
+Parser -> Parser : Map Kill Chain & Extract IOCs
+
+Parser --> Dashboard : Return Parsed STIX Objects Lists
+deactivate Parser
+
+Dashboard --> Analyst : Display STIX analytical views
+deactivate Dashboard
+@enduml

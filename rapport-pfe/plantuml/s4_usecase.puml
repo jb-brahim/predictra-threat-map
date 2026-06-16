@@ -1,0 +1,53 @@
+@startuml
+skinparam actorStyle awesome
+skinparam linetype ortho
+left to right direction
+
+!define BASE_COLOR #F2F9FF
+!define BASE_BORDER 2980B9
+!define INC_COLOR #FFF2F2
+!define INC_BORDER C0392B
+!define EXT_COLOR #FFFDF2
+!define EXT_BORDER D35400
+
+skinparam BackgroundColor #FFFFFF
+skinparam TitleFontColor #1E293B
+skinparam ActorBorderColor #1E293B
+skinparam ActorBackgroundColor #FFFFFF
+skinparam ActorFontSize 12
+skinparam ActorFontStyle bold
+
+skinparam RectangleBorderColor #475569
+skinparam RectangleBackgroundColor #F8FAFC
+skinparam RectangleFontSize 12
+skinparam RectangleFontStyle bold
+
+skinparam ArrowColor #475569
+skinparam ArrowFontSize 9
+skinparam ArrowFontColor #475569
+
+title Sprint 4 - Historical Search & Performance Guardrails Use Cases
+
+actor "Security Analyst" as analyst
+
+rectangle "Sprint 4: Search & Performance Boundary" {
+    usecase "Search History Logs" as uc1 BASE_COLOR;line:BASE_BORDER;line.bold
+    usecase "Trigger Target My IP" as uc2 BASE_COLOR;line:BASE_BORDER;line.bold
+    usecase "Monitor Performance HUD" as uc3 BASE_COLOR;line:BASE_BORDER;line.bold
+    
+    usecase "Query Paginated Database" as ucQuery INC_COLOR;line:INC_BORDER
+    usecase "Geolocate Public IP" as ucGeo INC_COLOR;line:INC_BORDER
+    usecase "Track Canvas FPS" as ucFPS INC_COLOR;line:INC_BORDER
+    usecase "Export Threat Logs (Excel)" as ucExport EXT_COLOR;line:EXT_BORDER
+
+    uc1 ..> ucQuery : <<include>>
+    uc2 ..> ucGeo : <<include>>
+    uc3 ..> ucFPS : <<include>>
+    
+    uc1 <.. ucExport : <<extend>>
+}
+
+analyst --> uc1
+analyst --> uc2
+analyst --> uc3
+@enduml

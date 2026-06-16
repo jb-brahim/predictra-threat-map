@@ -1,0 +1,88 @@
+<mxfile host="Electron" modified="2026-06-08T14:38:00.000Z" agent="Mozilla/5.0" version="21.6.8" type="device">
+  <diagram id="ScrumLifecycle" name="Scrum Lifecycle">
+    <mxGraphModel dx="1000" dy="800" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
+      <root>
+        <!-- Layer 0 (Base) -->
+        <mxCell id="0" />
+        <!-- Layer 1 (Parent) -->
+        <mxCell id="1" parent="0" />
+
+        <!-- 1. Product Backlog -->
+        <mxCell id="product" value="&lt;font face=&quot;Helvetica&quot; style=&quot;font-size: 13px;&quot;&gt;&lt;b&gt;Product Backlog&lt;/b&gt;&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#333333;strokeWidth=1.5;shadow=0;arcSize=8;fontColor=#000000;align=center;" parent="1" vertex="1">
+          <mxGeometry x="100" y="50" width="180" height="50" as="geometry" />
+        </mxCell>
+
+        <!-- 2. Sprint Planning -->
+        <mxCell id="planning" value="&lt;font face=&quot;Helvetica&quot; style=&quot;font-size: 13px;&quot;&gt;&lt;b&gt;Sprint Planning&lt;/b&gt;&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#333333;strokeWidth=1.5;shadow=0;arcSize=8;fontColor=#000000;align=center;" parent="1" vertex="1">
+          <mxGeometry x="100" y="140" width="180" height="50" as="geometry" />
+        </mxCell>
+
+        <!-- 3. Sprint Execution -->
+        <mxCell id="execution" value="&lt;font face=&quot;Helvetica&quot; style=&quot;font-size: 13px;&quot;&gt;&lt;b&gt;Sprint Execution&lt;/b&gt;&lt;br&gt;(2-3 Weeks Sprints)&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#333333;strokeWidth=1.5;shadow=0;arcSize=8;fontColor=#000000;align=center;" parent="1" vertex="1">
+          <mxGeometry x="100" y="230" width="180" height="50" as="geometry" />
+        </mxCell>
+
+        <!-- 4. Daily Scrum -->
+        <mxCell id="daily" value="&lt;font face=&quot;Helvetica&quot; style=&quot;font-size: 13px;&quot;&gt;&lt;b&gt;Daily Scrum&lt;/b&gt;&lt;br&gt;(15 Min Standup)&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#333333;strokeWidth=1.5;shadow=0;arcSize=8;fontColor=#000000;align=center;" parent="1" vertex="1">
+          <mxGeometry x="330" y="230" width="180" height="50" as="geometry" />
+        </mxCell>
+
+        <!-- 5. Sprint Review -->
+        <mxCell id="review" value="&lt;font face=&quot;Helvetica&quot; style=&quot;font-size: 13px;&quot;&gt;&lt;b&gt;Sprint Review&lt;/b&gt;&lt;br&gt;(Working Demo)&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#333333;strokeWidth=1.5;shadow=0;arcSize=8;fontColor=#000000;align=center;" parent="1" vertex="1">
+          <mxGeometry x="100" y="320" width="180" height="50" as="geometry" />
+        </mxCell>
+
+        <!-- 6. Sprint Retrospective -->
+        <mxCell id="retro" value="&lt;font face=&quot;Helvetica&quot; style=&quot;font-size: 13px;&quot;&gt;&lt;b&gt;Sprint Retrospective&lt;/b&gt;&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#333333;strokeWidth=1.5;shadow=0;arcSize=8;fontColor=#000000;align=center;" parent="1" vertex="1">
+          <mxGeometry x="100" y="410" width="180" height="50" as="geometry" />
+        </mxCell>
+
+        <!-- 7. Shippable Increment -->
+        <mxCell id="increment" value="&lt;font face=&quot;Helvetica&quot; style=&quot;font-size: 13px;&quot;&gt;&lt;b&gt;Shippable Increment&lt;/b&gt;&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#333333;strokeWidth=1.5;shadow=0;arcSize=8;fontColor=#000000;align=center;" parent="1" vertex="1">
+          <mxGeometry x="100" y="500" width="180" height="50" as="geometry" />
+        </mxCell>
+
+        <!-- Downward Flows -->
+        <mxCell id="arrow1" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;strokeColor=#333333;strokeWidth=1.5;endArrow=block;" parent="1" source="product" target="planning" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <mxCell id="arrow2" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;strokeColor=#333333;strokeWidth=1.5;endArrow=block;" parent="1" source="planning" target="execution" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <mxCell id="arrow3" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;strokeColor=#333333;strokeWidth=1.5;endArrow=block;" parent="1" source="execution" target="review" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <mxCell id="arrow4" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;strokeColor=#333333;strokeWidth=1.5;endArrow=block;" parent="1" source="review" target="retro" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <mxCell id="arrow5" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;strokeColor=#333333;strokeWidth=1.5;endArrow=block;" parent="1" source="retro" target="increment" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- Loop: Execution <-> Daily Scrum -->
+        <mxCell id="arrow_to_daily" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.25;exitDx=0;exitDy=0;entryX=0;entryY=0.25;entryDx=0;entryDy=0;strokeColor=#333333;strokeWidth=1.5;endArrow=block;" parent="1" source="execution" target="daily" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <mxCell id="arrow_from_daily" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;exitX=0;exitY=0.75;exitDx=0;exitDy=0;entryX=1;entryY=0.75;entryDx=0;entryDy=0;strokeColor=#333333;strokeWidth=1.5;endArrow=block;" parent="1" source="daily" target="execution" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- Loop: Retrospective -> Planning (Iterative Feed) -->
+        <mxCell id="arrow_feed" value="&lt;font color=&quot;#333333&quot;&gt;&lt;b&gt;Iterative Feed&lt;/b&gt;&lt;/font&gt;" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;exitX=0;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;strokeColor=#333333;strokeWidth=1.5;endArrow=block;labelBackgroundColor=#FFFFFF;" parent="1" source="retro" target="planning" edge="1">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="40" y="435" />
+              <mxPoint x="40" y="165" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

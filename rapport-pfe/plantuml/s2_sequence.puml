@@ -1,0 +1,36 @@
+@startuml
+skinparam BackgroundColor #FFFFFF
+skinparam TitleFontColor #1E293B
+skinparam ArrowColor #2980B9
+skinparam SequenceLifeLineBorderColor #475569
+skinparam SequenceLifeLineBackgroundColor #F8FAFC
+skinparam SequenceParticipantBorderColor #475569
+skinparam SequenceParticipantBackgroundColor #F2F9FF
+skinparam SequenceParticipantFontColor #1E293B
+skinparam SequenceParticipantFontSize 12
+skinparam SequenceParticipantFontStyle bold
+
+title Sprint 2 - Real-Time SSE Stream & 3D Globe Sequence Diagram
+
+participant "Express Server\n(server.js)" as Server
+participant "EventSource Client\n(Browser API)" as EventSource
+participant "Zustand Store\n(useStreamStore)" as Store
+participant "WebGL Globe\n(React Three Fiber)" as Globe
+
+Server -> EventSource : SSE Broadcast (300ms batched flush)
+activate EventSource
+
+EventSource -> Store : onmessage: addEvents(payload)
+activate Store
+
+Store -> Store : latLonToVector3() (Trigonometric projection)
+Store -> Store : Append new ArcData & MarkerData
+
+Store -> Globe : Trigger render update
+activate Globe
+
+Globe -> Globe : useFrame(): Render dynamic bezier trails (SLERP)
+deactivate Globe
+deactivate Store
+deactivate EventSource
+@enduml

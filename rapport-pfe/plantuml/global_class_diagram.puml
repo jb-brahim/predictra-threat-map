@@ -1,0 +1,205 @@
+@startuml
+skinparam classAttributeIconSize 0
+skinparam linetype ortho
+left to right direction
+
+' Style Customizations
+skinparam BackgroundColor #FFFFFF
+skinparam TitleFontColor #1E293B
+skinparam ArrowColor #475569
+skinparam ArrowFontSize 10
+skinparam ArrowFontColor #475569
+
+skinparam PackageBorderColor #64748B
+skinparam PackageBackgroundColor #F8FAFC
+skinparam PackageFontSize 13
+skinparam PackageFontStyle bold
+
+' Color Palette variables
+!define BACKEND_COLOR #F2F9FF
+!define BACKEND_BORDER 2980B9
+!define STATE_COLOR #F5EEF8
+!define STATE_BORDER 8E44AD
+!define UI_COLOR #FFFDF2
+!define UI_BORDER D35400
+
+title Predictra Threat Map - Global Class Diagram
+
+' ==========================================
+' TIER 1: Backend Ingestion & Persistence
+' ==========================================
+package "Backend Ingestion & Persistence Tier" {
+    
+    class "Express Server (server.js)" as Server BACKEND_COLOR;line:BACKEND_BORDER;line.bold {
+        - app: ExpressApp
+        - port: Number
+        - sseClients: Response[]
+        - activeScrapers: Scraper[]
+        --
+        + startServer(): void
+        + initDatabase(): void
+        + setupSSEFeed(req, res): void
+        + broadcastToClients(events): void
+    }
+
+    class EnrichmentService BACKEND_COLOR;line:BACKEND_BORDER;line.bold {
+        - rdapCache: Map
+        - keywordMap: Record
+        --
+        + getEnrichedSector(event): String
+        + getIpOrganization(ip): Promise<string>
+    }
+
+    class ScraperService BACKEND_COLOR;line:BACKEND_BORDER;line.bold {
+        - name: String
+        - frequency: Number
+        - isActive: Boolean
+        - apiUrl: String
+        --
+        + run(): Promise<void>
+        + fetchFeed(): Promise<rawJSON>
+        + normalize(raw): ThreatEvent[]
+    }
+
+    class "ThreatEvent (Mongoose Model)" as ThreatEvent BACKEND_COLOR;line:BACKEND_BORDER;line.bold {
+        + a_c: Number
+        + a_n: String
+        + a_t: 'exploit'|'malware'|'phishing'
+        + s_ip / d_ip: String
+        + source_api: String
+        + timestamp: Date
+    }
+
+    ' Compact 2x2 grid layout
+    Server -[hidden]right-> EnrichmentService
+    Server -[hidden]down-> ScraperService
+    EnrichmentService -[hidden]down-> ThreatEvent
+}
+
+' ==========================================
+' TIER 2: Client State & Performance Store
+' ==========================================
+package "Client State & Performance Store" {
+
+    class "Zustand Store (useStreamStore)" as ZustandStore STATE_COLOR;line:STATE_BORDER;line.bold {
+        + status: ConnectionStatus
+        + currentView: ViewType
+        + eventBuffer: RingBuffer
+        + recentEvents: ThreatEvent[]
+        + totalAttacks: Number
+        + attacksPerSecond: Number
+        + arcs: ArcData[]
+        + markers: MarkerData[]
+        + projectionMode: '3d' | '2d'
+        --
+        + addEvents(events): void
+        + updateCounter(data): void
+        + setProjectionMode(mode): void
+        + initStream(): void
+    }
+
+    class "RingBuffer<T>" as RingBuffer STATE_COLOR;line:STATE_BORDER;line.bold {
+        - capacity: Number
+        - buffer: T[]
+        --
+        + push(item: T): void
+        + getAll(): T[]
+        + getRecent(n): T[]
+    }
+
+    class "perfTelemetry" as PerfTelemetry STATE_COLOR;line:STATE_BORDER;line.bold {
+        - stats: Stats
+        --
+        + recordEvent(): void
+        + updateFps(fps): void
+        + getReport(): Object
+    }
+
+    ' Compact side-by-side and stacked layout
+    ZustandStore -[hidden]right-> RingBuffer
+    RingBuffer -[hidden]down-> PerfTelemetry
+}
+
+' ==========================================
+' TIER 3: React Dashboard & UI Pages
+' ==========================================
+package "React Dashboard & UI Pages" {
+
+    class DashboardPage UI_COLOR;line:UI_BORDER;line.bold {
+        + timeMode: 'live' | 'dvr'
+        + searchQuery: String
+        --
+        + filterDataBySource(src): void
+        + handleCountryDrillDown(co): void
+        + handleExportExcel(): void
+    }
+
+    class HistoryPage UI_COLOR;line:UI_BORDER;line.bold {
+        + events: ThreatEvent[]
+        + page: Number
+        + limit: Number
+        --
+        + fetchHistory(): Promise<void>
+        + handlePageChange(p): void
+        + handleExport(): void
+    }
+
+    class AnalyticsPage UI_COLOR;line:UI_BORDER;line.bold {
+        + timeframe: String
+        + chartType: ChartType
+        --
+        + renderTrendChart(): ReactNode
+        + renderSectorDistribution(): ReactNode
+    }
+
+    class StixDashboard UI_COLOR;line:UI_BORDER;line.bold {
+        + bundleData: STIXBundle | null
+        + activeTab: String
+        + selectedObject: STIXObject | null
+        --
+        + parseBundle(jsonText): ParsedStixData
+        + mapAttackToPhase(name): String[]
+        + exportIOCsToCSV(): void
+    }
+
+    class CountryDashboard UI_COLOR;line:UI_BORDER;line.bold {
+        + countryData: Object
+        + activeThreatsCount: Number
+        --
+        + renderHologram(): ReactNode
+        + fetchCountryStats(): Promise<void>
+    }
+
+    ' Compact 2x3 grid layout
+    DashboardPage -[hidden]right-> HistoryPage
+    DashboardPage -[hidden]down-> AnalyticsPage
+    HistoryPage -[hidden]down-> StixDashboard
+    AnalyticsPage -[hidden]down-> CountryDashboard
+}
+
+' ==========================================
+' RELATIONSHIPS & CONNECTIONS
+' ==========================================
+
+' Tier 1 Relationships
+Server --> ScraperService : "runs"
+Server --> EnrichmentService : "uses"
+Server --> ThreatEvent : "persists"
+EnrichmentService ..> ThreatEvent : "returns"
+
+' Tier 1 to Tier 2 Relations
+Server ..> ZustandStore : "streams (SSE)"
+ThreatEvent ..> ZustandStore : "populates"
+
+' Tier 2 internal Relations
+ZustandStore --> RingBuffer : "aggregates"
+ZustandStore --> PerfTelemetry : "tracks"
+
+' Tier 2 to Tier 3 Relations
+ZustandStore ..> DashboardPage : "binds"
+ZustandStore ..> HistoryPage : "binds"
+ZustandStore ..> AnalyticsPage : "binds"
+ZustandStore ..> StixDashboard : "binds"
+ZustandStore ..> CountryDashboard : "binds"
+
+@enduml

@@ -34,7 +34,7 @@ The \textbf{Predictra Threat Map} is a comprehensive, real-time threat intellige
 \begin{itemize}
     \item \textbf{Real-Time 3D Threat Mapping:} Utilizes high-performance Three.js to render a 3D Earth, displaying live cyber attacks as animated arcs between source and destination coordinates.
     \item \textbf{Multi-Source Intel Aggregation:} Automated scrapers poll and connect via WebSockets/SSE to over 10 different global external threat feeds, standardizing the data into a unified attack format.
-    \item \textbf{STIX 2.1 Threat Analysis:} Features a dedicated dashboard to ingest, parse, and visualize STIX 2.1 JSON threat bundles. It categorizes reports, maps techniques to MITRE attack phases, and displays relationship graphs via force-directed visualizations.
+    \item \textbf{STIX 2.1 Threat Analysis:} Features a dedicated dashboard to ingest, parse, and analyze STIX 2.1 JSON threat bundles. It categorizes reports and maps techniques to MITRE attack phases.
     \item \textbf{High-Efficiency SSE Streaming:} Implements a batched Server-Sent Events (SSE) architecture to broadcast hundreds of attacks per second to the client without causing browser throttling.
     \item \textbf{Data Enrichment \& Persistence:} Classifies raw IP addresses into business sectors (e.g., Healthcare, Finance) automatically, and stores aggregated data into a MongoDB instance for historical analysis.
     \item \textbf{Analytics Dashboard:} Generates trend analyses, country-by-country breakdown, and sector-based impact matrices based on stored event data.
@@ -218,7 +218,7 @@ The repository structure follows a full-stack monorepo design. Below is a compre
     \item \verb|DashboardPage.tsx|: Primary interface overlaying the 3D map.
     \item \verb|AnalyticsPage.tsx|, \verb|HistoryPage.tsx|: Renders charts and historical data logs fetched from backend APIs.
     \item \verb|CountryDashboard.tsx|, \verb|CountryHologram.tsx|: Focused analytical views for selected nation profiles.
-    \item \verb|StixDashboard.tsx|, \verb|StixVisualizerPage.tsx|: Parsing engine and force-directed graph rendering for STIX 2.1 intelligence bundles.
+    \item \verb|StixDashboard.tsx|: Parsing engine and MITRE ATT\&CK Kill Chain mapping for STIX 2.1 intelligence bundles.
 \end{itemize}
 \textbf{State \& Utilities (\texttt{src/stream/}, \texttt{src/utils/}, \texttt{src/data/}):}
 \begin{itemize}[noitemsep]
