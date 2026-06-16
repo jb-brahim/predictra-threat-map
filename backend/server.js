@@ -201,10 +201,20 @@ app.get('/api/history', async (req, res) => { // Bind GET route to query histori
     } // End of query construction check block
 
     // Add time filtration constraints if present
-    if (startTime || endTime) {
+    if ((startTime && startTime !== '') || (endTime && endTime !== '')) {
       query.timestamp = {};
-      if (startTime) query.timestamp.$gte = new Date(startTime);
-      if (endTime) query.timestamp.$lte = new Date(endTime);
+      if (startTime && startTime !== '') {
+        const d = new Date(startTime);
+        if (!isNaN(d.getTime())) query.timestamp.$gte = d;
+      }
+      if (endTime && endTime !== '') {
+        const d = new Date(endTime);
+        if (!isNaN(d.getTime())) query.timestamp.$lte = d;
+      }
+      // Clean up if no valid dates were parsed
+      if (Object.keys(query.timestamp).length === 0) {
+        delete query.timestamp;
+      }
     }
 
     let limitVal = 200;

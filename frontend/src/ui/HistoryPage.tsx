@@ -26,6 +26,7 @@ export function HistoryPage() {
       const response = await fetch(url.toString());
       if (!response.ok) throw new Error('Failed to fetch history');
       const data = await response.json();
+      console.log('[HistoryPage] Loaded history data:', data);
       setHistory(data);
     } catch (err: any) {
       setError(err.message);
@@ -79,6 +80,7 @@ export function HistoryPage() {
       const response = await fetch(url.toString());
       if (!response.ok) throw new Error('Failed to fetch data for export');
       const dataToExport: ThreatEvent[] = await response.json();
+      console.log('[HistoryPage] Exporting data:', dataToExport);
       
       if (dataToExport.length === 0) {
         alert('No data found matching current filters to export.');
