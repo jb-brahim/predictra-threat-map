@@ -120,29 +120,43 @@ export const useStreamStore = create<StreamState>((set, get) => ({
   },
   _cleanup: null,
 
+  /**
+   * Action: Ingests an incoming batch of threat events.
+   * Runs three critical pipelines:
+   *  1. Injects raw events into the 10,000 capacity circular history buffer.
+   *  2. Visual sampling: Evaluates client-side frame rates (FPS) and dynamically drops visual arcs/markers to save GPU cycles.
+   *  3. Analytics aggregation: Stores counters in temporary local variables to throttle React state renders.
+   */
   addEvents: (events: ThreatEvent[]) => {
     const state = get();
     const buffer = state.eventBuffer;
+    
+    // 1. Store all events immediately in the memory buffer (no sampling here, stats remain accurate)
     buffer.pushMany(events);
 
     const now = Date.now();
     const newArcs: ArcData[] = [];
     const newMarkers: MarkerData[] = [];
 
-    // Layer 2: Adaptive Sampling for Visuals (arcs/markers)
+    // 2. Performance Guard (Adaptive Visual Sampling):
+    // Check client-side frame rate (FPS). If the system is lagging, reduce the number of 3D elements rendered.
     const fps = perfTelemetry.stats.fps;
     let visualEvents = events;
     if (fps < 30) {
-      visualEvents = events.filter((_, i) => i % 3 === 0); // Keep 33%
+      // Lagging state (below 30 FPS): Drop 66% of visual arcs, keep only 1 in 3 events
+      visualEvents = events.filter((_, i) => i % 3 === 0);
     } else if (fps < 45) {
-      visualEvents = events.filter((_, i) => i % 2 === 0); // Keep 50%
+      // Warning state (30 to 45 FPS): Drop 50% of visual arcs, keep only 1 in 2 events
+      visualEvents = events.filter((_, i) => i % 2 === 0);
     }
 
+    // Loop through the selected visual events and construct WebGL geometries
     for (const event of visualEvents) {
-      perfTelemetry.recordEvent();
+      perfTelemetry.recordEvent(); // Update telemetry counters
 
-      // Create arc
+      // Construct and position the 3D flying arc curve
       if (state.arcs.length + newArcs.length < MAX_ARCS) {
+        // Map latitude/longitude to 3D Cartesian Vector coordinates on the sphere
         const sourcePos = latLonToVector3(event.s_la, event.s_lo);
         const targetPos = latLonToVector3(event.d_la, event.d_lo);
 
@@ -158,16 +172,17 @@ export const useStreamStore = create<StreamState>((set, get) => ({
           attackName: event.a_n,
           sourceCo: event.s_co,
           targetCo: event.d_co,
-          startTime: now + Math.random() * 200, // slight jitter
-          duration: ARC_DURATION + Math.random() * 1000,
+          startTime: now + Math.random() * 200, // Apply minor startup jitter to stagger rendering
+          duration: ARC_DURATION + Math.random() * 1000, // Stagger arc flight time slightly
           progress: 0,
           active: true,
         });
       } else {
+        // Track dropped visuals (when cap is hit)
         perfTelemetry.stats.droppedEvents++;
       }
 
-      // Source marker
+      // Construct the Source Marker (glow at attack origin location)
       if (state.markers.length + newMarkers.length < MAX_MARKERS) {
         newMarkers.push({
           id: `src-${event.id || fastId()}`,
@@ -183,7 +198,8 @@ export const useStreamStore = create<StreamState>((set, get) => ({
         });
       }
 
-      // Destination marker
+      // Construct the Destination Marker (glow at victim target location).
+      // Starts with a delay matching 70% of the arc's flight time to align with visual impact.
       if (state.markers.length + newMarkers.length < MAX_MARKERS) {
         newMarkers.push({
           id: `dst-${event.id || fastId()}`,
@@ -203,20 +219,23 @@ export const useStreamStore = create<StreamState>((set, get) => ({
     const allArcs = state.arcs.concat(newArcs);
     const allMarkers = state.markers.concat(newMarkers);
 
-    // Prepare next state for fast visual updates
+    // Build the partial state object to update Zustand store
     const nextState: Partial<StreamState> = {
       arcs: allArcs,
       markers: allMarkers,
       activeArcCount: allArcs.length,
     };
 
-    // Cap recentEvents update frequency (500ms)
+    // 3. UI Throttling (Log Feed):
+    // Only update the recent events visual list in the UI every 500ms to avoid thrashing React DOM threads.
     if (now - lastRecentEventsFlush > 500) {
-      nextState.recentEvents = buffer.getRecent(40); // 40 items max in UI feed
+      nextState.recentEvents = buffer.getRecent(40); // Select last 40 threats to display in UI feed
       lastRecentEventsFlush = now;
     }
 
-    // Accumulate Analytics data (Layer 3)
+    // 4. Analytics Accumulation:
+    // Stash incoming metrics in out-of-store local variables. This avoids running React state commits
+    // dozens of times per second. We flush these aggregated values in a single commit once per second.
     pendingTotal += events.length;
     for (const e of events) {
       if (e.a_t in pendingType) pendingType[e.a_t as keyof TypeDistribution]++;
@@ -373,47 +392,60 @@ export const useStreamStore = create<StreamState>((set, get) => ({
 
   setProjectionMode: (mode) => set({ projectionMode: mode }),
 
+  /**
+   * Action: Establishes a connection to the backend Server-Sent Events (SSE) feed.
+   * Handles initialization, data parsing, payload validation, metrics updates,
+   * exponential reconnect loops with network jitter protection, and unmount cleanups.
+   */
   initStream: () => {
     const state = get();
+    // 1. Double Inits Guard: If an active connection/cleanup hook is already active, dispose of it first.
     if (state._cleanup) state._cleanup();
 
+    // Determine target API URL using Vite environment VITE_API_URL or fallback to local path
     const apiUrl = import.meta.env.VITE_API_URL || '/api/feed';
 
-    // SSE connection with exponential backoff
-    let reconnectDelay = 1000;
+    // State parameters for connection management
+    let reconnectDelay = 1000;         // Starting retry delay of 1s (1000ms)
     let eventSource: EventSource | null = null;
-    let destroyed = false;
+    let destroyed = false;              // Lock flag to check if component has unmounted
 
+    // Asynchronous connector function
     const connect = () => {
-      if (destroyed) return;
+      if (destroyed) return; // Stop if store connection has been disposed
       set({ status: 'reconnecting' });
 
       try {
+        // Instantiate the HTML5 EventSource connection pointing to the backend
         eventSource = new EventSource(apiUrl);
 
+        // Bind connection success listener
         eventSource.onopen = () => {
           set({ status: 'live' });
-          reconnectDelay = 1000;
+          reconnectDelay = 1000; // Reset reconnection delay to 1s on success
         };
 
+        // Bind the main real-time threat feed event listener ('attacks')
         eventSource.addEventListener('attacks', (e: MessageEvent) => {
           try {
             const batch = JSON.parse(e.data);
             if (!Array.isArray(batch)) return;
 
             const validEvents: ThreatEvent[] = [];
+            // Parse and sanitize every event record in the incoming batch
             for (const data of batch) {
+              // Ignore records missing core characteristics (e.g. types, coordinates)
               if (!data.a_t || 
                   data.s_la === undefined || data.s_lo === undefined || 
                   data.d_la === undefined || data.d_lo === undefined) continue;
 
               validEvents.push({
-                id: fastId(),
+                id: fastId(), // Generate short local execution ID
                 a_c: data.a_c || 1,
-                a_n: String(data.a_n || 'Unknown').slice(0, 200),
+                a_n: String(data.a_n || 'Unknown').slice(0, 200), // Slice strings to protect memory
                 a_t: (['exploit', 'malware', 'phishing'].includes(data.a_t) ? data.a_t : 'exploit') as ThreatEvent['a_t'],
                 s_co: String(data.s_co || '??').slice(0, 2).toUpperCase(),
-                s_la: Math.max(-90, Math.min(90, Number(data.s_la) || 0)),
+                s_la: Math.max(-90, Math.min(90, Number(data.s_la) || 0)), // Clamp coordinates to legal limits
                 s_lo: Math.max(-180, Math.min(180, Number(data.s_lo) || 0)),
                 d_co: String(data.d_co || '??').slice(0, 2).toUpperCase(),
                 d_la: Math.max(-90, Math.min(90, Number(data.d_la) || 0)),
@@ -426,15 +458,16 @@ export const useStreamStore = create<StreamState>((set, get) => ({
               });
             }
 
+            // Ingest the sanitized list batch into the store
             if (validEvents.length > 0) {
               get().addEvents(validEvents);
             }
           } catch {
-            // discard malformed events
+            // Discard malformed JSON packets silently
           }
         });
 
-        // Also handle legacy 'attack' events just in case
+        // Bind fallback listener for legacy individual 'attack' events
         eventSource.addEventListener('attack', (e: MessageEvent) => {
           try {
             const data = JSON.parse(e.data);
@@ -463,41 +496,48 @@ export const useStreamStore = create<StreamState>((set, get) => ({
           } catch {}
         });
 
+        // Bind connection counter update event listener ('counter')
         eventSource.addEventListener('counter', (e: MessageEvent) => {
           try {
             const data = JSON.parse(e.data);
             if (data.recentPeriod && data.today !== undefined) {
-              get().updateCounter(data);
+              get().updateCounter(data); // Commit metrics summaries
             }
           } catch {
-            // discard
+            // Discard
           }
         });
 
+        // Bind failure/error event handler
         eventSource.onerror = () => {
-          eventSource?.close();
+          eventSource?.close(); // Close faulty socket
           if (destroyed) return;
-          get().incrementReconnect();
+          get().incrementReconnect(); // Increment total reconnection tally
           set({ status: 'reconnecting' });
 
-          // Exponential backoff with jitter
-          const jitter = Math.random() * 1000;
+          // Exponential backoff reconnect loop with network jitter protection:
+          // Prevents client instances from swarming the backend server at the same millisecond.
+          const jitter = Math.random() * 1000; // Generate up to 1s of random delay
           setTimeout(connect, reconnectDelay + jitter);
+          // Double retry interval up to 30s cap
           reconnectDelay = Math.min(reconnectDelay * 2, 30000);
         };
       } catch {
-        // If EventSource constructor fails, report disconnection
+        // Fallback for instant EventSource initialization failures
         set({ status: 'disconnected' });
       }
     };
 
+    // Trigger startup connection
     connect();
 
+    // Define cleanup function to close sockets and set flags when unmounting
     const cleanup = () => {
       destroyed = true;
       eventSource?.close();
     };
 
+    // Stash cleanup handler inside state
     set({ _cleanup: cleanup });
   },
 }));
