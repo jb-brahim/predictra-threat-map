@@ -251,7 +251,19 @@ app.get('/api/history/export/csv', async (req, res) => { // Endpoint to stream d
     console.log('[API GET /api/history/export/csv] Streaming CSV export for query:', query);
 
     res.setHeader('Content-Type', 'text/csv; charset=utf-8');
-    res.setHeader('Content-Disposition', `attachment; filename="Threat_History_Report_${new Date().toISOString().slice(0, 10)}.csv"`);
+    
+    let filename = 'Threat_History_Report';
+    if (req.query.q) {
+      filename += `_${req.query.q.replace(/[^a-zA-Z0-9]/g, '_')}`;
+    }
+    if (req.query.startTime || req.query.endTime) {
+      const startStr = req.query.startTime ? new Date(req.query.startTime).toISOString().slice(0, 10) : 'Start';
+      const endStr = req.query.endTime ? new Date(req.query.endTime).toISOString().slice(0, 10) : 'End';
+      filename += `_${startStr}_to_${endStr}`;
+    } else {
+      filename += `_${new Date().toISOString().slice(0, 10)}`;
+    }
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}.csv"`);
     
     res.write('\uFEFF'); // Write UTF-8 BOM
     res.write('Event ID,Local Time,Threat Type,Attack Vector,Source IP,Source Country,Target IP,Target Country,Intel Source\n');
@@ -308,7 +320,19 @@ app.get('/api/history/export/json', async (req, res) => { // Endpoint to stream 
     console.log('[API GET /api/history/export/json] Streaming JSON export for query:', query);
 
     res.setHeader('Content-Type', 'application/json; charset=utf-8');
-    res.setHeader('Content-Disposition', `attachment; filename="Threat_History_Report_${new Date().toISOString().slice(0, 10)}.json"`);
+
+    let filename = 'Threat_History_Report';
+    if (req.query.q) {
+      filename += `_${req.query.q.replace(/[^a-zA-Z0-9]/g, '_')}`;
+    }
+    if (req.query.startTime || req.query.endTime) {
+      const startStr = req.query.startTime ? new Date(req.query.startTime).toISOString().slice(0, 10) : 'Start';
+      const endStr = req.query.endTime ? new Date(req.query.endTime).toISOString().slice(0, 10) : 'End';
+      filename += `_${startStr}_to_${endStr}`;
+    } else {
+      filename += `_${new Date().toISOString().slice(0, 10)}`;
+    }
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}.json"`);
 
     const cursor = ThreatEvent.find(query).sort({ timestamp: -1 }).lean().cursor();
 

@@ -109,7 +109,6 @@ export function HistoryPage() {
         }
       }
 
-      const fileDate = new Date().toISOString().slice(0, 10);
       const workbook = new ExcelJS.Workbook();
       const sheet = workbook.addWorksheet('Threat History Report');
 
@@ -169,7 +168,18 @@ export function HistoryPage() {
       });
 
       const buffer = await workbook.xlsx.writeBuffer();
-      saveAs(new Blob([buffer]), `Threat_History_Report_${fileDate}.xlsx`);
+      let filename = 'Threat_History_Report';
+      if (search) {
+        filename += `_${search.replace(/[^a-zA-Z0-9]/g, '_')}`;
+      }
+      if (startTime || endTime) {
+        const startStr = startTime ? new Date(startTime).toISOString().slice(0, 10) : 'Start';
+        const endStr = endTime ? new Date(endTime).toISOString().slice(0, 10) : 'End';
+        filename += `_${startStr}_to_${endStr}`;
+      } else {
+        filename += `_${new Date().toISOString().slice(0, 10)}`;
+      }
+      saveAs(new Blob([buffer]), `${filename}.xlsx`);
     } catch (err: any) {
       console.error(err);
       alert('Failed to export threat history: ' + err.message);
